@@ -22,4 +22,7 @@ public class Payment
     public DateTime CreatedAt { get; set; }         
     public DateTime? PaidAt { get; set; }
     public string? TransactionRef { get; set; }
+
+    /// <summary>A deposit is a reservation-only payment. The final bill is a separate row with an OrderId.</summary>
+    public bool IsDeposit => OrderId is null;
 }
