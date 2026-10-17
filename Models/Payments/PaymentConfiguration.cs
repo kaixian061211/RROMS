@@ -1,0 +1,31 @@
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+
+namespace RROMS.Web.Models.Payments;
+
+public class PaymentConfiguration : IEntityTypeConfiguration<Payment>
+{
+    public void Configure(EntityTypeBuilder<Payment> builder)
+    {
+        builder.ToTable("Payment", t =>
+        {
+            t.HasCheckConstraint("CK_Payments_PaymentMethod",
+                "[PaymentMethod] IN ('cash','card','online_banking','e-wallet')");
+            t.HasCheckConstraint("CK_Payments_PaymentStatus",
+                "[PaymentStatus] IN ('pending','paid','failed','refunded')");
+            t.HasCheckConstraint("CK_Payments_HasReservationOrOrder",
+                "[ReservationId] IS NOT NULL OR [OrderId] IS NOT NULL");
+        });
+
+        builder.Property(p => p.PaymentStatus).HasDefaultValue("pending");
+        builder.Property(p => p.CreatedAt).HasDefaultValueSql("SYSDATETIME()");
+
+        // one payment per order
+        builder.HasIndex(p => p.OrderId).IsUnique()
+               .HasFilter("[OrderId] IS NOT NULL");
+
+        // one reservation payment (no order yet) per reservation
+        builder.HasIndex(p => p.ReservationId).IsUnique()
+               .HasFilter("[OrderId] IS NULL AND [ReservationId] IS NOT NULL");
+    }
+}
