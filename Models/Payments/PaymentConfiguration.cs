@@ -10,7 +10,7 @@ public class PaymentConfiguration : IEntityTypeConfiguration<Payment>
         builder.ToTable("Payment", t =>
         {
             t.HasCheckConstraint("CK_Payments_PaymentMethod",
-                "[PaymentMethod] IN ('cash','card','online_banking','e-wallet')");
+                "[PaymentMethod] IN ('cash','card','online_banking','e-wallet','pay_at_counter')");
             t.HasCheckConstraint("CK_Payments_PaymentStatus",
                 "[PaymentStatus] IN ('pending','paid','failed','refunded')");
             t.HasCheckConstraint("CK_Payments_HasReservationOrOrder",
@@ -24,8 +24,10 @@ public class PaymentConfiguration : IEntityTypeConfiguration<Payment>
         builder.HasIndex(p => p.OrderId).IsUnique()
                .HasFilter("[OrderId] IS NOT NULL");
 
-        // one reservation payment (no order yet) per reservation
         builder.HasIndex(p => p.ReservationId).IsUnique()
                .HasFilter("[OrderId] IS NULL AND [ReservationId] IS NOT NULL");
+
+        builder.Property(p => p.TransactionRef).HasMaxLength(100);
+        builder.HasIndex(p => p.TransactionRef);
     }
 }
