@@ -15,6 +15,10 @@ public class PaymentConfiguration : IEntityTypeConfiguration<Payment>
                 "[PaymentStatus] IN ('pending','paid','failed','refunded')");
             t.HasCheckConstraint("CK_Payments_HasReservationOrOrder",
                 "[ReservationId] IS NOT NULL OR [OrderId] IS NOT NULL");
+            t.HasCheckConstraint("CK_Payments_Amount", "[Amount] > 0");
+            t.HasCheckConstraint("CK_Payments_PaidAt",
+                "([PaymentStatus] IN ('paid','refunded') AND [PaidAt] IS NOT NULL) " +
+                "OR ([PaymentStatus] IN ('pending','failed') AND [PaidAt] IS NULL)");
         });
 
         builder.Property(p => p.PaymentStatus).HasDefaultValue("pending");

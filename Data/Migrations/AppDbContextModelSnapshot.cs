@@ -81,7 +81,11 @@ namespace RROMS.Web.Data.Migrations
 
                     b.ToTable("Payment", null, t =>
                         {
+                            t.HasCheckConstraint("CK_Payments_Amount", "[Amount] > 0");
+
                             t.HasCheckConstraint("CK_Payments_HasReservationOrOrder", "[ReservationId] IS NOT NULL OR [OrderId] IS NOT NULL");
+
+                            t.HasCheckConstraint("CK_Payments_PaidAt", "([PaymentStatus] IN ('paid','refunded') AND [PaidAt] IS NOT NULL) OR ([PaymentStatus] IN ('pending','failed') AND [PaidAt] IS NULL)");
 
                             t.HasCheckConstraint("CK_Payments_PaymentMethod", "[PaymentMethod] IN ('cash','card','online_banking','e-wallet','pay_at_counter')");
 
