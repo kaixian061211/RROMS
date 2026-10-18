@@ -7,8 +7,7 @@ namespace RROMS.Web.Models.Payments;
 public class PaymentDetails
 {
     public int PaymentId { get; set; }
-    public int? OrderId { get; set; }
-    public int? ReservationId { get; set; }
+    public int OrderId { get; set; }
 
     public int? CustomerId { get; set; }
     public string CustomerName { get; set; } = "-";

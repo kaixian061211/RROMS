@@ -13,8 +13,6 @@ public class PaymentConfiguration : IEntityTypeConfiguration<Payment>
                 "[PaymentMethod] IN ('cash','card','online_banking','e-wallet','pay_at_counter')");
             t.HasCheckConstraint("CK_Payments_PaymentStatus",
                 "[PaymentStatus] IN ('pending','paid','failed','refunded')");
-            t.HasCheckConstraint("CK_Payments_HasReservationOrOrder",
-                "[ReservationId] IS NOT NULL OR [OrderId] IS NOT NULL");
             t.HasCheckConstraint("CK_Payments_Amount", "[Amount] > 0");
             t.HasCheckConstraint("CK_Payments_PaidAt",
                 "([PaymentStatus] IN ('paid','refunded') AND [PaidAt] IS NOT NULL) " +
@@ -28,11 +26,7 @@ public class PaymentConfiguration : IEntityTypeConfiguration<Payment>
         builder.Property(p => p.CreatedAt).HasDefaultValueSql("SYSDATETIME()");
 
         // one payment per order
-        builder.HasIndex(p => p.OrderId).IsUnique()
-               .HasFilter("[OrderId] IS NOT NULL");
-
-        builder.HasIndex(p => p.ReservationId).IsUnique()
-               .HasFilter("[OrderId] IS NULL AND [ReservationId] IS NOT NULL");
+        builder.HasIndex(p => p.OrderId).IsUnique();
 
         builder.Property(p => p.TransactionRef).HasMaxLength(100);
         builder.HasIndex(p => p.TransactionRef).IsUnique()

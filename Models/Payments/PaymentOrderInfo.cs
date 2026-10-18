@@ -3,7 +3,6 @@ namespace RROMS.Web.Models.Payments;
 public class PaymentOrderInfo
 {
     public int OrderId { get; set; }
-    public int? ReservationId { get; set; }
 
     /// <summary>The numeric user id of the customer who placed the order.</summary>
     public int CustomerUserId { get; set; }
