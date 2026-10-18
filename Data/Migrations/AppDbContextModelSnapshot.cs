@@ -77,7 +77,9 @@ namespace RROMS.Web.Data.Migrations
                         .IsUnique()
                         .HasFilter("[OrderId] IS NULL AND [ReservationId] IS NOT NULL");
 
-                    b.HasIndex("TransactionRef");
+                    b.HasIndex("TransactionRef")
+                        .IsUnique()
+                        .HasFilter("[TransactionRef] IS NOT NULL");
 
                     b.ToTable("Payment", null, t =>
                         {

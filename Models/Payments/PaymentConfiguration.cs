@@ -32,6 +32,7 @@ public class PaymentConfiguration : IEntityTypeConfiguration<Payment>
                .HasFilter("[OrderId] IS NULL AND [ReservationId] IS NOT NULL");
 
         builder.Property(p => p.TransactionRef).HasMaxLength(100);
-        builder.HasIndex(p => p.TransactionRef);
+        builder.HasIndex(p => p.TransactionRef).IsUnique()
+       .HasFilter("[TransactionRef] IS NOT NULL");
     }
 }
