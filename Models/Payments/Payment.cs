@@ -28,4 +28,15 @@ public class Payment
 
     [StringLength(100)]
     public string? StripePaymentIntentId { get; set; }
+
+    public DateTime? ExpiresAt { get; set; }
+
+    public DateTime? RefundedAt { get; set; }
+    public int? RefundedByStaffId { get; set; }
+
+    [StringLength(200)]
+    public string? RefundReason { get; set; }
+
+    [StringLength(100)]
+    public string? StripeRefundId { get; set; }
 }

@@ -39,6 +39,9 @@ namespace RROMS.Web.Data.Migrations
                         .HasColumnType("datetime2")
                         .HasDefaultValueSql("SYSDATETIME()");
 
+                    b.Property<DateTime?>("ExpiresAt")
+                        .HasColumnType("datetime2");
+
                     b.Property<int?>("OrderId")
                         .HasColumnType("int");
 
