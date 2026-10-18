@@ -120,6 +120,16 @@ public class ReservationService : IReservationService
         Reservations.AsNoTracking()
             .FirstOrDefaultAsync(r => r.ReservationId == reservationId && r.CustomerUserId == customerUserId);
 
+    public async Task<ReservationResult> GetForChangeAsync(int customerUserId, int reservationId)
+    {
+        var reservation = await GetByIdAsync(customerUserId, reservationId);
+        if (reservation is null)
+            return ReservationResult.Failure(NotFoundMessage);
+
+        var error = CheckCanChange(reservation);
+        return error is null ? ReservationResult.Success(reservation) : ReservationResult.Failure(error);
+    }
+
     /// <summary>Loads the reservation for updating. Another customer's reservation is treated as not found.</summary>
     private Task<Reservation?> FindOwnAsync(int customerUserId, int reservationId) =>
         Reservations.FirstOrDefaultAsync(r => r.ReservationId == reservationId && r.CustomerUserId == customerUserId);
@@ -137,7 +147,7 @@ public class ReservationService : IReservationService
 
     private static string? Validate(ReservationInput input)
     {
-        if (input.TableId <= 0)
+        if (!TemporaryTables.Exists(input.TableId))
             return "Please choose a table.";
         if (input.PartySize <= 0)
             return "Party size must be at least 1.";

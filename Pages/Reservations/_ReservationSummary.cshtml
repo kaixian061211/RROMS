@@ -1,0 +1,31 @@
+@* A reservation's details, shown on the Confirmation and Cancel pages. *@
+@model Reservation
+
+<div class="card">
+    <div class="card-body">
+        <dl class="row mb-0">
+            <dt class="col-sm-4">Reference</dt>
+            <dd class="col-sm-8">@ReservationFormatter.Reference(Model.ReservationId)</dd>
+
+            <dt class="col-sm-4">When</dt>
+            <dd class="col-sm-8">@ReservationFormatter.When(Model.ReservationDate, Model.TimeSlot)</dd>
+
+            <dt class="col-sm-4">Table</dt>
+            <dd class="col-sm-8">@ReservationFormatter.Table(Model.TableId)</dd>
+
+            <dt class="col-sm-4">Party size</dt>
+            <dd class="col-sm-8">@ReservationFormatter.PartySize(Model.PartySize)</dd>
+
+            @if (Model.SpecialRequest is not null)
+            {
+                <dt class="col-sm-4">Special request</dt>
+                <dd class="col-sm-8">@Model.SpecialRequest</dd>
+            }
+
+            <dt class="col-sm-4">Status</dt>
+            <dd class="col-sm-8 mb-0">
+                <span class="badge @ReservationFormatter.StatusBadge(Model.Status)">@ReservationFormatter.StatusLabel(Model.Status)</span>
+            </dd>
+        </dl>
+    </div>
+</div>

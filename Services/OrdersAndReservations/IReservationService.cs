@@ -22,4 +22,10 @@ public interface IReservationService
 
     /// <summary>Null when the reservation doesn't exist or belongs to another customer.</summary>
     Task<Reservation?> GetByIdAsync(int customerUserId, int reservationId);
+
+    /// <summary>
+    /// The customer's reservation if they may still change or cancel it; otherwise a failure saying
+    /// why not (not found, cancelled, completed or already passed).
+    /// </summary>
+    Task<ReservationResult> GetForChangeAsync(int customerUserId, int reservationId);
 }

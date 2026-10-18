@@ -1,0 +1,28 @@
+@page "{id:int}"
+@model ConfirmationModel
+@{
+    ViewData["Title"] = "Booking received";
+}
+
+@if (Model.Reservation is null)
+{
+    <div class="alert alert-warning" role="alert">Reservation not found.</div>
+    <a asp-page="Index" class="btn btn-outline-secondary">Back to my reservations</a>
+}
+else
+{
+    <div class="row">
+        <div class="col-md-8 col-lg-6">
+            <h1 class="h3">Booking received</h1>
+            <p class="text-muted">
+                Your reference is <strong>@ReservationFormatter.Reference(Model.Reservation.ReservationId)</strong>.
+                The restaurant will confirm your booking soon.
+            </p>
+            <partial name="_ReservationSummary" model="Model.Reservation" />
+            <div class="d-flex flex-wrap gap-2 mt-3">
+                <a asp-page="Index" class="btn btn-primary">View my reservations</a>
+                <a asp-page="Create" class="btn btn-outline-secondary">Book another table</a>
+            </div>
+        </div>
+    </div>
+}
