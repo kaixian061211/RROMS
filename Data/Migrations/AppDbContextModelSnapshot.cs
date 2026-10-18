@@ -63,6 +63,10 @@ namespace RROMS.Web.Data.Migrations
                     b.Property<int?>("ReservationId")
                         .HasColumnType("int");
 
+                    b.Property<string>("StripePaymentIntentId")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
                     b.Property<string>("TransactionRef")
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
@@ -76,6 +80,10 @@ namespace RROMS.Web.Data.Migrations
                     b.HasIndex("ReservationId")
                         .IsUnique()
                         .HasFilter("[OrderId] IS NULL AND [ReservationId] IS NOT NULL");
+
+                    b.HasIndex("StripePaymentIntentId")
+                        .IsUnique()
+                        .HasFilter("[StripePaymentIntentId] IS NOT NULL");
 
                     b.HasIndex("TransactionRef")
                         .IsUnique()

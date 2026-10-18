@@ -34,5 +34,8 @@ public class PaymentConfiguration : IEntityTypeConfiguration<Payment>
         builder.Property(p => p.TransactionRef).HasMaxLength(100);
         builder.HasIndex(p => p.TransactionRef).IsUnique()
        .HasFilter("[TransactionRef] IS NOT NULL");
+
+       builder.HasIndex(p => p.StripePaymentIntentId).IsUnique()
+       .HasFilter("[StripePaymentIntentId] IS NOT NULL");
     }
 }

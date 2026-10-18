@@ -25,4 +25,7 @@ public class Payment
 
     /// <summary>A deposit is a reservation-only payment. The final bill is a separate row with an OrderId.</summary>
     public bool IsDeposit => OrderId is null;
+
+    [StringLength(100)]
+    public string? StripePaymentIntentId { get; set; }
 }
