@@ -1,0 +1,102 @@
+@page
+@model IndexModel
+@{
+    ViewData["Title"] = "Manage reservations";
+    var dateValue = ReservationFormatter.InputDate(Model.SelectedDate);
+}
+
+<h1 class="h3 mb-3">Manage reservations</h1>
+
+<form method="get" class="row g-2 align-items-end mb-4">
+    <div class="col-12 col-sm-auto">
+        <label for="date" class="form-label">Date</label>
+        <input id="date" name="date" type="date" class="form-control" value="@dateValue" />
+    </div>
+    <div class="col-12 col-sm-auto">
+        <label for="status" class="form-label">Status</label>
+        <select id="status" name="status" class="form-select">
+            <option value="">All statuses</option>
+            @foreach (var status in ReservationStatus.All)
+            {
+                <option value="@status" selected="@(status == Model.StatusFilter)">@ReservationFormatter.StatusLabel(status)</option>
+            }
+        </select>
+    </div>
+    <div class="col-12 col-sm-auto d-flex gap-2">
+        <button type="submit" class="btn btn-primary">Show</button>
+        <a asp-page="Index" class="btn btn-outline-secondary">Today</a>
+    </div>
+</form>
+
+<h2 class="h5 mb-3">@ReservationFormatter.LongDate(Model.SelectedDate)</h2>
+
+@if (Model.StatusMessage is not null)
+{
+    <div class="alert alert-success" role="status">@Model.StatusMessage</div>
+}
+@if (Model.ErrorMessage is not null)
+{
+    <div class="alert alert-danger" role="alert">@Model.ErrorMessage</div>
+}
+
+@if (Model.Rows.Count == 0)
+{
+    <div class="text-center text-muted border rounded py-5">
+        @(Model.StatusFilter is null ? "No reservations for this date." : "No reservations with this status for this date.")
+    </div>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table align-middle">
+            <thead>
+                <tr>
+                    <th>Time</th>
+                    <th>Table</th>
+                    <th>Party size</th>
+                    <th>Customer</th>
+                    <th>Special request</th>
+                    <th>Status</th>
+                    <th><span class="visually-hidden">Actions</span></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var row in Model.Rows)
+                {
+                    var r = row.Reservation;
+                    <tr>
+                        <td class="text-nowrap">
+                            @ReservationFormatter.Time(r.TimeSlot)
+                            <div class="small text-muted">@ReservationFormatter.Reference(r.ReservationId)</div>
+                        </td>
+                        <td class="text-nowrap">@ReservationFormatter.Table(r.TableId)</td>
+                        <td class="text-nowrap">@ReservationFormatter.PartySize(r.PartySize)</td>
+                        <td class="text-nowrap">@ReservationFormatter.Customer(r.CustomerUserId)</td>
+                        <td>@(r.SpecialRequest ?? "-")</td>
+                        <td><span class="badge @ReservationFormatter.StatusBadge(r.Status)">@ReservationFormatter.StatusLabel(r.Status)</span></td>
+                        <td>
+                            <div class="d-flex flex-wrap justify-content-end gap-1">
+                                @foreach (var next in row.NextStatuses)
+                                {
+                                    <form method="post" asp-page-handler="ChangeStatus" asp-route-date="@dateValue" asp-route-status="@Model.StatusFilter">
+                                        <input type="hidden" name="id" value="@r.ReservationId" />
+                                        <input type="hidden" name="newStatus" value="@next" />
+                                        <input type="hidden" name="rowVersion" value="@Convert.ToBase64String(r.RowVersion)" />
+                                        <button type="submit" class="btn btn-sm @ReservationFormatter.StatusActionButton(next)"
+                                                onclick="@(next == ReservationStatus.Cancelled ? "return confirm('Cancel this reservation?');" : null)">
+                                            @ReservationFormatter.StatusAction(next)
+                                        </button>
+                                    </form>
+                                }
+                                @if (row.CanEdit)
+                                {
+                                    <a asp-page="Edit" asp-route-id="@r.ReservationId" class="btn btn-sm btn-outline-secondary">Edit</a>
+                                }
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

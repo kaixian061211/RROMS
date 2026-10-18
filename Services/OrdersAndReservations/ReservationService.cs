@@ -16,6 +16,13 @@ public class ReservationService : IReservationService
     private const string ChangedByOthersMessage =
         "This reservation was changed by someone else while you were editing it. Please reload the page and try again.";
 
+    // The only status changes allowed: pending -> confirmed -> completed, and pending/confirmed -> cancelled.
+    private static readonly Dictionary<string, string[]> AllowedStatusChanges = new()
+    {
+        [ReservationStatus.Pending] = new[] { ReservationStatus.Confirmed, ReservationStatus.Cancelled },
+        [ReservationStatus.Confirmed] = new[] { ReservationStatus.Completed, ReservationStatus.Cancelled }
+    };
+
     private readonly AppDbContext _db;
 
     public ReservationService(AppDbContext db)
@@ -37,6 +44,8 @@ public class ReservationService : IReservationService
 
         return !taken;
     }
+
+    // Customer actions
 
     public async Task<ReservationResult> CreateAsync(int customerUserId, ReservationInput input)
     {
@@ -62,28 +71,8 @@ public class ReservationService : IReservationService
     }
 
     public async Task<ReservationResult> ModifyAsync(
-        int customerUserId, int reservationId, ReservationInput input, byte[] rowVersion)
-    {
-        var reservation = await FindOwnAsync(customerUserId, reservationId);
-        if (reservation is null)
-            return ReservationResult.Failure(NotFoundMessage);
-
-        var error = CheckCanChange(reservation) ?? Validate(input);
-        if (error is not null)
-            return ReservationResult.Failure(error);
-
-        if (!await IsSlotFreeAsync(input.TableId, input.ReservationDate, input.TimeSlot, reservationId))
-            return ReservationResult.Failure(SlotTakenMessage);
-
-        reservation.TableId = input.TableId;
-        reservation.ReservationDate = input.ReservationDate;
-        reservation.TimeSlot = input.TimeSlot;
-        reservation.PartySize = input.PartySize;
-        reservation.SpecialRequest = TrimToNull(input.SpecialRequest);
-        UseLoadedRowVersion(reservation, rowVersion);
-
-        return await SaveAsync(reservation);
-    }
+        int customerUserId, int reservationId, ReservationInput input, byte[] rowVersion) =>
+        await ApplyChangesAsync(await FindOwnAsync(customerUserId, reservationId), input, rowVersion, byCustomer: true);
 
     public async Task<ReservationResult> CancelAsync(int customerUserId, int reservationId, byte[] rowVersion)
     {
@@ -120,9 +109,85 @@ public class ReservationService : IReservationService
         Reservations.AsNoTracking()
             .FirstOrDefaultAsync(r => r.ReservationId == reservationId && r.CustomerUserId == customerUserId);
 
-    public async Task<ReservationResult> GetForChangeAsync(int customerUserId, int reservationId)
+    public async Task<ReservationResult> GetForChangeAsync(int customerUserId, int reservationId) =>
+        ForChange(await GetByIdAsync(customerUserId, reservationId));
+
+    // Staff actions
+
+    public Task<List<Reservation>> GetForDateAsync(DateOnly date, string? status)
     {
-        var reservation = await GetByIdAsync(customerUserId, reservationId);
+        var query = Reservations.AsNoTracking().Where(r => r.ReservationDate == date);
+        if (!string.IsNullOrEmpty(status))
+            query = query.Where(r => r.Status == status);
+
+        return query.OrderBy(r => r.TimeSlot).ThenBy(r => r.TableId).ToListAsync();
+    }
+
+    public async Task<ReservationResult> GetForStaffChangeAsync(int reservationId) =>
+        ForChange(await Reservations.AsNoTracking().FirstOrDefaultAsync(r => r.ReservationId == reservationId));
+
+    public async Task<ReservationResult> ModifyForStaffAsync(int reservationId, ReservationInput input, byte[] rowVersion) =>
+        await ApplyChangesAsync(await Reservations.FindAsync(reservationId), input, rowVersion, byCustomer: false);
+
+    public async Task<ReservationResult> ChangeStatusAsync(int reservationId, string newStatus, byte[] rowVersion)
+    {
+        var reservation = await Reservations.FindAsync(reservationId);
+        if (reservation is null)
+            return ReservationResult.Failure(NotFoundMessage);
+
+        var error = CheckStatusChange(reservation, newStatus);
+        if (error is not null)
+            return ReservationResult.Failure(error);
+
+        reservation.Status = newStatus;
+        UseLoadedRowVersion(reservation, rowVersion);
+
+        return await SaveAsync(reservation);
+    }
+
+    public IReadOnlyList<string> GetAllowedStatusChanges(Reservation reservation) =>
+        ReservationStatus.All.Where(status => CheckStatusChange(reservation, status) is null).ToList();
+
+    public bool CanChangeDetails(Reservation reservation) => CheckCanChange(reservation) is null;
+
+    // Rules shared by customers and staff
+
+    private async Task<ReservationResult> ApplyChangesAsync(
+        Reservation? reservation, ReservationInput input, byte[] rowVersion, bool byCustomer)
+    {
+        if (reservation is null)
+            return ReservationResult.Failure(NotFoundMessage);
+
+        var error = CheckCanChange(reservation) ?? Validate(input);
+        if (error is not null)
+            return ReservationResult.Failure(error);
+
+        if (!await IsSlotFreeAsync(input.TableId, input.ReservationDate, input.TimeSlot, reservation.ReservationId))
+            return ReservationResult.Failure(SlotTakenMessage);
+
+        // A customer who moves a confirmed booking needs the restaurant to confirm it again.
+        if (byCustomer && reservation.Status == ReservationStatus.Confirmed && ChangesBooking(reservation, input))
+            reservation.Status = ReservationStatus.Pending;
+
+        reservation.TableId = input.TableId;
+        reservation.ReservationDate = input.ReservationDate;
+        reservation.TimeSlot = input.TimeSlot;
+        reservation.PartySize = input.PartySize;
+        reservation.SpecialRequest = TrimToNull(input.SpecialRequest);
+        UseLoadedRowVersion(reservation, rowVersion);
+
+        return await SaveAsync(reservation);
+    }
+
+    /// <summary>True when the date, time, table or party size would change. The special request doesn't count.</summary>
+    private static bool ChangesBooking(Reservation reservation, ReservationInput input) =>
+        reservation.TableId != input.TableId ||
+        reservation.ReservationDate != input.ReservationDate ||
+        reservation.TimeSlot != input.TimeSlot ||
+        reservation.PartySize != input.PartySize;
+
+    private static ReservationResult ForChange(Reservation? reservation)
+    {
         if (reservation is null)
             return ReservationResult.Failure(NotFoundMessage);
 
@@ -142,6 +207,15 @@ public class ReservationService : IReservationService
             return "This reservation is completed, so it can't be changed or cancelled.";
         if (IsInPast(reservation.ReservationDate, reservation.TimeSlot))
             return "This reservation has already passed, so it can't be changed or cancelled.";
+        return null;
+    }
+
+    private static string? CheckStatusChange(Reservation reservation, string newStatus)
+    {
+        if (!AllowedStatusChanges.TryGetValue(reservation.Status, out var allowed) || !allowed.Contains(newStatus))
+            return $"A {reservation.Status} reservation can't be changed to {newStatus}.";
+        if (newStatus == ReservationStatus.Completed && !IsInPast(reservation.ReservationDate, reservation.TimeSlot))
+            return "A reservation can only be marked as completed once its time has started.";
         return null;
     }
 
