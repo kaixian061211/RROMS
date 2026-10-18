@@ -19,6 +19,9 @@ public class PaymentConfiguration : IEntityTypeConfiguration<Payment>
             t.HasCheckConstraint("CK_Payments_PaidAt",
                 "([PaymentStatus] IN ('paid','refunded') AND [PaidAt] IS NOT NULL) " +
                 "OR ([PaymentStatus] IN ('pending','failed') AND [PaidAt] IS NULL)");
+            t.HasCheckConstraint("CK_Payments_RefundedAt",
+                "([PaymentStatus] = 'refunded' AND [RefundedAt] IS NOT NULL) " +
+                "OR ([PaymentStatus] <> 'refunded' AND [RefundedAt] IS NULL)");
         });
 
         builder.Property(p => p.PaymentStatus).HasDefaultValue("pending");

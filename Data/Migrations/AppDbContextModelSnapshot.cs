@@ -63,10 +63,24 @@ namespace RROMS.Web.Data.Migrations
                     b.Property<int?>("RecordedByStaffId")
                         .HasColumnType("int");
 
+                    b.Property<string>("RefundReason")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<DateTime?>("RefundedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("RefundedByStaffId")
+                        .HasColumnType("int");
+
                     b.Property<int?>("ReservationId")
                         .HasColumnType("int");
 
                     b.Property<string>("StripePaymentIntentId")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("StripeRefundId")
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
@@ -103,6 +117,8 @@ namespace RROMS.Web.Data.Migrations
                             t.HasCheckConstraint("CK_Payments_PaymentMethod", "[PaymentMethod] IN ('cash','card','online_banking','e-wallet','pay_at_counter')");
 
                             t.HasCheckConstraint("CK_Payments_PaymentStatus", "[PaymentStatus] IN ('pending','paid','failed','refunded')");
+
+                            t.HasCheckConstraint("CK_Payments_RefundedAt", "([PaymentStatus] = 'refunded' AND [RefundedAt] IS NOT NULL) OR ([PaymentStatus] <> 'refunded' AND [RefundedAt] IS NULL)");
                         });
                 });
 #pragma warning restore 612, 618
