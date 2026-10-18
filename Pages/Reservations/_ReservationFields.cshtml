@@ -1,0 +1,40 @@
+@* The form fields shared by the Create and Edit pages. Used as <partial name="_ReservationFields" for="Input" />. *@
+@using System.Globalization
+@model ReservationInput
+
+<div class="row g-3">
+    <div class="col-sm-6">
+        <label asp-for="ReservationDate" class="form-label"></label>
+        <input asp-for="ReservationDate" type="date" asp-format="{0:yyyy-MM-dd}" class="form-control" />
+        <span asp-validation-for="ReservationDate" class="text-danger"></span>
+    </div>
+    <div class="col-sm-6">
+        <label asp-for="TimeSlot" class="form-label"></label>
+        <select id="@Html.IdFor(m => m.TimeSlot)" name="@Html.NameFor(m => m.TimeSlot)" class="form-select">
+            @foreach (var slot in ReservationTimeSlots.All)
+            {
+                <option value="@slot.ToString("HH:mm", CultureInfo.InvariantCulture)" selected="@(slot == Model.TimeSlot)">
+                    @ReservationFormatter.Time(slot)
+                </option>
+            }
+        </select>
+        <span asp-validation-for="TimeSlot" class="text-danger"></span>
+    </div>
+    <div class="col-sm-6">
+        <label asp-for="TableId" class="form-label"></label>
+        <select asp-for="TableId" class="form-select"
+                asp-items="@(TemporaryTables.TableIds.Select(id => new SelectListItem(ReservationFormatter.Table(id), id.ToString())))"></select>
+        <span asp-validation-for="TableId" class="text-danger"></span>
+    </div>
+    <div class="col-sm-6">
+        <label asp-for="PartySize" class="form-label"></label>
+        <input asp-for="PartySize" class="form-control" />
+        <span asp-validation-for="PartySize" class="text-danger"></span>
+    </div>
+    <div class="col-12">
+        <label asp-for="SpecialRequest" class="form-label"></label>
+        <textarea asp-for="SpecialRequest" class="form-control" rows="3" maxlength="500"
+                  placeholder="For example: a high chair, or a table by the window"></textarea>
+        <span asp-validation-for="SpecialRequest" class="text-danger"></span>
+    </div>
+</div>

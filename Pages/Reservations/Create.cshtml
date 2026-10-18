@@ -1,0 +1,24 @@
+@page
+@model CreateModel
+@{
+    ViewData["Title"] = "Book a table";
+}
+
+<h1 class="h3 mb-3">Book a table</h1>
+
+<div class="row">
+    <div class="col-lg-8">
+        <form method="post">
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+            <partial name="_ReservationFields" for="Input" />
+            <div class="d-flex flex-wrap gap-2 mt-4">
+                <button type="submit" class="btn btn-primary">Book table</button>
+                <a asp-page="Index" class="btn btn-outline-secondary">Back to my reservations</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

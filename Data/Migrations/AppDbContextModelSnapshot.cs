@@ -22,6 +22,140 @@ namespace RROMS.Web.Data.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("RROMS.Web.Models.OrdersAndReservations.Order", b =>
+                {
+                    b.Property<int>("OrderId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("OrderId"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("SYSDATETIME()");
+
+                    b.Property<int>("CustomerUserId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("ReservationId")
+                        .HasColumnType("int");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)")
+                        .HasDefaultValue("pending");
+
+                    b.HasKey("OrderId");
+
+                    b.HasIndex("ReservationId");
+
+                    b.ToTable("Order", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_Orders_Status", "[Status] IN ('pending','preparing','ready','served','completed','cancelled')");
+                        });
+                });
+
+            modelBuilder.Entity("RROMS.Web.Models.OrdersAndReservations.OrderItem", b =>
+                {
+                    b.Property<int>("OrderItemId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("OrderItemId"));
+
+                    b.Property<int>("MenuItemId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("OrderId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("UnitPrice")
+                        .HasPrecision(10, 2)
+                        .HasColumnType("decimal(10,2)");
+
+                    b.HasKey("OrderItemId");
+
+                    b.HasIndex("OrderId");
+
+                    b.ToTable("OrderItem", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_OrderItems_Quantity", "[Quantity] > 0");
+
+                            t.HasCheckConstraint("CK_OrderItems_UnitPrice", "[UnitPrice] > 0");
+                        });
+                });
+
+            modelBuilder.Entity("RROMS.Web.Models.OrdersAndReservations.Reservation", b =>
+                {
+                    b.Property<int>("ReservationId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ReservationId"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("SYSDATETIME()");
+
+                    b.Property<int>("CustomerUserId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("PartySize")
+                        .HasColumnType("int");
+
+                    b.Property<DateOnly>("ReservationDate")
+                        .HasColumnType("date");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<string>("SpecialRequest")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)")
+                        .HasDefaultValue("pending");
+
+                    b.Property<int>("TableId")
+                        .HasColumnType("int");
+
+                    b.Property<TimeOnly>("TimeSlot")
+                        .HasColumnType("time");
+
+                    b.HasKey("ReservationId");
+
+                    b.HasIndex("TableId", "ReservationDate", "TimeSlot")
+                        .IsUnique()
+                        .HasFilter("[Status] <> 'cancelled'");
+
+                    b.ToTable("Reservation", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_Reservations_PartySize", "[PartySize] > 0");
+
+                            t.HasCheckConstraint("CK_Reservations_Status", "[Status] IN ('pending','confirmed','cancelled','completed')");
+                        });
+                });
+
             modelBuilder.Entity("RROMS.Web.Models.Payments.Payment", b =>
                 {
                     b.Property<int>("PaymentId")
@@ -126,6 +260,32 @@ namespace RROMS.Web.Data.Migrations
 
                             t.HasCheckConstraint("CK_Payments_RefundedAt", "([PaymentStatus] = 'refunded' AND [RefundedAt] IS NOT NULL) OR ([PaymentStatus] <> 'refunded' AND [RefundedAt] IS NULL)");
                         });
+                });
+
+            modelBuilder.Entity("RROMS.Web.Models.OrdersAndReservations.Order", b =>
+                {
+                    b.HasOne("RROMS.Web.Models.OrdersAndReservations.Reservation", "Reservation")
+                        .WithMany()
+                        .HasForeignKey("ReservationId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Reservation");
+                });
+
+            modelBuilder.Entity("RROMS.Web.Models.OrdersAndReservations.OrderItem", b =>
+                {
+                    b.HasOne("RROMS.Web.Models.OrdersAndReservations.Order", "Order")
+                        .WithMany("Items")
+                        .HasForeignKey("OrderId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Order");
+                });
+
+            modelBuilder.Entity("RROMS.Web.Models.OrdersAndReservations.Order", b =>
+                {
+                    b.Navigation("Items");
                 });
 #pragma warning restore 612, 618
         }
