@@ -76,6 +76,12 @@ namespace RROMS.Web.Data.Migrations
                     b.Property<int?>("ReservationId")
                         .HasColumnType("int");
 
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
                     b.Property<string>("StripePaymentIntentId")
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");

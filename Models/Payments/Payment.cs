@@ -36,4 +36,7 @@ public class Payment
 
     [StringLength(100)]
     public string? StripeRefundId { get; set; }
+
+    [Timestamp]
+    public byte[] RowVersion { get; set; } = null!;
 }
