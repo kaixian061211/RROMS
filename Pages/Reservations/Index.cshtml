@@ -1,0 +1,57 @@
+@page
+@model IndexModel
+@{
+    ViewData["Title"] = "My reservations";
+}
+
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+    <h1 class="h3 mb-0">My reservations</h1>
+    <a asp-page="Create" class="btn btn-primary">Book a table</a>
+</div>
+
+@if (Model.StatusMessage is not null)
+{
+    <div class="alert alert-success" role="status">@Model.StatusMessage</div>
+}
+
+@if (Model.Reservations.Count == 0)
+{
+    <div class="text-center text-muted border rounded py-5">
+        <p class="mb-3">You have no upcoming reservations.</p>
+        <a asp-page="Create" class="btn btn-outline-primary">Book a table</a>
+    </div>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table align-middle">
+            <thead>
+                <tr>
+                    <th>When</th>
+                    <th>Table</th>
+                    <th>Party size</th>
+                    <th>Status</th>
+                    <th><span class="visually-hidden">Actions</span></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var r in Model.Reservations)
+                {
+                    <tr>
+                        <td>
+                            @ReservationFormatter.When(r.ReservationDate, r.TimeSlot)
+                            <div class="small text-muted">@ReservationFormatter.Reference(r.ReservationId)</div>
+                        </td>
+                        <td>@ReservationFormatter.Table(r.TableId)</td>
+                        <td>@ReservationFormatter.PartySize(r.PartySize)</td>
+                        <td><span class="badge @ReservationFormatter.StatusBadge(r.Status)">@ReservationFormatter.StatusLabel(r.Status)</span></td>
+                        <td class="text-end text-nowrap">
+                            <a asp-page="Edit" asp-route-id="@r.ReservationId" class="btn btn-sm btn-outline-primary">Edit</a>
+                            <a asp-page="Cancel" asp-route-id="@r.ReservationId" class="btn btn-sm btn-outline-danger">Cancel</a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

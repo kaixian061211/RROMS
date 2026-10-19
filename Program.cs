@@ -3,6 +3,7 @@ using RROMS.Web.Data;
 using RROMS.Web.Services.Payments;
 using RROMS.Web.Services.Payments.Gateways;
 using RROMS.Web.Services.Payments.Notifications;
+using RROMS.Web.Services.OrdersAndReservations;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -10,6 +11,7 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
     ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 
 builder.Services.AddDbContext<AppDbContext>(o => o.UseSqlServer(connectionString));
+builder.Services.AddScoped<IReservationService, ReservationService>();
 builder.Services.AddRazorPages();
 
 // ---- Payment module ----
