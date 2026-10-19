@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using RROMS.Web.Data;
+using RROMS.Web.Services.Payments.Gateways;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -8,6 +9,11 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 
 builder.Services.AddDbContext<AppDbContext>(o => o.UseSqlServer(connectionString));
 builder.Services.AddRazorPages();
+
+// ---- Payment module ----
+
+builder.Services.Configure<StripeSettings>(builder.Configuration.GetSection(StripeSettings.SectionName));
+builder.Services.AddSingleton<IStripeGateway, StripeGateway>();
 
 var app = builder.Build();
 
