@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using RROMS.Web.Data;
+using RROMS.Web.Services.Payments;
 using RROMS.Web.Services.Payments.Gateways;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -14,6 +15,7 @@ builder.Services.AddRazorPages();
 
 builder.Services.Configure<StripeSettings>(builder.Configuration.GetSection(StripeSettings.SectionName));
 builder.Services.AddSingleton<IStripeGateway, StripeGateway>();
+builder.Services.AddScoped<IPaymentQueries, PaymentQueries>();
 
 var app = builder.Build();
 
