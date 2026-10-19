@@ -18,6 +18,8 @@ builder.Services.Configure<StripeSettings>(builder.Configuration.GetSection(Stri
 builder.Services.AddSingleton<IStripeGateway, StripeGateway>();
 builder.Services.AddScoped<IPaymentQueries, PaymentQueries>();
 builder.Services.AddScoped<IPaymentNotifier, LoggingPaymentNotifier>();
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<IPaymentService, PaymentService>();
 
 var app = builder.Build();
 
