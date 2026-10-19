@@ -1,14 +1,13 @@
 namespace RROMS.Web.Models.Payments;
 
 /// <summary>
-/// A flat, display-ready payment: the Payment row plus the customer and staff names supplied by
-/// the other modules. Used by lists, details, receipts, e-mails and exports.
+/// Payment information enriched with customer and staff details.
+/// Used by payment lists, receipts, reports and exports.
 /// </summary>
 public class PaymentDetails
 {
     public int PaymentId { get; set; }
-    public int? OrderId { get; set; }
-    public int? ReservationId { get; set; }
+    public int OrderId { get; set; }
 
     public int? CustomerId { get; set; }
     public string CustomerName { get; set; } = "-";
@@ -23,12 +22,22 @@ public class PaymentDetails
 
     public DateTime CreatedAt { get; set; }
     public DateTime? PaidAt { get; set; }
+
     public string? TransactionRef { get; set; }
+    public string? StripePaymentIntentId { get; set; }
+
+    public DateTime? RefundedAt { get; set; }
+    public int? RefundedByStaffId { get; set; }
+    public string? RefundReason { get; set; }
 
     public string ReceiptNo => $"RCP-{PaymentId:D6}";
 
-    public bool IsAwaitingCounter =>
-        Status == PaymentStatus.Pending && Method == PaymentMethod.PayAtCounter;
+    public string OrderLabel => $"#{OrderId}";
 
-    public bool HasReceipt => Status is PaymentStatus.Paid or PaymentStatus.Refunded;
+    public bool IsAwaitingCounter =>
+        Status == PaymentStatus.Pending &&
+        Method == PaymentMethod.PayAtCounter;
+
+    public bool HasReceipt =>
+        Status is PaymentStatus.Paid or PaymentStatus.Refunded;
 }

@@ -173,10 +173,7 @@ namespace RROMS.Web.Data.Migrations
                         .HasColumnType("datetime2")
                         .HasDefaultValueSql("SYSDATETIME()");
 
-                    b.Property<DateTime?>("ExpiresAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int?>("OrderId")
+                    b.Property<int>("OrderId")
                         .HasColumnType("int");
 
                     b.Property<DateTime?>("PaidAt")
@@ -207,20 +204,7 @@ namespace RROMS.Web.Data.Migrations
                     b.Property<int?>("RefundedByStaffId")
                         .HasColumnType("int");
 
-                    b.Property<int?>("ReservationId")
-                        .HasColumnType("int");
-
-                    b.Property<byte[]>("RowVersion")
-                        .IsConcurrencyToken()
-                        .IsRequired()
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("rowversion");
-
                     b.Property<string>("StripePaymentIntentId")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<string>("StripeRefundId")
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
@@ -231,12 +215,7 @@ namespace RROMS.Web.Data.Migrations
                     b.HasKey("PaymentId");
 
                     b.HasIndex("OrderId")
-                        .IsUnique()
-                        .HasFilter("[OrderId] IS NOT NULL");
-
-                    b.HasIndex("ReservationId")
-                        .IsUnique()
-                        .HasFilter("[OrderId] IS NULL AND [ReservationId] IS NOT NULL");
+                        .IsUnique();
 
                     b.HasIndex("StripePaymentIntentId")
                         .IsUnique()
@@ -249,8 +228,6 @@ namespace RROMS.Web.Data.Migrations
                     b.ToTable("Payment", null, t =>
                         {
                             t.HasCheckConstraint("CK_Payments_Amount", "[Amount] > 0");
-
-                            t.HasCheckConstraint("CK_Payments_HasReservationOrOrder", "[ReservationId] IS NOT NULL OR [OrderId] IS NOT NULL");
 
                             t.HasCheckConstraint("CK_Payments_PaidAt", "([PaymentStatus] IN ('paid','refunded') AND [PaidAt] IS NOT NULL) OR ([PaymentStatus] IN ('pending','failed') AND [PaidAt] IS NULL)");
 

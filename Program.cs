@@ -1,5 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using RROMS.Web.Data;
+using RROMS.Web.Services.Payments;
+using RROMS.Web.Services.Payments.Gateways;
+using RROMS.Web.Services.Payments.Notifications;
 using RROMS.Web.Services.OrdersAndReservations;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -10,6 +13,16 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 builder.Services.AddDbContext<AppDbContext>(o => o.UseSqlServer(connectionString));
 builder.Services.AddScoped<IReservationService, ReservationService>();
 builder.Services.AddRazorPages();
+
+// ---- Payment module ----
+
+builder.Services.Configure<StripeSettings>(builder.Configuration.GetSection(StripeSettings.SectionName));
+builder.Services.AddSingleton<IStripeGateway, StripeGateway>();
+builder.Services.AddScoped<IPaymentOrderProvider, PaymentOrderProvider>();
+builder.Services.AddScoped<IPaymentQueries, PaymentQueries>();
+builder.Services.AddScoped<IPaymentNotifier, LoggingPaymentNotifier>();
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<IPaymentService, PaymentService>();
 
 var app = builder.Build();
 
