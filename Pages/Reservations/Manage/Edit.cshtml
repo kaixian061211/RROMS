@@ -1,0 +1,44 @@
+@page "{id:int}"
+@model EditModel
+@{
+    ViewData["Title"] = "Edit reservation";
+}
+
+<h1 class="h3 mb-3">
+    Edit reservation
+    <small class="text-muted fs-6">@ReservationFormatter.Reference(Model.Id)</small>
+</h1>
+
+@if (Model.BlockedMessage is not null)
+{
+    <div class="alert alert-warning" role="alert">@Model.BlockedMessage</div>
+    <a asp-page="Index" class="btn btn-outline-secondary">Back to reservations</a>
+}
+else
+{
+    if (Model.Reservation is not null)
+    {
+        <p class="text-muted">
+            @ReservationFormatter.Customer(Model.Reservation.CustomerUserId)
+            <span class="badge ms-2 @ReservationFormatter.StatusBadge(Model.Reservation.Status)">@ReservationFormatter.StatusLabel(Model.Reservation.Status)</span>
+        </p>
+    }
+    <div class="row">
+        <div class="col-lg-8">
+            <form method="post">
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+                <input type="hidden" asp-for="RowVersion" />
+                <partial name="_ReservationFields" for="Input" />
+                <div class="d-flex flex-wrap gap-2 mt-4">
+                    <button type="submit" class="btn btn-primary">Save changes</button>
+                    <a asp-page="Index" asp-route-date="@ReservationFormatter.InputDate(Model.Input.ReservationDate)"
+                       class="btn btn-outline-secondary">Back to reservations</a>
+                </div>
+            </form>
+        </div>
+    </div>
+}
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

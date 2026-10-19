@@ -16,6 +16,12 @@
 }
 else
 {
+    if (Model.IsConfirmed)
+    {
+        <div class="alert alert-info" role="status">
+            This booking is confirmed. If you change the date, time, table or party size, the restaurant will need to confirm it again.
+        </div>
+    }
     <div class="row">
         <div class="col-lg-8">
             <form method="post">

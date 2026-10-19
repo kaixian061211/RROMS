@@ -10,9 +10,14 @@ public interface IReservationService
     /// </summary>
     Task<bool> IsSlotFreeAsync(int tableId, DateOnly date, TimeOnly timeSlot, int? ignoreReservationId = null);
 
+    // Customer actions
+
     Task<ReservationResult> CreateAsync(int customerUserId, ReservationInput input);
 
-    /// <summary>rowVersion is the value the customer's page loaded, so a change saved by someone else in between is caught.</summary>
+    /// <summary>
+    /// rowVersion is the value the customer's page loaded, so a change saved by someone else in between is caught.
+    /// If a confirmed booking's date, time, table or party size changes, it goes back to pending.
+    /// </summary>
     Task<ReservationResult> ModifyAsync(int customerUserId, int reservationId, ReservationInput input, byte[] rowVersion);
 
     Task<ReservationResult> CancelAsync(int customerUserId, int reservationId, byte[] rowVersion);
@@ -28,4 +33,27 @@ public interface IReservationService
     /// why not (not found, cancelled, completed or already passed).
     /// </summary>
     Task<ReservationResult> GetForChangeAsync(int customerUserId, int reservationId);
+
+    // Staff actions
+
+    /// <summary>Every reservation on a date, optionally only those with one status, by time then table.</summary>
+    Task<List<Reservation>> GetForDateAsync(DateOnly date, string? status);
+
+    /// <summary>Any customer's reservation if its details can still be changed; otherwise a failure saying why not.</summary>
+    Task<ReservationResult> GetForStaffChangeAsync(int reservationId);
+
+    /// <summary>Like ModifyAsync, but for any customer's reservation, and the status stays as it is.</summary>
+    Task<ReservationResult> ModifyForStaffAsync(int reservationId, ReservationInput input, byte[] rowVersion);
+
+    /// <summary>
+    /// Moves a reservation to another status. Only pending → confirmed → completed and
+    /// pending/confirmed → cancelled are allowed, and completed only once the booking time has started.
+    /// </summary>
+    Task<ReservationResult> ChangeStatusAsync(int reservationId, string newStatus, byte[] rowVersion);
+
+    /// <summary>The statuses this reservation may move to right now, so pages only offer those actions.</summary>
+    IReadOnlyList<string> GetAllowedStatusChanges(Reservation reservation);
+
+    /// <summary>False for cancelled, completed and past reservations.</summary>
+    bool CanChangeDetails(Reservation reservation);
 }

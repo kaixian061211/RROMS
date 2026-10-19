@@ -29,6 +29,8 @@ public class EditModel : PageModel
     /// <summary>Set when the reservation can't be changed. The page shows it instead of the form.</summary>
     public string? BlockedMessage { get; private set; }
 
+    public bool IsConfirmed { get; private set; }
+
     public async Task<IActionResult> OnGetAsync()
     {
         if (!User.TryGetCustomerId(_environment, out var customerId))
@@ -43,6 +45,7 @@ public class EditModel : PageModel
 
         Input = ReservationInput.From(result.Reservation!);
         RowVersion = result.Reservation!.RowVersion;
+        IsConfirmed = result.Reservation.Status == ReservationStatus.Confirmed;
         return Page();
     }
 
