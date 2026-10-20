@@ -1,0 +1,70 @@
+@page
+@model CreateModel
+@using System.Globalization
+@{
+    ViewData["Title"] = "Order food";
+}
+
+<h1 class="h3 mb-3">Order food</h1>
+
+<div class="row">
+    <div class="col-lg-8">
+        <form method="post" data-order-form>
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+
+            @if (Model.ReservationOptions.Count > 0)
+            {
+                <div class="mb-4">
+                    <label asp-for="Input.ReservationId" class="form-label"></label>
+                    <select asp-for="Input.ReservationId" asp-items="Model.ReservationOptions" class="form-select">
+                        <option value="">No reservation</option>
+                    </select>
+                </div>
+            }
+
+            @if (Model.Menu.Count == 0)
+            {
+                <div class="alert alert-info" role="status">Sorry, nothing can be ordered right now.</div>
+            }
+            else
+            {
+                <ul class="list-group mb-3">
+                    @for (var i = 0; i < Model.Menu.Count; i++)
+                    {
+                        var dish = Model.Menu[i];
+                        var quantityId = $"quantity-{dish.MenuItemId}";
+                        <li class="list-group-item d-flex flex-wrap align-items-center gap-2">
+                            <label for="@quantityId" class="flex-grow-1">
+                                <span class="fw-semibold">@dish.Name</span>
+                                <span class="d-block small text-muted">@OrderFormatter.Money(dish.Price)</span>
+                            </label>
+                            @* Only the dish id and quantity are form fields. data-price is for the running total on screen. *@
+                            <input type="hidden" name="Input.Items[@i].MenuItemId" value="@dish.MenuItemId" />
+                            <div class="input-group input-group-sm w-auto">
+                                <button type="button" class="btn btn-outline-secondary" data-step="-1" aria-label="One less @dish.Name">&minus;</button>
+                                <input type="number" id="@quantityId" name="Input.Items[@i].Quantity" value="@Model.Input.Items[i].Quantity"
+                                       min="0" max="@OrderLineInput.MaxQuantity" step="1" class="form-control text-center" style="width: 4rem"
+                                       data-price="@dish.Price.ToString(CultureInfo.InvariantCulture)" />
+                                <button type="button" class="btn btn-outline-secondary" data-step="1" aria-label="One more @dish.Name">+</button>
+                            </div>
+                        </li>
+                    }
+                </ul>
+                @* Shown by order-form.js. The real total is worked out on the server when the order is placed. *@
+                <p class="text-end fs-5 d-none">Total: <strong data-order-total></strong></p>
+            }
+
+            <div class="d-flex flex-wrap gap-2 mt-4">
+                @if (Model.Menu.Count > 0)
+                {
+                    <button type="submit" class="btn btn-primary">Place order</button>
+                }
+                <a asp-page="Index" class="btn btn-outline-secondary">Back to my orders</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/order-form.js" asp-append-version="true"></script>
+}

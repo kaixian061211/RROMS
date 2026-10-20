@@ -22,6 +22,9 @@ public class OrderService : IOrderService
     private DbSet<Order> Orders => _db.Set<Order>();
     private DbSet<Reservation> Reservations => _db.Set<Reservation>();
 
+    public async Task<IReadOnlyList<MenuItemInfo>> GetMenuAsync() =>
+        (await _menu.GetAllAsync()).Where(menuItem => menuItem.IsAvailable).ToList();
+
     public async Task<OrderResult> CreateAsync(int customerUserId, OrderInput input)
     {
         if (input.Items.Any(line => line.Quantity < 0))
