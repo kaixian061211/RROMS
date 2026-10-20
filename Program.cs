@@ -12,6 +12,9 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 
 builder.Services.AddDbContext<AppDbContext>(o => o.UseSqlServer(connectionString));
 builder.Services.AddScoped<IReservationService, ReservationService>();
+builder.Services.AddScoped<IOrderService, OrderService>();
+// TODO: use a lookup that reads the real MenuItem table once it's on main.
+builder.Services.AddScoped<IMenuItemLookup, TemporaryMenuItemLookup>();
 builder.Services.AddRazorPages();
 
 // ---- Payment module ----

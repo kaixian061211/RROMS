@@ -10,9 +10,8 @@ public class Order
     /// <summary>No FK yet: the user table belongs to the login module.</summary>
     public int CustomerUserId { get; set; }
 
-    /// <summary>Set when the order belongs to a table reservation.</summary>
-    public int? ReservationId { get; set; }
-    public Reservation? Reservation { get; set; }
+    /// <summary>The table to bring the food to. No FK yet: the RestaurantTable table belongs to another module.</summary>
+    public int TableId { get; set; }
 
     [Required, StringLength(20)]
     public string Status { get; set; } = OrderStatus.Pending;
@@ -20,6 +19,9 @@ public class Order
     public DateTime CreatedAt { get; set; }
 
     public List<OrderItem> Items { get; set; } = new();
+
+    /// <summary>Sum of the item line totals. Not stored, so it always matches the items. Load Items first.</summary>
+    public decimal Total => Items.Sum(item => item.LineTotal);
 
     [Timestamp]
     public byte[] RowVersion { get; set; } = null!;
