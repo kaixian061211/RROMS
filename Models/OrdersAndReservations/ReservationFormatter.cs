@@ -62,10 +62,6 @@ public static class ReservationFormatter
 
     public static string PartySize(int partySize) => partySize == 1 ? "1 person" : $"{partySize} people";
 
-    /// <summary>"RES-000051: 15 Jan 2030, 7:30 PM, Table 9", for the order page's dropdown and order details.</summary>
-    public static string Summary(Reservation reservation) =>
-        $"{Reference(reservation.ReservationId)}: {When(reservation.ReservationDate, reservation.TimeSlot)}, {Table(reservation.TableId)}";
-
     // TODO: show the customer's name once the user table exists.
     public static string Customer(int customerUserId) => $"Customer #{customerUserId}";
 }

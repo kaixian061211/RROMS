@@ -38,9 +38,6 @@ namespace RROMS.Web.Data.Migrations
                     b.Property<int>("CustomerUserId")
                         .HasColumnType("int");
 
-                    b.Property<int?>("ReservationId")
-                        .HasColumnType("int");
-
                     b.Property<byte[]>("RowVersion")
                         .IsConcurrencyToken()
                         .IsRequired()
@@ -54,9 +51,10 @@ namespace RROMS.Web.Data.Migrations
                         .HasColumnType("nvarchar(20)")
                         .HasDefaultValue("pending");
 
-                    b.HasKey("OrderId");
+                    b.Property<int>("TableId")
+                        .HasColumnType("int");
 
-                    b.HasIndex("ReservationId");
+                    b.HasKey("OrderId");
 
                     b.ToTable("Order", null, t =>
                         {
@@ -237,16 +235,6 @@ namespace RROMS.Web.Data.Migrations
 
                             t.HasCheckConstraint("CK_Payments_RefundedAt", "([PaymentStatus] = 'refunded' AND [RefundedAt] IS NOT NULL) OR ([PaymentStatus] <> 'refunded' AND [RefundedAt] IS NULL)");
                         });
-                });
-
-            modelBuilder.Entity("RROMS.Web.Models.OrdersAndReservations.Order", b =>
-                {
-                    b.HasOne("RROMS.Web.Models.OrdersAndReservations.Reservation", "Reservation")
-                        .WithMany()
-                        .HasForeignKey("ReservationId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.Navigation("Reservation");
                 });
 
             modelBuilder.Entity("RROMS.Web.Models.OrdersAndReservations.OrderItem", b =>

@@ -8,8 +8,8 @@ public interface IOrderService
     Task<IReadOnlyList<MenuItemInfo>> GetMenuAsync();
 
     /// <summary>
-    /// Places an order. Only menu item ids and quantities come from the customer: each item's price is
-    /// copied from the menu now, and the total is always calculated from the items.
+    /// Places an order for the customer's table. Only the table, menu item ids and quantities come from
+    /// the customer: each item's price is copied from the menu now, and the total is always calculated from the items.
     /// </summary>
     Task<OrderResult> CreateAsync(int customerUserId, OrderInput input);
 
@@ -18,7 +18,4 @@ public interface IOrderService
 
     /// <summary>The customer's orders with their items (so totals can be shown), newest first.</summary>
     Task<List<Order>> GetForCustomerAsync(int customerUserId);
-
-    /// <summary>The customer's reservations an order can be linked to: pending or confirmed, today or later.</summary>
-    Task<List<Reservation>> GetReservationsForOrderingAsync(int customerUserId);
 }

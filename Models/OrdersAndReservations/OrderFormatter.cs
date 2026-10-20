@@ -32,6 +32,8 @@ public static class OrderFormatter
         _ => "text-bg-light"
     };
 
+    public static string Table(int tableId) => $"Table {tableId}";
+
     /// <summary>The payment module's format, so amounts look the same everywhere: "RM 12.90".</summary>
     public static string Money(decimal amount) => PaymentFormatter.Money(amount);
 

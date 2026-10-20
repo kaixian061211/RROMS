@@ -27,8 +27,8 @@ else
             <dl class="row">
                 <dt class="col-sm-4">Placed</dt>
                 <dd class="col-sm-8">@OrderFormatter.PlacedAt(order.CreatedAt)</dd>
-                <dt class="col-sm-4">Reservation</dt>
-                <dd class="col-sm-8">@(order.Reservation is null ? "None" : ReservationFormatter.Summary(order.Reservation))</dd>
+                <dt class="col-sm-4">Table</dt>
+                <dd class="col-sm-8">@OrderFormatter.Table(order.TableId)</dd>
             </dl>
 
             <div class="table-responsive">

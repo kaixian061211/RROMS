@@ -25,7 +25,7 @@ else
                     <th>Order</th>
                     <th>Items</th>
                     <th class="text-end">Total</th>
-                    <th>Reservation</th>
+                    <th>Table</th>
                     <th>Status</th>
                     <th><span class="visually-hidden">Actions</span></th>
                 </tr>
@@ -40,7 +40,7 @@ else
                         </td>
                         <td>@OrderFormatter.ItemCount(o)</td>
                         <td class="text-end">@OrderFormatter.Money(o.Total)</td>
-                        <td>@(o.ReservationId is int reservationId ? ReservationFormatter.Reference(reservationId) : "-")</td>
+                        <td>@OrderFormatter.Table(o.TableId)</td>
                         <td><span class="badge @OrderFormatter.StatusBadge(o.Status)">@OrderFormatter.StatusLabel(o.Status)</span></td>
                         <td class="text-end">
                             <a asp-page="Details" asp-route-id="@o.OrderId" class="btn btn-sm btn-outline-primary">View</a>

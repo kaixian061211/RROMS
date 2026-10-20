@@ -6,9 +6,6 @@ namespace RROMS.Web.Services.OrdersAndReservations;
 
 public class OrderService : IOrderService
 {
-    private const string ReservationNotAllowedMessage =
-        "That reservation can't be linked to an order. Please choose one of your upcoming reservations.";
-
     private readonly AppDbContext _db;
     private readonly IMenuItemLookup _menu;
 
@@ -18,15 +15,17 @@ public class OrderService : IOrderService
         _menu = menu;
     }
 
-    // AppDbContext picks up Order and Reservation through their configuration classes, so it needs no DbSets.
+    // AppDbContext picks up Order through OrderConfiguration, so it needs no DbSet for it.
     private DbSet<Order> Orders => _db.Set<Order>();
-    private DbSet<Reservation> Reservations => _db.Set<Reservation>();
 
     public async Task<IReadOnlyList<MenuItemInfo>> GetMenuAsync() =>
         (await _menu.GetAllAsync()).Where(menuItem => menuItem.IsAvailable).ToList();
 
     public async Task<OrderResult> CreateAsync(int customerUserId, OrderInput input)
     {
+        // TODO: check against the real tables once the RestaurantTable table exists.
+        if (input.TableId is not int tableId || !TemporaryTables.Exists(tableId))
+            return OrderResult.Failure("Please choose your table.");
         if (input.Items.Any(line => line.Quantity < 0))
             return OrderResult.Failure("Quantities can't be negative.");
 
@@ -47,13 +46,10 @@ public class OrderService : IOrderService
         if (error is not null)
             return OrderResult.Failure(error);
 
-        if (input.ReservationId is int reservationId && !await CanLinkReservationAsync(customerUserId, reservationId))
-            return OrderResult.Failure(ReservationNotAllowedMessage);
-
         var order = new Order
         {
             CustomerUserId = customerUserId,
-            ReservationId = input.ReservationId,
+            TableId = tableId,
             Items = lines.Select(line => new OrderItem
             {
                 MenuItemId = line.MenuItemId,
@@ -72,7 +68,6 @@ public class OrderService : IOrderService
     {
         var order = await Orders.AsNoTracking()
             .Include(o => o.Items)
-            .Include(o => o.Reservation)
             .FirstOrDefaultAsync(o => o.OrderId == orderId && o.CustomerUserId == customerUserId);
         if (order is null)
             return null;
@@ -96,12 +91,6 @@ public class OrderService : IOrderService
             .ThenByDescending(o => o.OrderId)
             .ToListAsync();
 
-    public Task<List<Reservation>> GetReservationsForOrderingAsync(int customerUserId) =>
-        LinkableReservations(customerUserId)
-            .OrderBy(r => r.ReservationDate)
-            .ThenBy(r => r.TimeSlot)
-            .ToListAsync();
-
     private static string? CheckCanOrder(IEnumerable<int> menuItemIds, IReadOnlyDictionary<int, MenuItemInfo> menuItems)
     {
         foreach (var menuItemId in menuItemIds)
@@ -112,21 +101,5 @@ public class OrderService : IOrderService
                 return $"Sorry, {menuItem.Name} isn't available right now.";
         }
         return null;
-    }
-
-    private Task<bool> CanLinkReservationAsync(int customerUserId, int reservationId) =>
-        LinkableReservations(customerUserId).AnyAsync(r => r.ReservationId == reservationId);
-
-    /// <summary>
-    /// The reservations an order may be linked to: the customer's own, pending or confirmed, today or later.
-    /// The list for the page and the check when saving both use this, so they can't disagree.
-    /// </summary>
-    private IQueryable<Reservation> LinkableReservations(int customerUserId)
-    {
-        var today = DateOnly.FromDateTime(DateTime.Now);
-        return Reservations.AsNoTracking().Where(r =>
-            r.CustomerUserId == customerUserId &&
-            (r.Status == ReservationStatus.Pending || r.Status == ReservationStatus.Confirmed) &&
-            r.ReservationDate >= today);
     }
 }

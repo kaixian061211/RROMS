@@ -15,11 +15,5 @@ public class OrderConfiguration : IEntityTypeConfiguration<Order>
 
         builder.Property(o => o.Status).HasDefaultValue(OrderStatus.Pending);
         builder.Property(o => o.CreatedAt).HasDefaultValueSql("SYSDATETIME()");
-
-        // a reservation that has orders can't be deleted
-        builder.HasOne(o => o.Reservation)
-               .WithMany()
-               .HasForeignKey(o => o.ReservationId)
-               .OnDelete(DeleteBehavior.Restrict);
     }
 }

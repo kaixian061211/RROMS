@@ -17,23 +17,22 @@ public class CreateModel : PageModel
         _environment = environment;
     }
 
-    /// <summary>Only dish ids, quantities and the reservation are posted. Prices never come from the browser.</summary>
+    /// <summary>Only the table, dish ids and quantities are posted. Prices never come from the browser.</summary>
     [BindProperty]
     public OrderInput Input { get; set; } = new();
 
     /// <summary>The dishes on the form. Input.Items has one line per dish, in the same order.</summary>
     public IReadOnlyList<MenuItemInfo> Menu { get; private set; } = Array.Empty<MenuItemInfo>();
 
-    public List<SelectListItem> ReservationOptions { get; private set; } = new();
+    public IEnumerable<SelectListItem> TableOptions =>
+        TemporaryTables.TableIds.Select(id => new SelectListItem(OrderFormatter.Table(id), id.ToString()));
 
-    /// <summary>reservationId comes from the "Order food" button on My reservations, to choose it in the dropdown.</summary>
-    public async Task<IActionResult> OnGetAsync(int? reservationId)
+    public async Task<IActionResult> OnGetAsync()
     {
-        if (!User.TryGetCustomerId(_environment, out var customerId))
+        if (!User.TryGetCustomerId(_environment, out _))
             return Unauthorized();
 
-        Input.ReservationId = reservationId;
-        await LoadFormAsync(customerId);
+        await LoadMenuAsync();
         return Page();
     }
 
@@ -47,7 +46,7 @@ public class CreateModel : PageModel
             // Only a quantity that isn't a whole number from 0 to 20 gets here, so one message covers it.
             ModelState.AddModelError(string.Empty,
                 $"Please enter a quantity from 0 to {OrderLineInput.MaxQuantity} for each dish.");
-            await LoadFormAsync(customerId);
+            await LoadMenuAsync();
             return Page();
         }
 
@@ -55,7 +54,7 @@ public class CreateModel : PageModel
         if (!result.Succeeded)
         {
             ModelState.AddModelError(string.Empty, result.ErrorMessage!);
-            await LoadFormAsync(customerId);
+            await LoadMenuAsync();
             return Page();
         }
 
@@ -64,10 +63,10 @@ public class CreateModel : PageModel
     }
 
     /// <summary>
-    /// Loads the menu and the reservations for the dropdown, and lines Input.Items up with the menu:
-    /// one line per dish, keeping any quantity the customer already chose.
+    /// Loads the menu and lines Input.Items up with it: one line per dish, keeping any quantity
+    /// the customer already chose.
     /// </summary>
-    private async Task LoadFormAsync(int customerId)
+    private async Task LoadMenuAsync()
     {
         Menu = await _orders.GetMenuAsync();
         var chosen = Input.Items;
@@ -76,10 +75,5 @@ public class CreateModel : PageModel
             MenuItemId = dish.MenuItemId,
             Quantity = chosen.FirstOrDefault(line => line.MenuItemId == dish.MenuItemId)?.Quantity ?? 0
         }).ToList();
-
-        var reservations = await _orders.GetReservationsForOrderingAsync(customerId);
-        ReservationOptions = reservations
-            .Select(r => new SelectListItem(ReservationFormatter.Summary(r), r.ReservationId.ToString()))
-            .ToList();
     }
 }

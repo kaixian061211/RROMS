@@ -46,7 +46,6 @@ else
                         <td>@ReservationFormatter.PartySize(r.PartySize)</td>
                         <td><span class="badge @ReservationFormatter.StatusBadge(r.Status)">@ReservationFormatter.StatusLabel(r.Status)</span></td>
                         <td class="text-end text-nowrap">
-                            <a asp-page="/Orders/Create" asp-route-reservationId="@r.ReservationId" class="btn btn-sm btn-outline-success">Order food</a>
                             <a asp-page="Edit" asp-route-id="@r.ReservationId" class="btn btn-sm btn-outline-primary">Edit</a>
                             <a asp-page="Cancel" asp-route-id="@r.ReservationId" class="btn btn-sm btn-outline-danger">Cancel</a>
                         </td>
