@@ -21,6 +21,9 @@ public class Order
 
     public List<OrderItem> Items { get; set; } = new();
 
+    /// <summary>Sum of the item line totals. Not stored, so it always matches the items. Load Items first.</summary>
+    public decimal Total => Items.Sum(item => item.LineTotal);
+
     [Timestamp]
     public byte[] RowVersion { get; set; } = null!;
 }
