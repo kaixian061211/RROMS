@@ -28,8 +28,9 @@ builder.Services.AddSingleton<IStripeGateway, StripeGateway>();
 builder.Services.AddScoped<IPaymentQueries, PaymentQueries>();
 builder.Services.AddScoped<IPaymentNotifier, LoggingPaymentNotifier>();
 builder.Services.AddScoped<IPaymentService, PaymentService>();
-QuestPDF.Settings.License = LicenseType.Community;   // free for individuals, students and small businesses
+QuestPDF.Settings.License = LicenseType.Community;
 builder.Services.AddSingleton<IReceiptService, ReceiptService>();
+builder.Services.AddScoped<StripeWebhookHandler>();
 
 var app = builder.Build();
 
@@ -46,6 +47,7 @@ app.UseAuthorization();
 
 app.MapStaticAssets();
 app.MapRazorPages().WithStaticAssets();
+app.MapStripeWebhook();   // POST /webhooks/stripe
 
 // Dev only: create the database on startup
 if (app.Environment.IsDevelopment())
