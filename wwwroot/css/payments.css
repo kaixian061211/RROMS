@@ -1,0 +1,61 @@
+/*
+  Payment module styles. Only classes used by the payment pages live here; nothing restyles
+  the site-wide layout, navbar or Bootstrap theme. Loaded by Pages/Shared/_PaymentPageHeader.cshtml.
+*/
+
+/* The bill: a receipt-style card used for order and payment summaries. */
+.bill {
+    background: #fff;
+    border: 1px solid #d5dedc;
+    border-radius: 4px;
+}
+.bill-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.3rem 0;
+    font-variant-numeric: tabular-nums;
+}
+.bill-row .label { color: #5b6b6b; }
+.bill-total {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 2px dashed #d5dedc;
+    font-size: 1.35rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+
+/* Payment method picker */
+.method-option {
+    display: flex;
+    gap: 0.9rem;
+    align-items: flex-start;
+    padding: 0.9rem 1rem;
+    background: #fff;
+    border: 1px solid #d5dedc;
+    border-radius: 4px;
+    cursor: pointer;
+}
+.method-option:hover { border-color: #0e5a5a; }
+.method-option:has(input:checked) {
+    border-color: #0e5a5a;
+    box-shadow: 0 0 0 1px #0e5a5a;
+}
+.method-option input { margin-top: 0.3rem; accent-color: #0e5a5a; }
+
+.num { font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+
+/* Status pages (success, cancelled, access denied) */
+.status-panel { max-width: 34rem; margin: 2rem auto; }
+.status-icon { font-size: 3rem; line-height: 1; font-weight: 700; }
+.status-icon.paid { color: #1e7f4f; }
+.status-icon.pending { color: #b7791f; }
+.status-icon.failed { color: #b3382c; }
+.status-icon.refunded { color: #5b6b6b; }
+
+@media (prefers-reduced-motion: reduce) {
+    .spinner-border { animation-duration: 3s; }
+}
