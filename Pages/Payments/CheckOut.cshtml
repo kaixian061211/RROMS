@@ -1,0 +1,43 @@
+@page
+@model RROMS.Web.Pages.Payments.CheckoutModel
+@{
+    ViewData["Title"] = "Pay for your order";
+    var order = Model.Order!;
+}
+
+<partial name="_PaymentPageHeader" />
+
+<div class="row g-4">
+    <div class="col-lg-7">
+        <h1 class="h3 mb-1">Pay for order #@order.OrderId</h1>
+        <p class="text-muted">Choose how you'd like to pay.</p>
+
+        <form method="post">
+            <input type="hidden" asp-for="OrderId" />
+
+            <div class="d-grid gap-2 mb-4">
+                @foreach (var option in CheckoutModel.MethodOptions)
+                {
+                    <label class="method-option">
+                        <input type="radio" name="Method" value="@option.Value" checked="@(option.Value == Model.Method)" />
+                        <span>
+                            <strong>@option.Title</strong><br />
+                            <small class="text-muted">@option.Description</small>
+                        </span>
+                    </label>
+                }
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-lg">Continue</button>
+            <a class="btn btn-link" asp-page="MyOrders">Back to my orders</a>
+        </form>
+    </div>
+
+    <div class="col-lg-5">
+        <div class="bill p-4">
+            <h2 class="h6 text-muted mb-3">Order summary</h2>
+            <div class="bill-row"><span class="label">Order</span><span>#@order.OrderId</span></div>
+            <div class="bill-total"><span>Total</span><span>@PaymentFormatter.Money(order.TotalAmount)</span></div>
+        </div>
+    </div>
+</div>

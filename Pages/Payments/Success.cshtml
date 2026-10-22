@@ -1,0 +1,60 @@
+@page
+@model RROMS.Web.Pages.Payments.SuccessModel
+@{
+    ViewData["Title"] = "Payment status";
+    var payment = Model.Payment!;
+}
+
+<partial name="_PaymentPageHeader" />
+
+<div class="status-panel text-center">
+    @if (payment.Status == PaymentStatus.Paid)
+    {
+        <div class="status-icon paid mb-3" aria-hidden="true">&#10003;</div>
+        <h1 class="h3">Payment received</h1>
+        <p class="text-muted">Thank you. We've received @PaymentFormatter.Money(payment.Amount) for order @payment.OrderLabel.</p>
+        <div class="d-flex justify-content-center gap-2">
+            <a class="btn btn-primary" asp-page="Receipt" asp-route-id="@payment.PaymentId">Download receipt</a>
+            <a class="btn btn-outline-secondary" asp-page="History">Payment history</a>
+        </div>
+    }
+    else if (payment.IsAwaitingCounter)
+    {
+        <div class="status-icon pending mb-3" aria-hidden="true">RM</div>
+        <h1 class="h3">Pay at the counter</h1>
+        <p class="text-muted">Your order is placed. Please pay @PaymentFormatter.Money(payment.Amount) to our staff when you arrive.</p>
+        <div class="bill p-3 text-start mb-3">
+            <div class="bill-row"><span class="label">Order</span><span>@payment.OrderLabel</span></div>
+            <div class="bill-row"><span class="label">Payment reference</span><span>@payment.ReceiptNo</span></div>
+        </div>
+        <a class="btn btn-outline-secondary" asp-page="MyOrders">Back to my orders</a>
+    }
+    else if (payment.Status == PaymentStatus.Pending)
+    {
+        <div class="mb-3"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading</span></div></div>
+        <h1 class="h3">Confirming your payment</h1>
+        <p class="text-muted" id="poll-note">This usually takes a few seconds. Please keep this page open.</p>
+        <div id="poll" data-url="@Url.Page("/Payments/Success", "Status", new { paymentId = payment.PaymentId })"></div>
+    }
+    else if (payment.Status == PaymentStatus.Refunded)
+    {
+        <div class="status-icon refunded mb-3" aria-hidden="true">&#8634;</div>
+        <h1 class="h3">Payment refunded</h1>
+        <p class="text-muted">@PaymentFormatter.Money(payment.Amount) for order @payment.OrderLabel has been refunded.</p>
+        <a class="btn btn-outline-secondary" asp-page="History">Payment history</a>
+    }
+    else
+    {
+        <div class="status-icon failed mb-3" aria-hidden="true">&#10005;</div>
+        <h1 class="h3">Payment didn't go through</h1>
+        <p class="text-muted">You haven't been charged. You can try again with the same or a different method.</p>
+        <a class="btn btn-primary" asp-page="Checkout" asp-route-orderId="@payment.OrderId">Try again</a>
+    }
+</div>
+
+@section Scripts {
+    @if (Model.ShouldPoll)
+    {
+        <script src="~/js/payments-status.js" asp-append-version="true"></script>
+    }
+}
