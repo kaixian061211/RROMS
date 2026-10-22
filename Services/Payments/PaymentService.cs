@@ -1,7 +1,7 @@
-using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using RROMS.Web.Data;
 using RROMS.Web.Models.Payments;
+using RROMS.Web.Services.Payments.Gateways;
 using RROMS.Web.Services.Payments.Notifications;
 
 namespace RROMS.Web.Services.Payments;
@@ -9,408 +9,370 @@ namespace RROMS.Web.Services.Payments;
 public class PaymentService : IPaymentService
 {
     private readonly AppDbContext _db;
+    private readonly IStripeGateway _stripe;
     private readonly IPaymentOrderProvider _orders;
     private readonly IPaymentQueries _queries;
     private readonly IEnumerable<IPaymentNotifier> _notifiers;
-    private readonly IHttpContextAccessor _http;
     private readonly ILogger<PaymentService> _logger;
 
     public PaymentService(
         AppDbContext db,
+        IStripeGateway stripe,
         IPaymentOrderProvider orders,
         IPaymentQueries queries,
         IEnumerable<IPaymentNotifier> notifiers,
-        IHttpContextAccessor http,
         ILogger<PaymentService> logger)
     {
         _db = db;
+        _stripe = stripe;
         _orders = orders;
         _queries = queries;
         _notifiers = notifiers;
-        _http = http;
         _logger = logger;
     }
 
-    public async Task<Payment> CreateCounterPaymentAsync(int orderId)
+    // ------------------------------------------------------------------------------------
+    // Customer checkout
+    // ------------------------------------------------------------------------------------
+
+    public async Task<PaymentResult> StartCheckoutAsync(int orderId, int customerUserId, string method, string baseUrl)
     {
-        RequireStaff();
-
-        var order = await GetOrderAsync(orderId);
-
-        var existing = await _db.Payments
-            .AsNoTracking()
-            .SingleOrDefaultAsync(p => p.OrderId == orderId);
-
-        if (existing is not null)
+        if (!PaymentMethod.CheckoutChoices.Contains(method))
         {
-            if (existing.PaymentStatus is
-                PaymentStatus.Paid or PaymentStatus.Refunded)
-            {
-                throw new PaymentException(
-                    "This order has already been paid or refunded.");
-            }
-
-            if (!IsCounter(existing))
-            {
-                throw new PaymentException(
-                    "Resolve the online payment before starting a counter payment.");
-            }
-
-            if (existing.PaymentStatus == PaymentStatus.Pending)
-            {
-                if (existing.Amount != order.TotalAmount)
-                {
-                    throw new PaymentException(
-                        "The order total changed. Cancel the waiting payment and create it again.");
-                }
-
-                return existing;
-            }
-
-            if (existing.PaymentStatus != PaymentStatus.Failed)
-            {
-                throw new PaymentException(
-                    "This order has already been paid or refunded.");
-            }
-
-            var reopened = await _db.Payments
-                .Where(p =>
-                    p.PaymentId == existing.PaymentId &&
-                    p.PaymentStatus == PaymentStatus.Failed &&
-                    p.PaymentMethod == PaymentMethod.PayAtCounter &&
-                    p.Amount == existing.Amount &&
-                    p.RecordedByStaffId == null &&
-                    p.TransactionRef == null &&
-                    p.StripePaymentIntentId == null)
-                .ExecuteUpdateAsync(s => s
-                    .SetProperty(
-                        p => p.PaymentStatus,
-                        PaymentStatus.Pending)
-                    .SetProperty(
-                        p => p.Amount,
-                        order.TotalAmount)
-                    .SetProperty(
-                        p => p.RecordedByStaffId,
-                        (int?)null));
-
-            if (reopened == 0)
-            {
-                throw new PaymentException(
-                    "The payment changed. Refresh and try again.");
-            }
-
-            return await GetPaymentAsync(existing.PaymentId);
+            throw new PaymentException("Please choose how you would like to pay.");
         }
 
-        var payment = new Payment
+        // 1. The order must exist and belong to this customer. The amount always comes from the
+        //    order, never from the browser.
+        var order = await _orders.GetOrderAsync(orderId);
+        if (order is null || order.CustomerUserId != customerUserId)
         {
-            OrderId = order.OrderId,
-            Amount = order.TotalAmount,
-            PaymentMethod = PaymentMethod.PayAtCounter,
-            PaymentStatus = PaymentStatus.Pending,
-            CreatedAt = DateTime.Now
-        };
+            throw new PaymentException("We couldn't find that order.");
+        }
 
-        _db.Payments.Add(payment);
+        if (order.TotalAmount <= 0)
+        {
+            throw new PaymentException("This order has nothing to pay.");
+        }
 
+        // 2. An order has at most one payment row (unique index). Create it, or re-open the old one.
+        var existing = await _db.Payments.AsNoTracking().FirstOrDefaultAsync(p => p.OrderId == orderId);
+
+        Payment payment;
+        if (existing is null)
+        {
+            payment = new Payment
+            {
+                OrderId = order.OrderId,
+                Amount = order.TotalAmount,
+                PaymentMethod = method,
+                PaymentStatus = PaymentStatus.Pending
+            };
+
+            _db.Payments.Add(payment);
+
+            try
+            {
+                await _db.SaveChangesAsync();
+            }
+            catch (DbUpdateException ex)
+            {
+                // Two clicks at once hit the unique "one payment per order" index.
+                _logger.LogWarning(ex, "Could not create a payment for order {OrderId}", orderId);
+                throw new PaymentException("A payment for this order is already in progress.");
+            }
+        }
+        else
+        {
+            payment = await ReopenAsync(existing, order, method);
+        }
+
+        // 3a. Pay at the counter: nothing more to do until staff take the money.
+        if (method == PaymentMethod.PayAtCounter)
+        {
+            return new PaymentResult { Payment = payment };
+        }
+
+        // 3b. Online: send the customer to Stripe's hosted page.
         try
         {
-            await _db.SaveChangesAsync();
+            var session = await _stripe.CreateCheckoutSessionAsync(
+                payment,
+                order.CustomerEmail,
+                successUrl: $"{baseUrl}/Payments/Success?paymentId={payment.PaymentId}",
+                cancelUrl: $"{baseUrl}/Payments/Cancel?paymentId={payment.PaymentId}&attempt={payment.CreatedAt.Ticks}");
+
+            // Remember the Stripe session, so this attempt can be closed or recognised later.
+            await _db.Payments
+                .Where(p => p.PaymentId == payment.PaymentId && p.PaymentStatus == PaymentStatus.Pending)
+                .ExecuteUpdateAsync(s => s.SetProperty(p => p.TransactionRef, session.SessionId));
+
+            return new PaymentResult { Payment = payment, RedirectUrl = session.Url };
         }
-        catch (DbUpdateException ex)
+        catch (PaymentException)
         {
-            _db.Entry(payment).State = EntityState.Detached;
-
-            _logger.LogError(
-                ex,
-                "Could not save payment for order {OrderId}",
-                orderId);
-
-            throw new PaymentException(
-                "Unable to save the payment. Refresh the order and try again.");
+            // Stripe said no (or isn't configured) - don't leave a pending row waiting for nothing.
+            await MarkFailedAsync(payment.PaymentId);
+            throw;
         }
-
-        return payment;
     }
 
-    public async Task<decimal> CollectAtCounterAsync(
-        int paymentId,
-        string method,
-        decimal? cashReceived = null)
+    /// <summary>
+    /// Starts a new attempt on the order's existing payment row. A paid or refunded payment is final;
+    /// a pending one is retired first (its Stripe page is closed); then the row is claimed with one
+    /// conditional UPDATE so two simultaneous clicks cannot both start an attempt.
+    /// </summary>
+    private async Task<Payment> ReopenAsync(Payment existing, PaymentOrderInfo order, string method)
     {
-        var staffId = RequireStaff();
+        if (existing.PaymentStatus == PaymentStatus.Paid)
+        {
+            throw new PaymentException("This order has already been paid.");
+        }
 
+        if (existing.PaymentStatus == PaymentStatus.Refunded)
+        {
+            throw new PaymentException("This order's payment was refunded, so it can't be paid again here. Please speak to the restaurant.");
+        }
+
+        if (existing.PaymentStatus == PaymentStatus.Pending)
+        {
+            // Close the old Stripe page first so it can't be paid after we replace it.
+            if (!string.IsNullOrEmpty(existing.TransactionRef)
+                && existing.PaymentMethod != PaymentMethod.PayAtCounter
+                && !await _stripe.TryExpireSessionAsync(existing.TransactionRef))
+            {
+                // The customer may have just paid in another tab - don't create a second charge.
+                throw new PaymentException("Your previous payment is still being processed. Please wait a moment and refresh.");
+            }
+
+            await _db.Payments
+                .Where(p => p.PaymentId == existing.PaymentId && p.PaymentStatus == PaymentStatus.Pending)
+                .ExecuteUpdateAsync(s => s.SetProperty(p => p.PaymentStatus, PaymentStatus.Failed));
+        }
+
+        DateTime now = DateTime.Now;   // same local clock as SYSDATETIME()
+
+        // The CK_Payments_PaidAt constraint needs PaidAt empty for pending/failed, so it is cleared in the same UPDATE.
+        var claimed = await _db.Payments
+            .Where(p => p.PaymentId == existing.PaymentId && p.PaymentStatus == PaymentStatus.Failed)
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(p => p.PaymentStatus, PaymentStatus.Pending)
+                .SetProperty(p => p.PaymentMethod, method)
+                .SetProperty(p => p.Amount, order.TotalAmount)
+                .SetProperty(p => p.CreatedAt, now)
+                .SetProperty(p => p.PaidAt, (DateTime?)null)
+                .SetProperty(p => p.RecordedByStaffId, (int?)null)
+                .SetProperty(p => p.TransactionRef, (string?)null)
+                .SetProperty(p => p.StripePaymentIntentId, (string?)null));
+
+        if (claimed == 0)
+        {
+            throw new PaymentException("A payment for this order is already in progress.");
+        }
+
+        return await _db.Payments.AsNoTracking().FirstAsync(p => p.PaymentId == existing.PaymentId);
+    }
+
+    // ------------------------------------------------------------------------------------
+    // Stripe results (called by the webhook)
+    // ------------------------------------------------------------------------------------
+
+    public async Task<bool> MarkPaidOnlineAsync(int paymentId, string? paymentIntentId)
+    {
+        DateTime? paidAt = DateTime.Now;
+
+        // One conditional UPDATE: if Stripe sends the same event twice, the second call updates
+        // 0 rows and is ignored - no double receipts. A "failed" row is accepted too: if Stripe says
+        // the money arrived, that wins (for example the customer paid just as we retired the attempt).
+        var updated = await _db.Payments
+            .Where(p => p.PaymentId == paymentId
+                     && (p.PaymentStatus == PaymentStatus.Pending || p.PaymentStatus == PaymentStatus.Failed)
+                     && p.PaymentMethod != PaymentMethod.PayAtCounter)
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(p => p.PaymentStatus, PaymentStatus.Paid)
+                .SetProperty(p => p.PaidAt, paidAt)
+                .SetProperty(p => p.StripePaymentIntentId, paymentIntentId));
+
+        if (updated == 0)
+        {
+            _logger.LogInformation("Payment {PaymentId} was not an open online payment - paid event ignored", paymentId);
+            return false;
+        }
+
+        await NotifyAsync(paymentId, (n, details) => n.PaymentConfirmedAsync(details));
+        return true;
+    }
+
+    public async Task<bool> MarkFailedAsync(int paymentId, string? sessionId = null)
+    {
+        // Only online attempts fail this way; a waiting counter payment is cancelled by staff (VoidPendingAsync).
+        var updated = await _db.Payments
+            .Where(p => p.PaymentId == paymentId
+                     && p.PaymentStatus == PaymentStatus.Pending
+                     && p.PaymentMethod != PaymentMethod.PayAtCounter
+                     && (sessionId == null || p.TransactionRef == sessionId))
+            .ExecuteUpdateAsync(s => s.SetProperty(p => p.PaymentStatus, PaymentStatus.Failed));
+
+        return updated > 0;
+    }
+
+    public async Task CancelOnlineAttemptAsync(int paymentId, int customerUserId, long? attempt = null)
+    {
+        var payment = await _db.Payments.AsNoTracking().FirstOrDefaultAsync(p => p.PaymentId == paymentId);
+
+        if (payment is null || !await OwnsAsync(payment, customerUserId))
+        {
+            throw new PaymentException("We couldn't find that payment.");
+        }
+
+        if (payment.PaymentStatus != PaymentStatus.Pending || payment.PaymentMethod == PaymentMethod.PayAtCounter)
+        {
+            return;   // nothing to cancel
+        }
+
+        // An old browser tab must not cancel a newer attempt: every attempt has its own CreatedAt.
+        if (attempt.HasValue && attempt.Value != payment.CreatedAt.Ticks)
+        {
+            return;
+        }
+
+        // Close the Stripe page first so it can't be paid after we mark it failed.
+        if (!string.IsNullOrEmpty(payment.TransactionRef) && !await _stripe.TryExpireSessionAsync(payment.TransactionRef))
+        {
+            return;   // probably paid already - let the webhook decide
+        }
+
+        await MarkFailedAsync(paymentId, payment.TransactionRef);
+    }
+
+    // ------------------------------------------------------------------------------------
+    // Counter payments (staff)
+    // ------------------------------------------------------------------------------------
+
+    public async Task CollectAtCounterAsync(int paymentId, int staffUserId, string method)
+    {
         if (!PaymentMethod.CounterMethods.Contains(method))
         {
-            throw new PaymentException(
-                "Choose cash, card or e-wallet.");
+            throw new PaymentException("Choose cash, card or e-wallet.");
         }
 
-        var payment = await GetPaymentAsync(paymentId);
+        DateTime? paidAt = DateTime.Now;
 
-        if (!IsCounter(payment) ||
-            payment.PaymentStatus != PaymentStatus.Pending)
-        {
-            throw new PaymentException(
-                "This payment is not waiting at the counter.");
-        }
-
-        var order = await GetOrderAsync(payment.OrderId);
-
-        if (order.TotalAmount != payment.Amount)
-        {
-            throw new PaymentException(
-                "The order total changed. Cancel the waiting payment and create it again.");
-        }
-
-        decimal change = 0;
-
-        if (method == PaymentMethod.Cash)
-        {
-            if (!cashReceived.HasValue)
-            {
-                throw new PaymentException(
-                    "Enter the cash received.");
-            }
-
-            ValidateAmount(cashReceived.Value);
-
-            if (cashReceived.Value < payment.Amount)
-            {
-                throw new PaymentException(
-                    "Cash received is less than the amount due.");
-            }
-
-            change = cashReceived.Value - payment.Amount;
-        }
-
+        // A waiting counter payment is "pending + pay_at_counter". The real method replaces the placeholder
+        // and the staff member who took the money is recorded.
         var updated = await _db.Payments
-            .Where(p =>
-                p.PaymentId == paymentId &&
-                p.PaymentStatus == PaymentStatus.Pending &&
-                p.PaymentMethod == PaymentMethod.PayAtCounter &&
-                p.Amount == payment.Amount &&
-                p.RecordedByStaffId == null &&
-                p.TransactionRef == null &&
-                p.StripePaymentIntentId == null)
+            .Where(p => p.PaymentId == paymentId
+                     && p.PaymentStatus == PaymentStatus.Pending
+                     && p.PaymentMethod == PaymentMethod.PayAtCounter)
             .ExecuteUpdateAsync(s => s
-                .SetProperty(
-                    p => p.PaymentStatus,
-                    PaymentStatus.Paid)
-                .SetProperty(
-                    p => p.PaymentMethod,
-                    method)
-                .SetProperty(
-                    p => p.PaidAt,
-                    (DateTime?)DateTime.Now)
-                .SetProperty(
-                    p => p.RecordedByStaffId,
-                    (int?)staffId));
+                .SetProperty(p => p.PaymentStatus, PaymentStatus.Paid)
+                .SetProperty(p => p.PaymentMethod, method)
+                .SetProperty(p => p.PaidAt, paidAt)
+                .SetProperty(p => p.RecordedByStaffId, (int?)staffUserId));
 
         if (updated == 0)
         {
-            throw new PaymentException(
-                "The payment changed or was already collected. Refresh the page.");
+            throw new PaymentException("This payment is no longer waiting to be collected.");
         }
 
-        await NotifyAsync(paymentId, refunded: false);
-
-        return change;
+        await NotifyAsync(paymentId, (n, details) => n.PaymentConfirmedAsync(details));
     }
 
-    public async Task VoidPendingAsync(int paymentId)
+    public async Task VoidPendingAsync(int paymentId, int staffUserId)
     {
-        var staffId = RequireStaff();
-
         var updated = await _db.Payments
-            .Where(p =>
-                p.PaymentId == paymentId &&
-                p.PaymentStatus == PaymentStatus.Pending &&
-                p.PaymentMethod == PaymentMethod.PayAtCounter &&
-                p.RecordedByStaffId == null &&
-                p.TransactionRef == null &&
-                p.StripePaymentIntentId == null)
+            .Where(p => p.PaymentId == paymentId
+                     && p.PaymentStatus == PaymentStatus.Pending
+                     && p.PaymentMethod == PaymentMethod.PayAtCounter)
             .ExecuteUpdateAsync(s => s
-                .SetProperty(
-                    p => p.PaymentStatus,
-                    PaymentStatus.Failed));
+                .SetProperty(p => p.PaymentStatus, PaymentStatus.Failed)
+                .SetProperty(p => p.RecordedByStaffId, (int?)staffUserId));
 
         if (updated == 0)
         {
-            throw new PaymentException(
-                "This payment is no longer waiting at the counter.");
+            throw new PaymentException("This payment is no longer waiting to be collected.");
         }
-
-        _logger.LogInformation(
-            "Staff {StaffId} cancelled counter payment {PaymentId}",
-            staffId,
-            paymentId);
     }
 
-    public async Task RefundCounterPaymentAsync(
-        int paymentId,
-        string reason)
+    // ------------------------------------------------------------------------------------
+    // Refunds (admin)
+    // ------------------------------------------------------------------------------------
+
+    public async Task RefundAsync(int paymentId, int adminUserId, string? reason = null)
     {
-        var adminId = RequireStaff(adminOnly: true);
-
-        reason = reason?.Trim() ?? string.Empty;
-
-        if (reason.Length == 0 || reason.Length > 200)
+        reason = string.IsNullOrWhiteSpace(reason) ? null : reason.Trim();
+        if (reason is { Length: > 200 })
         {
-            throw new PaymentException(
-                "Enter a refund reason between 1 and 200 characters.");
+            throw new PaymentException("The refund reason can be at most 200 characters.");
         }
 
-        // Staff return the money through the original counter/terminal
-        // process before recording this refund.
+        var payment = await _db.Payments.AsNoTracking().FirstOrDefaultAsync(p => p.PaymentId == paymentId)
+            ?? throw new PaymentException("We couldn't find that payment.");
+
+        if (payment.PaymentStatus != PaymentStatus.Paid)
+        {
+            throw new PaymentException("Only paid payments can be refunded.");
+        }
+
+        // An online payment has a Stripe PaymentIntent id (saved by the webhook). The idempotency key makes a
+        // double-click safe: Stripe returns the first refund instead of creating a second one.
+        // Counter payments have nothing at Stripe - staff hand the money back and we only record it.
+        if (!string.IsNullOrEmpty(payment.StripePaymentIntentId))
+        {
+            await _stripe.RefundAsync(payment.StripePaymentIntentId, idempotencyKey: $"refund-payment-{payment.PaymentId}");
+        }
+        else if (!string.IsNullOrEmpty(payment.TransactionRef) && payment.PaymentMethod != PaymentMethod.PayAtCounter
+                 && PaymentMethod.IsOnline(payment.PaymentMethod) && payment.RecordedByStaffId is null)
+        {
+            throw new PaymentException("This online payment has no Stripe charge reference. Refund it in the Stripe Dashboard.");
+        }
+
+        // PaidAt is kept (CK_Payments_PaidAt) and RefundedAt is set in the same UPDATE (CK_Payments_RefundedAt).
+        DateTime refundedAt = DateTime.Now;
         var updated = await _db.Payments
-            .Where(p =>
-                p.PaymentId == paymentId &&
-                p.PaymentStatus == PaymentStatus.Paid &&
-                p.PaymentMethod != PaymentMethod.PayAtCounter &&
-                p.RecordedByStaffId != null &&
-                p.TransactionRef == null &&
-                p.StripePaymentIntentId == null)
+            .Where(p => p.PaymentId == paymentId && p.PaymentStatus == PaymentStatus.Paid)
             .ExecuteUpdateAsync(s => s
-                .SetProperty(
-                    p => p.PaymentStatus,
-                    PaymentStatus.Refunded)
-                .SetProperty(
-                    p => p.RefundedAt,
-                    (DateTime?)DateTime.Now)
-                .SetProperty(
-                    p => p.RefundedByStaffId,
-                    (int?)adminId)
-                .SetProperty(
-                    p => p.RefundReason,
-                    reason));
+                .SetProperty(p => p.PaymentStatus, PaymentStatus.Refunded)
+                .SetProperty(p => p.RefundedAt, (DateTime?)refundedAt)
+                .SetProperty(p => p.RefundedByStaffId, (int?)adminUserId)
+                .SetProperty(p => p.RefundReason, reason));
 
         if (updated == 0)
         {
-            throw new PaymentException(
-                "Only a paid counter payment can be refunded here.");
+            throw new PaymentException("This payment has already been refunded.");
         }
 
-        await NotifyAsync(paymentId, refunded: true);
+        await NotifyAsync(paymentId, (n, details) => n.PaymentRefundedAsync(details));
     }
 
-    private int RequireStaff(bool adminOnly = false)
+    // ------------------------------------------------------------------------------------
+
+    /// <summary>A customer owns a payment if they placed its order.</summary>
+    private async Task<bool> OwnsAsync(Payment payment, int customerUserId)
     {
-        var user = _http.HttpContext?.User;
-
-        if (user?.Identity?.IsAuthenticated != true)
-        {
-            throw new PaymentException(
-                "Sign in before recording a payment.");
-        }
-
-        var allowed =
-            user.IsInRole(PaymentRoles.Admin) ||
-            (!adminOnly && user.IsInRole(PaymentRoles.Staff));
-
-        if (!allowed)
-        {
-            throw new PaymentException(
-                "You do not have permission to perform this action.");
-        }
-
-        if (!user.TryGetPaymentUserId(out var id) || id <= 0)
-        {
-            throw new PaymentException(
-                "The signed-in user has no valid staff ID.");
-        }
-
-        return id;
+        var order = await _orders.GetOrderAsync(payment.OrderId);
+        return order is not null && order.CustomerUserId == customerUserId;
     }
 
-    private async Task<PaymentOrderInfo> GetOrderAsync(int orderId)
+    /// <summary>Tells every notifier. One failing notifier must never undo or hide a payment.</summary>
+    private async Task NotifyAsync(int paymentId, Func<IPaymentNotifier, PaymentDetails, Task> send)
     {
-        if (orderId <= 0)
+        var details = await _queries.GetDetailsAsync(paymentId);
+        if (details is null)
         {
-            throw new PaymentException(
-                "Choose a valid order.");
+            return;
         }
 
-        var order = await _orders.GetOrderAsync(orderId);
-
-        if (order is null || order.OrderId != orderId)
+        foreach (var notifier in _notifiers)
         {
-            throw new PaymentException(
-                "The order could not be found.");
-        }
-
-        ValidateAmount(order.TotalAmount);
-
-        return order;
-    }
-
-    private async Task<Payment> GetPaymentAsync(int paymentId)
-    {
-        return await _db.Payments
-            .AsNoTracking()
-            .SingleOrDefaultAsync(p => p.PaymentId == paymentId)
-            ?? throw new PaymentException(
-                "The payment could not be found.");
-    }
-
-    private static bool IsCounter(Payment payment)
-    {
-        return payment.PaymentMethod == PaymentMethod.PayAtCounter
-            && payment.RecordedByStaffId is null
-            && payment.TransactionRef is null
-            && payment.StripePaymentIntentId is null;
-    }
-
-    private static void ValidateAmount(decimal amount)
-    {
-        if (amount <= 0 ||
-            amount > 99999999.99m ||
-            decimal.Round(amount, 2) != amount)
-        {
-            throw new PaymentException(
-                "The amount must be positive and have no more than two decimal places.");
-        }
-    }
-
-    private async Task NotifyAsync(int paymentId, bool refunded)
-    {
-        try
-        {
-            var details = await _queries.GetDetailsAsync(paymentId);
-
-            if (details is null)
+            try
             {
-                return;
+                await send(notifier, details);
             }
-
-            foreach (var notifier in _notifiers)
+            catch (Exception ex)
             {
-                try
-                {
-                    if (refunded)
-                    {
-                        await notifier.PaymentRefundedAsync(details);
-                    }
-                    else
-                    {
-                        await notifier.PaymentConfirmedAsync(details);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(
-                        ex,
-                        "Notification failed for payment {PaymentId}",
-                        paymentId);
-                }
+                _logger.LogError(ex, "{Notifier} failed for payment {PaymentId}", notifier.GetType().Name, paymentId);
             }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(
-                ex,
-                "Could not load notification details for payment {PaymentId}",
-                paymentId);
         }
     }
 }
