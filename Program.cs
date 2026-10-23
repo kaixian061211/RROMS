@@ -17,6 +17,9 @@ builder.Services.AddRazorPages();
 builder.Services.AddAuthentication();
 
 builder.Services.AddScoped<IReservationService, ReservationService>();
+builder.Services.AddScoped<IOrderService, OrderService>();
+// TODO: use a lookup that reads the real MenuItem table once it's on main.
+builder.Services.AddScoped<IMenuItemLookup, TemporaryMenuItemLookup>();
 builder.Services.AddScoped<IPaymentOrderProvider, PaymentOrderProvider>();
 builder.Services.AddHttpContextAccessor();
 

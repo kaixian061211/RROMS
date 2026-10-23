@@ -1,0 +1,70 @@
+@page "{id:int}"
+@model DetailsModel
+@{
+    ViewData["Title"] = "Order details";
+}
+
+@if (Model.Details is null)
+{
+    <div class="alert alert-warning" role="alert">Order not found.</div>
+    <a asp-page="Index" class="btn btn-outline-secondary">Back to my orders</a>
+}
+else
+{
+    var order = Model.Details.Order;
+    <div class="row">
+        <div class="col-lg-8">
+            @if (Model.StatusMessage is not null)
+            {
+                <div class="alert alert-success" role="status">@Model.StatusMessage</div>
+            }
+
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+                <h1 class="h3 mb-0">Order @OrderFormatter.Reference(order.OrderId)</h1>
+                <span class="badge fs-6 @OrderFormatter.StatusBadge(order.Status)">@OrderFormatter.StatusLabel(order.Status)</span>
+            </div>
+
+            <dl class="row">
+                <dt class="col-sm-4">Placed</dt>
+                <dd class="col-sm-8">@OrderFormatter.PlacedAt(order.CreatedAt)</dd>
+                <dt class="col-sm-4">Table</dt>
+                <dd class="col-sm-8">@OrderFormatter.Table(order.TableId)</dd>
+            </dl>
+
+            <div class="table-responsive">
+                <table class="table align-middle">
+                    <thead>
+                        <tr>
+                            <th>Dish</th>
+                            <th class="text-end">Quantity</th>
+                            <th class="text-end">Unit price</th>
+                            <th class="text-end">Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var line in Model.Details.Lines)
+                        {
+                            <tr>
+                                <td>@line.MenuItemName</td>
+                                <td class="text-end">@line.Item.Quantity</td>
+                                <td class="text-end">@OrderFormatter.Money(line.Item.UnitPrice)</td>
+                                <td class="text-end">@OrderFormatter.Money(line.Item.LineTotal)</td>
+                            </tr>
+                        }
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <th colspan="3" class="text-end">Total</th>
+                            <th class="text-end">@OrderFormatter.Money(order.Total)</th>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+
+            <div class="d-flex flex-wrap gap-2">
+                <a asp-page="Index" class="btn btn-primary">View my orders</a>
+                <a asp-page="Create" class="btn btn-outline-secondary">Order more food</a>
+            </div>
+        </div>
+    </div>
+}

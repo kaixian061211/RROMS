@@ -1,0 +1,53 @@
+@page
+@model IndexModel
+@{
+    ViewData["Title"] = "My orders";
+}
+
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+    <h1 class="h3 mb-0">My orders</h1>
+    <a asp-page="Create" class="btn btn-primary">Order food</a>
+</div>
+
+@if (Model.Orders.Count == 0)
+{
+    <div class="text-center text-muted border rounded py-5">
+        <p class="mb-3">You haven't placed any orders yet.</p>
+        <a asp-page="Create" class="btn btn-outline-primary">Order food</a>
+    </div>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table align-middle">
+            <thead>
+                <tr>
+                    <th>Order</th>
+                    <th>Items</th>
+                    <th class="text-end">Total</th>
+                    <th>Table</th>
+                    <th>Status</th>
+                    <th><span class="visually-hidden">Actions</span></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var o in Model.Orders)
+                {
+                    <tr>
+                        <td>
+                            @OrderFormatter.Reference(o.OrderId)
+                            <div class="small text-muted">@OrderFormatter.PlacedAt(o.CreatedAt)</div>
+                        </td>
+                        <td>@OrderFormatter.ItemCount(o)</td>
+                        <td class="text-end">@OrderFormatter.Money(o.Total)</td>
+                        <td>@OrderFormatter.Table(o.TableId)</td>
+                        <td><span class="badge @OrderFormatter.StatusBadge(o.Status)">@OrderFormatter.StatusLabel(o.Status)</span></td>
+                        <td class="text-end">
+                            <a asp-page="Details" asp-route-id="@o.OrderId" class="btn btn-sm btn-outline-primary">View</a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
