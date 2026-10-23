@@ -3,13 +3,20 @@ using Payment = RROMS.Web.Models.Payments.Payment;
 
 namespace RROMS.Web.Services.Payments.Gateways;
 
-public record StripeSessionInfo(string SessionId, string Url);
+public record StripeSessionInfo(
+    string SessionId,
+    string Url,
+    string? PaymentIntentId = null);
 
 /// <summary>Everything the app needs from Stripe, so the rest of the code never touches the Stripe SDK.</summary>
 public interface IStripeGateway
 {
     /// <summary>Creates a hosted Checkout page for one pending payment.</summary>
-    Task<StripeSessionInfo> CreateCheckoutSessionAsync(Payment payment, string customerEmail, string successUrl, string cancelUrl);
+    Task<StripeSessionInfo> CreateCheckoutSessionAsync(
+        Payment payment,
+        string customerEmail,
+        string successUrl,
+        string cancelUrl);
 
     /// <summary>
     /// Closes an open Checkout page so it can no longer be paid.

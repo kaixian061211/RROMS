@@ -1,3 +1,4 @@
+using System.Globalization;
 using Microsoft.Extensions.Options;
 using Stripe;
 using Stripe.Checkout;
@@ -13,14 +14,19 @@ public class StripeGateway : IStripeGateway
     private readonly ILogger<StripeGateway> _logger;
     private StripeClient? _client;
 
-    public StripeGateway(IOptions<StripeSettings> options, ILogger<StripeGateway> logger)
+    public StripeGateway(
+        IOptions<StripeSettings> options,
+        ILogger<StripeGateway> logger)
     {
         _settings = options.Value;
         _logger = logger;
     }
 
     public async Task<StripeSessionInfo> CreateCheckoutSessionAsync(
-        Payment payment, string customerEmail, string successUrl, string cancelUrl)
+        Payment payment,
+        string customerEmail,
+        string successUrl,
+        string cancelUrl)
     {
         var client = GetClient();
 
@@ -31,16 +37,22 @@ public class StripeGateway : IStripeGateway
         var options = new SessionCreateOptions
         {
             Mode = "payment",
-            AllowedPaymentMethodTypes = new List<string> { ToStripeMethodType(payment.PaymentMethod) },
-            ClientReferenceId = payment.PaymentId.ToString(),
-            CustomerEmail = string.IsNullOrWhiteSpace(customerEmail) ? null : customerEmail,
+            AllowedPaymentMethodTypes = new List<string>
+            {
+                ToStripeMethodType(payment.PaymentMethod)
+            },
+            ClientReferenceId = payment.PaymentId.ToString(CultureInfo.InvariantCulture),
+            CustomerEmail = string.IsNullOrWhiteSpace(customerEmail)
+                ? null
+                : customerEmail,
             SuccessUrl = successUrl,
             CancelUrl = cancelUrl,
             ExpiresAt = DateTime.UtcNow.AddMinutes(expiryMinutes),
             Metadata = new Dictionary<string, string>
             {
-                ["payment_id"] = payment.PaymentId.ToString(),
-                ["order_id"] = payment.OrderId.ToString() ?? string.Empty
+                ["payment_id"] = payment.PaymentId.ToString(CultureInfo.InvariantCulture),
+                ["order_id"] = payment.OrderId.ToString(CultureInfo.InvariantCulture),
+                ["attempt_ticks"] = payment.CreatedAt.Ticks.ToString(CultureInfo.InvariantCulture)
             },
             LineItems = new List<SessionLineItemOptions>
             {
@@ -69,13 +81,24 @@ public class StripeGateway : IStripeGateway
 
         try
         {
-            var session = await new SessionService(client).CreateAsync(options, requestOptions);
-            return new StripeSessionInfo(session.Id, session.Url);
+            var session = await new SessionService(client).CreateAsync(
+                options,
+                requestOptions);
+
+            return new StripeSessionInfo(
+                session.Id,
+                session.Url,
+                session.PaymentIntentId);
         }
         catch (StripeException ex)
         {
-            _logger.LogError(ex, "Stripe could not create a Checkout Session for payment {PaymentId}", payment.PaymentId);
-            throw new PaymentException("We couldn't start the online payment. Please try again or choose another method.");
+            _logger.LogError(
+                ex,
+                "Stripe could not create a Checkout Session for payment {PaymentId}",
+                payment.PaymentId);
+
+            throw new PaymentException(
+                "We couldn't start the online payment. Please try again or choose another method.");
         }
     }
 
@@ -98,26 +121,47 @@ public class StripeGateway : IStripeGateway
             }
             catch (StripeException ex)
             {
-                _logger.LogWarning(ex, "Could not check Checkout Session {SessionId}", sessionId);
+                _logger.LogWarning(
+                    ex,
+                    "Could not check Checkout Session {SessionId}",
+                    sessionId);
+
                 return false;
             }
         }
     }
 
-    public async Task<string> RefundAsync(string paymentIntentId, string idempotencyKey)
+    public async Task<string> RefundAsync(
+        string paymentIntentId,
+        string idempotencyKey)
     {
-        var options = new RefundCreateOptions { PaymentIntent = paymentIntentId };
-        var requestOptions = new RequestOptions { IdempotencyKey = idempotencyKey };
+        var options = new RefundCreateOptions
+        {
+            PaymentIntent = paymentIntentId
+        };
+
+        var requestOptions = new RequestOptions
+        {
+            IdempotencyKey = idempotencyKey
+        };
 
         try
         {
-            var refund = await new RefundService(GetClient()).CreateAsync(options, requestOptions);
+            var refund = await new RefundService(GetClient()).CreateAsync(
+                options,
+                requestOptions);
+
             return refund.Id;
         }
         catch (StripeException ex)
         {
-            _logger.LogError(ex, "Stripe refused the refund for {PaymentIntentId}", paymentIntentId);
-            throw new PaymentException($"Stripe could not process the refund: {ex.StripeError?.Message ?? ex.Message}");
+            _logger.LogError(
+                ex,
+                "Stripe refused the refund for {PaymentIntentId}",
+                paymentIntentId);
+
+            throw new PaymentException(
+                $"Stripe could not process the refund: {ex.StripeError?.Message ?? ex.Message}");
         }
     }
 
@@ -125,21 +169,25 @@ public class StripeGateway : IStripeGateway
     {
         if (string.IsNullOrWhiteSpace(_settings.WebhookSecret))
         {
-            throw new InvalidOperationException("Stripe:WebhookSecret is not configured.");
+            throw new InvalidOperationException(
+                "Stripe:WebhookSecret is not configured.");
         }
 
         // throwOnApiVersionMismatch: false -> the SDK's pinned API version may differ from the
         // one your Stripe account uses; we only read fields that exist in both.
-        return EventUtility.ConstructEvent(json, signatureHeader, _settings.WebhookSecret, throwOnApiVersionMismatch: false);
+        return EventUtility.ConstructEvent(
+            json,
+            signatureHeader,
+            _settings.WebhookSecret,
+            throwOnApiVersionMismatch: false);
     }
-
-    // ---- helpers -----------------------------------------------------------------------
 
     private StripeClient GetClient()
     {
         if (string.IsNullOrWhiteSpace(_settings.SecretKey))
         {
-            throw new PaymentException("Online payments are not set up yet. Add the Stripe test keys (Stripe:SecretKey in user-secrets) or pay at the counter.");
+            throw new PaymentException(
+                "Online payments are not set up yet. Add the Stripe test keys (Stripe:SecretKey in user-secrets) or pay at the counter.");
         }
 
         return _client ??= new StripeClient(_settings.SecretKey);
@@ -149,7 +197,7 @@ public class StripeGateway : IStripeGateway
     private static string ToStripeMethodType(string paymentMethod) => paymentMethod switch
     {
         PaymentMethod.Card => "card",
-        PaymentMethod.OnlineBanking => "fpx",       // Malaysian online banking
+        PaymentMethod.OnlineBanking => "fpx",
         PaymentMethod.EWallet => "grabpay",
         _ => throw new PaymentException("That payment method can't be paid online.")
     };
