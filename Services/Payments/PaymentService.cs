@@ -45,6 +45,12 @@ public class PaymentService : IPaymentService
         string method,
         string baseUrl)
     {
+        if (orderId <= 0 || customerUserId <= 0)
+        {
+            throw new PaymentException("We couldn't find that order.");
+        }
+        
+
         if (!PaymentMethod.CheckoutChoices.Contains(method))
         {
             throw new PaymentException(
@@ -60,9 +66,12 @@ public class PaymentService : IPaymentService
             throw new PaymentException("We couldn't find that order.");
         }
 
-        if (order.TotalAmount <= 0)
+        if (order.TotalAmount <= 0
+            || order.TotalAmount > 99999999.99m
+            || decimal.Round(order.TotalAmount, 2) != order.TotalAmount)
         {
-            throw new PaymentException("This order has nothing to pay.");
+            throw new PaymentException(
+                "This order does not have a valid payment amount.");
         }
 
         // An order has at most one payment row.
@@ -90,13 +99,15 @@ public class PaymentService : IPaymentService
             }
             catch (DbUpdateException ex)
             {
+                _db.Entry(payment).State = EntityState.Detached;
+
                 _logger.LogWarning(
                     ex,
                     "Could not create a payment for order {OrderId}",
                     orderId);
 
                 throw new PaymentException(
-                    "A payment for this order is already in progress.");
+                    "We couldn't save the payment. Please check its status before trying again.");
             }
         }
         else
@@ -123,9 +134,18 @@ public class PaymentService : IPaymentService
                 successUrl: $"{baseUrl}/Payments/Success?paymentId={payment.PaymentId}",
                 cancelUrl: $"{baseUrl}/Payments/Cancel?paymentId={payment.PaymentId}&attempt={payment.CreatedAt.Ticks}");
         }
-        catch (PaymentException)
+        catch (PaymentException ex) when (!ex.PaymentMayBeInProgress)
         {
-            await MarkFailedAsync(payment.PaymentId);
+            await _db.Payments
+                .Where(p => p.PaymentId == payment.PaymentId
+                    && p.CreatedAt == payment.CreatedAt
+                    && p.PaymentStatus == PaymentStatus.Pending
+                    && p.PaymentMethod == payment.PaymentMethod
+                    && p.TransactionRef == null
+                    && p.RecordedByStaffId == null)
+                .ExecuteUpdateAsync(s => s
+                    .SetProperty(p => p.PaymentStatus, PaymentStatus.Failed));
+
             throw;
         }
 
@@ -168,9 +188,6 @@ public class PaymentService : IPaymentService
         };
     }
 
-    /// <summary>
-    /// Starts a new attempt on the order's existing payment row.
-    /// </summary>
     private async Task<Payment> ReopenAsync(
         Payment existing,
         PaymentOrderInfo order,
@@ -189,7 +206,14 @@ public class PaymentService : IPaymentService
 
         if (existing.PaymentStatus == PaymentStatus.Pending)
         {
-            // Close the old Stripe page before replacing its attempt.
+            if (PaymentMethod.IsOnline(existing.PaymentMethod)
+                && string.IsNullOrWhiteSpace(existing.TransactionRef))
+            {
+                throw new PaymentException(
+                    "The previous online payment is not confirmed yet. Please contact the restaurant to check it before paying again.",
+                    paymentMayBeInProgress: true);
+            }
+
             if (!string.IsNullOrEmpty(existing.TransactionRef)
                 && existing.PaymentMethod != PaymentMethod.PayAtCounter
                 && !await _stripe.TryExpireSessionAsync(existing.TransactionRef))
@@ -200,19 +224,23 @@ public class PaymentService : IPaymentService
 
             await _db.Payments
                 .Where(p => p.PaymentId == existing.PaymentId
-                         && p.PaymentStatus == PaymentStatus.Pending)
+                    && p.CreatedAt == existing.CreatedAt
+                    && p.PaymentStatus == PaymentStatus.Pending)
                 .ExecuteUpdateAsync(s => s
-                    .SetProperty(
-                        p => p.PaymentStatus,
-                        PaymentStatus.Failed));
+                    .SetProperty(p => p.PaymentStatus, PaymentStatus.Failed));
         }
 
         DateTime now = DateTime.Now;
 
-        // Clear PaidAt in the same update to satisfy the status constraint.
+        if (now <= existing.CreatedAt)
+        {
+            now = existing.CreatedAt.AddTicks(1);
+        }
+
         var claimed = await _db.Payments
             .Where(p => p.PaymentId == existing.PaymentId
-                     && p.PaymentStatus == PaymentStatus.Failed)
+                && p.CreatedAt == existing.CreatedAt
+                && p.PaymentStatus == PaymentStatus.Failed)
             .ExecuteUpdateAsync(s => s
                 .SetProperty(p => p.PaymentStatus, PaymentStatus.Pending)
                 .SetProperty(p => p.PaymentMethod, method)
@@ -408,22 +436,44 @@ public class PaymentService : IPaymentService
         if (payment.PaymentStatus != PaymentStatus.Pending
             || payment.PaymentMethod == PaymentMethod.PayAtCounter)
         {
-            return;
+            throw new PaymentException(
+                "This payment is not waiting for online cancellation. Open your order to check its current status.");
         }
 
-        if (attempt.HasValue
-            && attempt.Value != payment.CreatedAt.Ticks)
+        if (attempt is not long attemptTicks
+            || attemptTicks != payment.CreatedAt.Ticks)
         {
-            return;
+            throw new PaymentException(
+                "This checkout link is no longer current. Open your order to check its payment status.");
         }
 
-        if (!string.IsNullOrEmpty(payment.TransactionRef)
-            && !await _stripe.TryExpireSessionAsync(payment.TransactionRef))
+        if (string.IsNullOrWhiteSpace(payment.TransactionRef))
         {
-            return;
+            throw new PaymentException(
+                "This payment is not confirmed yet. Please contact the restaurant to check it before cancelling or paying again.",
+                paymentMayBeInProgress: true);
         }
 
-        await MarkFailedAsync(paymentId, payment.TransactionRef);
+        if (!await _stripe.TryExpireSessionAsync(payment.TransactionRef))
+        {
+            throw new PaymentException(
+                "Cancellation is not confirmed. Your payment may still be processing. Please check your order.",
+                paymentMayBeInProgress: true);
+        }
+
+        var cancelled = await _db.Payments
+            .Where(p => p.PaymentId == paymentId
+                && p.CreatedAt == payment.CreatedAt
+                && p.PaymentStatus == PaymentStatus.Pending
+                && p.TransactionRef == payment.TransactionRef)
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(p => p.PaymentStatus, PaymentStatus.Failed));
+
+        if (cancelled == 0)
+        {
+            throw new PaymentException(
+                "This payment changed while cancellation was being checked. Please open your order to check its status.");
+        }
     }
 
     // ------------------------------------------------------------------------------------

@@ -1,3 +1,4 @@
+using System.Net;
 using System.Globalization;
 using Microsoft.Extensions.Options;
 using Stripe;
@@ -97,8 +98,28 @@ public class StripeGateway : IStripeGateway
                 "Stripe could not create a Checkout Session for payment {PaymentId}",
                 payment.PaymentId);
 
+            bool definiteRejection =
+                ex.HttpStatusCode == HttpStatusCode.BadRequest
+                && ex.StripeError?.Type == "invalid_request_error"
+                && ex.StripeError?.Code != "idempotency_key_in_use";
+
             throw new PaymentException(
-                "We couldn't start the online payment. Please try again or choose another method.");
+                definiteRejection
+                    ? "Stripe could not start checkout. Check the payment settings or choose another method."
+                    : "Stripe has not confirmed this attempt. Please check your payment status before trying again.",
+                paymentMayBeInProgress: !definiteRejection);
+        }
+        catch (Exception ex)
+            when (ex is HttpRequestException or OperationCanceledException)
+        {
+            _logger.LogWarning(
+                ex,
+                "Checkout response was interrupted for payment {PaymentId}",
+                payment.PaymentId);
+
+            throw new PaymentException(
+                "The connection was interrupted. Your payment status is not confirmed yet. Please check it before trying again.",
+                paymentMayBeInProgress: true);
         }
     }
 
