@@ -1,0 +1,93 @@
+@page
+@model QueueModel
+@{
+    ViewData["Title"] = "Order queue";
+}
+
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+    <h1 class="h3 mb-0">Order queue</h1>
+    <form method="get" class="d-flex flex-wrap gap-2">
+        <label for="status" class="visually-hidden">Status</label>
+        <select id="status" name="status" class="form-select w-auto">
+            <option value="" selected="@(Model.StatusFilter is null)">All active orders</option>
+            @foreach (var status in OrderStatus.All)
+            {
+                <option value="@status" selected="@(status == Model.StatusFilter)">@OrderFormatter.StatusFilterLabel(status)</option>
+            }
+        </select>
+        <button type="submit" class="btn btn-outline-primary">Show</button>
+    </form>
+</div>
+
+@if (Model.StatusMessage is not null)
+{
+    <div class="alert alert-success" role="status">@Model.StatusMessage</div>
+}
+@if (Model.ErrorMessage is not null)
+{
+    <div class="alert alert-danger" role="alert">@Model.ErrorMessage</div>
+}
+
+@if (Model.Orders.Count == 0)
+{
+    <div class="text-center text-muted border rounded py-5">
+        @(Model.StatusFilter is null ? "No orders waiting. New orders show up here by themselves." : "No orders with this status.")
+    </div>
+}
+else
+{
+    <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-3">
+        @foreach (var item in Model.Orders)
+        {
+            var order = item.Order;
+            <div class="col">
+                <div class="card h-100">
+                    <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+                        <div>
+                            <strong>@OrderFormatter.Table(order.TableId)</strong>
+                            <span class="small text-muted ms-1">@OrderFormatter.Reference(order.OrderId)</span>
+                        </div>
+                        <span class="badge @OrderFormatter.StatusBadge(order.Status)">@OrderFormatter.StatusLabel(order.Status)</span>
+                    </div>
+                    <div class="card-body">
+                        <p class="small text-muted mb-2">Placed @OrderFormatter.Time(order.CreatedAt) (@OrderFormatter.Waiting(order.CreatedAt))</p>
+                        <ul class="list-unstyled mb-3">
+                            @foreach (var line in item.Lines)
+                            {
+                                <li><strong>@line.Item.Quantity ×</strong> @line.MenuItemName</li>
+                            }
+                        </ul>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="badge @OrderFormatter.PaymentBadge(item.Payment)">@OrderFormatter.PaymentLabel(item.Payment)</span>
+                            <strong>@OrderFormatter.Money(order.Total)</strong>
+                        </div>
+                    </div>
+                    @if (item.AllowedStatusChanges.Count > 0)
+                    {
+                        <div class="card-footer d-flex flex-wrap gap-2">
+                            @foreach (var next in item.AllowedStatusChanges)
+                            {
+                                <form method="post" asp-page-handler="ChangeStatus" asp-route-status="@Model.StatusFilter">
+                                    <input type="hidden" name="id" value="@order.OrderId" />
+                                    <input type="hidden" name="newStatus" value="@next" />
+                                    <input type="hidden" name="rowVersion" value="@Convert.ToBase64String(order.RowVersion)" />
+                                    <button type="submit" class="btn btn-sm @OrderFormatter.StatusActionButton(next)"
+                                            onclick="@(next == OrderStatus.Cancelled ? "return confirm('Cancel this order?');" : null)">
+                                        @OrderFormatter.StatusAction(next)
+                                    </button>
+                                </form>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@section Scripts {
+    <script>
+        // New orders show up without pressing anything: reload the queue every 30 seconds.
+        setTimeout(function () { window.location.reload(); }, 30000);
+    </script>
+}
