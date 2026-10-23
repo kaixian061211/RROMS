@@ -57,6 +57,6 @@ public class CollectModel : PageModel
         }
 
         TempData["Success"] = "Payment recorded. The customer has been notified.";
-        return RedirectToPage("Counter");
+        return RedirectToPage("Details", new { id = Id });
     }
 }
