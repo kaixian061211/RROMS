@@ -1,0 +1,56 @@
+@page
+@model RROMS.Web.Pages.Payments.CounterModel
+@{
+    ViewData["Title"] = "Counter payments";
+}
+
+<partial name="_PaymentPageHeader" />
+
+<div class="d-flex justify-content-between align-items-end mb-3">
+    <div>
+        <h1 class="h3 mb-1">Counter payments</h1>
+        <p class="text-muted mb-0">Orders waiting to be paid at the restaurant, oldest first.</p>
+    </div>
+    <a class="btn btn-outline-secondary btn-sm" asp-page="Counter">Refresh</a>
+</div>
+
+@if (Model.Queue.Count == 0)
+{
+    <div class="alert alert-success">Nothing is waiting to be collected.</div>
+}
+else
+{
+    <div class="table-responsive bg-white border rounded">
+        <table class="table mb-0">
+            <thead>
+                <tr>
+                    <th>Reference</th>
+                    <th>Order</th>
+                    <th>Customer</th>
+                    <th>Waiting since</th>
+                    <th class="num">Amount</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var payment in Model.Queue)
+                {
+                    <tr>
+                        <td>@payment.ReceiptNo</td>
+                        <td>@payment.OrderLabel</td>
+                        <td>@payment.CustomerName</td>
+                        <td>@PaymentFormatter.When(payment.CreatedAt)</td>
+                        <td class="num">@PaymentFormatter.Money(payment.Amount)</td>
+                        <td class="text-end">
+                            <form method="post" asp-page-handler="Void" asp-route-paymentId="@payment.PaymentId"
+                                  class="d-inline" onsubmit="return confirm('Cancel this payment? The customer will need to choose a payment method again.');">
+                                <button type="submit" class="btn btn-sm btn-outline-danger">Cancel</button>
+                            </form>
+                            <a class="btn btn-sm btn-primary" asp-page="Collect" asp-route-id="@payment.PaymentId">Collect</a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
