@@ -1,0 +1,27 @@
+@page
+@model RROMS.Web.Pages.Payments.CancelModel
+@{
+    ViewData["Title"] = "Payment cancelled";
+}
+
+<partial name="_PaymentPageHeader" />
+
+<div class="status-panel text-center">
+    <div class="status-icon pending mb-3" aria-hidden="true">!</div>
+    <h1 class="h3">Payment cancelled</h1>
+    @if (Model.Problem is not null)
+    {
+        <p class="text-muted">@Model.Problem</p>
+    }
+    else
+    {
+        <p class="text-muted">Nothing was charged. Your order is still waiting for payment.</p>
+    }
+    <div class="d-flex justify-content-center gap-2">
+        @if (Model.OrderId.HasValue)
+        {
+            <a class="btn btn-primary" asp-page="Checkout" asp-route-orderId="@Model.OrderId">Choose how to pay</a>
+        }
+        <a class="btn btn-outline-secondary" asp-page="MyOrders">My orders</a>
+    </div>
+</div>

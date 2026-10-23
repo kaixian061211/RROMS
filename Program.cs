@@ -1,9 +1,11 @@
 using Microsoft.EntityFrameworkCore;
+using QuestPDF.Infrastructure;
 using RROMS.Web.Data;
 using RROMS.Web.Services.Payments;
 using RROMS.Web.Services.Payments.Gateways;
 using RROMS.Web.Services.Payments.Notifications;
 using RROMS.Web.Services.OrdersAndReservations;
+using RROMS.Web.Services.Payments.Receipts;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,21 +13,29 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
     ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 
 builder.Services.AddDbContext<AppDbContext>(o => o.UseSqlServer(connectionString));
+builder.Services.AddRazorPages();
+builder.Services.AddAuthentication();
+
 builder.Services.AddScoped<IReservationService, ReservationService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
 // TODO: use a lookup that reads the real MenuItem table once it's on main.
 builder.Services.AddScoped<IMenuItemLookup, TemporaryMenuItemLookup>();
-builder.Services.AddRazorPages();
+builder.Services.AddScoped<IPaymentOrderProvider, PaymentOrderProvider>();
+builder.Services.AddHttpContextAccessor();
+
 
 // ---- Payment module ----
 
 builder.Services.Configure<StripeSettings>(builder.Configuration.GetSection(StripeSettings.SectionName));
 builder.Services.AddSingleton<IStripeGateway, StripeGateway>();
-builder.Services.AddScoped<IPaymentOrderProvider, PaymentOrderProvider>();
 builder.Services.AddScoped<IPaymentQueries, PaymentQueries>();
 builder.Services.AddScoped<IPaymentNotifier, LoggingPaymentNotifier>();
-builder.Services.AddHttpContextAccessor();
+builder.Services.Configure<SmtpSettings>(builder.Configuration.GetSection(SmtpSettings.SectionName));
+builder.Services.AddScoped<IPaymentNotifier, EmailPaymentNotifier>();
 builder.Services.AddScoped<IPaymentService, PaymentService>();
+QuestPDF.Settings.License = LicenseType.Community;
+builder.Services.AddSingleton<IReceiptService, ReceiptService>();
+builder.Services.AddScoped<StripeWebhookHandler>();
 
 var app = builder.Build();
 
@@ -37,10 +47,12 @@ if (!app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseRouting();
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapStaticAssets();
 app.MapRazorPages().WithStaticAssets();
+app.MapStripeWebhook();   // POST /webhooks/stripe
 
 // Dev only: create the database on startup
 if (app.Environment.IsDevelopment())

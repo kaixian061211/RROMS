@@ -1,0 +1,57 @@
+@page
+@model RROMS.Web.Pages.Payments.HistoryModel
+@{
+    ViewData["Title"] = "Payment history";
+}
+
+<partial name="_PaymentPageHeader" />
+
+<h1 class="h3 mb-3">Payment history</h1>
+
+@if (Model.Payments.Count == 0)
+{
+    <div class="alert alert-info">You haven't made any payments yet.</div>
+}
+else
+{
+    <div class="table-responsive bg-white border rounded">
+        <table class="table mb-0">
+            <thead>
+                <tr>
+                    <th>Reference</th>
+                    <th>Order</th>
+                    <th>Method</th>
+                    <th>Status</th>
+                    <th class="num">Amount</th>
+                    <th>Date</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var payment in Model.Payments)
+                {
+                    <tr>
+                        <td>@payment.ReceiptNo</td>
+                        <td>@payment.OrderLabel</td>
+                        <td>@PaymentFormatter.MethodLabel(payment.Method)</td>
+                        <td><span class="badge @PaymentFormatter.StatusBadge(payment.Status)">@PaymentFormatter.StatusLabel(payment.Status)</span></td>
+                        <td class="num">@PaymentFormatter.Money(payment.Amount)</td>
+                        <td>@PaymentFormatter.When(payment.PaidAt ?? payment.CreatedAt)</td>
+                        <td class="text-end">
+                            @if (payment.HasReceipt)
+                            {
+                                <a class="btn btn-sm btn-outline-secondary" asp-page="Receipt" asp-route-id="@payment.PaymentId">Receipt</a>
+                            }
+                            else if (payment.Status == PaymentStatus.Pending || payment.Status == PaymentStatus.Failed)
+                            {
+                                <a class="btn btn-sm btn-outline-secondary" asp-page="Checkout" asp-route-orderId="@payment.OrderId">
+                                    @(payment.Status == PaymentStatus.Failed ? "Try again" : "Change payment")
+                                </a>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

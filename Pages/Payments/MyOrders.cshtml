@@ -1,0 +1,67 @@
+@page
+@model RROMS.Web.Pages.Payments.MyOrdersModel
+@{
+    ViewData["Title"] = "My orders";
+}
+
+<partial name="_PaymentPageHeader" />
+
+<h1 class="h3 mb-1">My orders</h1>
+<p class="text-muted">Pay for an order online, or choose to pay when you're at the restaurant.</p>
+
+@if (Model.Orders.Count == 0)
+{
+    <div class="alert alert-info">You haven't placed any orders yet.</div>
+}
+else
+{
+    <div class="table-responsive bg-white border rounded">
+        <table class="table mb-0">
+            <thead>
+                <tr>
+                    <th>Order</th>
+                    <th class="num">Total</th>
+                    <th>Payment</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var order in Model.Orders)
+                {
+                    <tr>
+                        <td>#@order.OrderId</td>
+                        <td class="num">@PaymentFormatter.Money(order.TotalAmount)</td>
+                        <td>
+                            @if (order.Status is null)
+                            {
+                                <span class="badge text-bg-light border">Unpaid</span>
+                            }
+                            else
+                            {
+                                <span class="badge @PaymentFormatter.StatusBadge(order.Status)">@PaymentFormatter.StatusLabel(order.Status)</span>
+                                @if (order.IsAwaitingCounter)
+                                {
+                                    <div class="small text-muted">Pay at the counter</div>
+                                }
+                            }
+                        </td>
+                        <td class="text-end">
+                            @if (order.Status is null || order.Status == PaymentStatus.Failed)
+                            {
+                                <a class="btn btn-sm btn-primary" asp-page="Checkout" asp-route-orderId="@order.OrderId">Pay now</a>
+                            }
+                            else if (order.Status == PaymentStatus.Pending)
+                            {
+                                <a class="btn btn-sm btn-outline-secondary" asp-page="Checkout" asp-route-orderId="@order.OrderId">Change payment</a>
+                            }
+                            else if (order.PaymentId.HasValue)
+                            {
+                                <a class="btn btn-sm btn-outline-secondary" asp-page="Receipt" asp-route-id="@order.PaymentId">Receipt</a>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
