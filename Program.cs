@@ -27,6 +27,8 @@ builder.Services.Configure<StripeSettings>(builder.Configuration.GetSection(Stri
 builder.Services.AddSingleton<IStripeGateway, StripeGateway>();
 builder.Services.AddScoped<IPaymentQueries, PaymentQueries>();
 builder.Services.AddScoped<IPaymentNotifier, LoggingPaymentNotifier>();
+builder.Services.Configure<SmtpSettings>(builder.Configuration.GetSection(SmtpSettings.SectionName));
+builder.Services.AddScoped<IPaymentNotifier, EmailPaymentNotifier>();
 builder.Services.AddScoped<IPaymentService, PaymentService>();
 QuestPDF.Settings.License = LicenseType.Community;
 builder.Services.AddSingleton<IReceiptService, ReceiptService>();
