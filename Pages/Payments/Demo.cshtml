@@ -1,0 +1,35 @@
+@page
+@model RROMS.Web.Pages.Payments.DemoModel
+@{
+    ViewData["Title"] = "Payments";
+}
+<h1 class="h3 mb-2">Payments</h1>
+<p class="text-muted">View orders, make payments, and manage payment records.</p>
+<div class="row g-3 mb-4">
+    <div class="col-md-6">
+        <div class="card h-100"><div class="card-body">
+            <h2 class="h5">My payments</h2>
+            <p>Create an order, choose a payment method, view history and download receipts.</p>
+            <a class="btn btn-primary" asp-page="MyOrders">View orders</a>
+            <a class="btn btn-outline-secondary" asp-page="History">View my payments</a>
+        </div></div>
+    </div>
+    <div class="col-md-6">
+        <div class="card h-100"><div class="card-body">
+            <h2 class="h5">Manage payments</h2>
+            <p>Collect payments, void pending counter payments, search records and record full refunds.</p>
+            <a class="btn btn-primary" asp-page="Counter">Collect payments</a>
+            <a class="btn btn-outline-secondary" asp-page="Index">Manage payments</a>
+        </div></div>
+    </div>
+</div>
+<div class="border rounded p-3">
+    <h2 class="h5">Payment process</h2>
+    <ol class="mb-0">
+        <li>Open the customer view, select <strong>Order food</strong> and place an order.</li>
+        <li>Select <strong>Pay now</strong>, choose <strong>Pay at the counter</strong> and confirm.</li>
+        <li>Open <strong>Counter payments</strong> from the navigation and collect the payment.</li>
+        <li>Open payment details to download a receipt or record a refund after returning the money manually.</li>
+        <li>Open <strong>My payments</strong> to check payment history.</li>
+    </ol>
+</div>

@@ -1,17 +1,30 @@
 @page
 @model RROMS.Web.Pages.Payments.MyOrdersModel
 @{
-    ViewData["Title"] = "My orders";
+    ViewData["Title"] = "Orders for payment";
 }
 
 <partial name="_PaymentPageHeader" />
 
-<h1 class="h3 mb-1">My orders</h1>
-<p class="text-muted">Pay for an order online, or choose to pay when you're at the restaurant.</p>
+<h1 class="h3 mb-1">Orders for payment</h1>
+
+<p class="text-muted">
+    Pay for an order online, or choose to pay when you're at the restaurant.
+</p>
+
+<div class="d-flex gap-2 mb-3">
+    <a class="btn btn-primary"
+       asp-page="/Orders/Create">Order food</a>
+
+    <a class="btn btn-outline-secondary"
+       asp-page="History">My payments</a>
+</div>
 
 @if (Model.Orders.Count == 0)
 {
-    <div class="alert alert-info">You haven't placed any orders yet.</div>
+    <div class="alert alert-info">
+        You haven't placed any orders yet.
+    </div>
 }
 else
 {
@@ -30,33 +43,66 @@ else
                 {
                     <tr>
                         <td>#@order.OrderId</td>
-                        <td class="num">@PaymentFormatter.Money(order.TotalAmount)</td>
+                        <td class="num">
+                            @PaymentFormatter.Money(order.TotalAmount)
+                        </td>
                         <td>
                             @if (order.Status is null)
                             {
-                                <span class="badge text-bg-light border">Unpaid</span>
+                                <span class="badge text-bg-light border">
+                                    Unpaid
+                                </span>
                             }
                             else
                             {
-                                <span class="badge @PaymentFormatter.StatusBadge(order.Status)">@PaymentFormatter.StatusLabel(order.Status)</span>
+                                <span class="badge @PaymentFormatter.StatusBadge(order.Status)">
+                                    @PaymentFormatter.StatusLabel(order.Status)
+                                </span>
+
                                 @if (order.IsAwaitingCounter)
                                 {
-                                    <div class="small text-muted">Pay at the counter</div>
+                                    <div class="small text-muted">
+                                        Pay at the counter
+                                    </div>
                                 }
                             }
                         </td>
                         <td class="text-end">
-                            @if (order.Status is null || order.Status == PaymentStatus.Failed)
+                            @if (order.Status is PaymentStatus.Paid or PaymentStatus.Refunded &&
+                                 order.PaymentId is not null)
                             {
-                                <a class="btn btn-sm btn-primary" asp-page="Checkout" asp-route-orderId="@order.OrderId">Pay now</a>
+                                <a class="btn btn-sm btn-outline-secondary"
+                                   asp-page="Receipt"
+                                   asp-route-id="@order.PaymentId">
+                                    Receipt
+                                </a>
                             }
-                            else if (order.Status == PaymentStatus.Pending)
+                            else if (
+                                order.OrderStatus ==
+                                RROMS.Web.Models.OrdersAndReservations.OrderStatus.Cancelled)
                             {
-                                <a class="btn btn-sm btn-outline-secondary" asp-page="Checkout" asp-route-orderId="@order.OrderId">Change payment</a>
+                                <span class="text-muted">
+                                    Order cancelled
+                                </span>
                             }
-                            else if (order.PaymentId.HasValue)
+                            else if (
+                                order.Status is null ||
+                                order.Status == PaymentStatus.Failed)
                             {
-                                <a class="btn btn-sm btn-outline-secondary" asp-page="Receipt" asp-route-id="@order.PaymentId">Receipt</a>
+                                <a class="btn btn-sm btn-primary"
+                                   asp-page="Checkout"
+                                   asp-route-orderId="@order.OrderId">
+                                    Pay now
+                                </a>
+                            }
+                            else if (
+                                order.Status == PaymentStatus.Pending)
+                            {
+                                <a class="btn btn-sm btn-outline-secondary"
+                                   asp-page="Checkout"
+                                   asp-route-orderId="@order.OrderId">
+                                    Change payment
+                                </a>
                             }
                         </td>
                     </tr>

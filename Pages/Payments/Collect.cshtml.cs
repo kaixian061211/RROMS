@@ -6,17 +6,21 @@ using RROMS.Web.Services.Payments;
 
 namespace RROMS.Web.Pages.Payments;
 
-/// <summary>Staff record the money they took at the restaurant. Staff and administrators only.</summary>
 [Authorize(Roles = PaymentRoles.AdminOrStaff)]
 public class CollectModel : PageModel
 {
     private readonly IPaymentQueries _queries;
     private readonly IPaymentService _payments;
+    private readonly ILogger<CollectModel> _logger;
 
-    public CollectModel(IPaymentQueries queries, IPaymentService payments)
+    public CollectModel(
+        IPaymentQueries queries,
+        IPaymentService payments,
+        ILogger<CollectModel> logger)
     {
         _queries = queries;
         _payments = payments;
+        _logger = logger;
     }
 
     [BindProperty(SupportsGet = true)]
@@ -29,34 +33,126 @@ public class CollectModel : PageModel
 
     public async Task<IActionResult> OnGetAsync()
     {
-        Payment = await _queries.GetDetailsAsync(Id);
-        if (Payment is null)
+        if (!User.TryGetPaymentUserId(out var staffId) ||
+            staffId <= 0)
         {
-            return NotFound();
+            return Forbid();
         }
 
-        if (!Payment.IsAwaitingCounter)
+        if (Id <= 0 || !ModelState.IsValid)
         {
-            TempData["Info"] = "That payment is no longer waiting to be collected.";
-            return RedirectToPage("Counter");
+            return BadRequest("Choose a valid payment.");
         }
 
-        return Page();
+        try
+        {
+            Payment = await _queries.GetDetailsAsync(Id);
+
+            if (Payment is null)
+            {
+                return NotFound();
+            }
+
+            if (!Payment.CanCollectAtCounter)
+            {
+                TempData["Info"] =
+                    "That payment is no longer available for collection. Its order may have been cancelled.";
+
+                return RedirectToPage("Counter");
+            }
+
+            return Page();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(
+                ex,
+                "Could not load counter payment {PaymentId}",
+                Id);
+
+            return StatusCode(
+                StatusCodes.Status500InternalServerError,
+                "The payment could not be loaded. Please try again later.");
+        }
     }
 
     public async Task<IActionResult> OnPostAsync()
     {
+        if (!User.TryGetPaymentUserId(out var staffId) ||
+            staffId <= 0)
+        {
+            return Forbid();
+        }
+
+        if (Id <= 0 ||
+            ModelState[nameof(Id)]?.Errors.Count > 0)
+        {
+            return BadRequest("Choose a valid payment.");
+        }
+
         try
         {
-            await _payments.CollectAtCounterAsync(Id, User.GetPaymentUserId(), Method);
+            Payment = await _queries.GetDetailsAsync(Id);
+
+            if (Payment is null)
+            {
+                return NotFound();
+            }
+
+            if (!Payment.CanCollectAtCounter)
+            {
+                TempData["Info"] =
+                    "That payment is no longer available for collection. Its order may have been cancelled.";
+
+                return RedirectToPage("Counter");
+            }
+
+            if (!PaymentMethod.CounterMethods.Contains(Method))
+            {
+                ModelState.AddModelError(
+                    nameof(Method),
+                    "Choose cash, card or e-wallet.");
+            }
+
+            if (!ModelState.IsValid)
+            {
+                return Page();
+            }
+
+            await _payments.CollectAtCounterAsync(
+                Id,
+                staffId,
+                Method);
+
+            TempData["Success"] = "Payment recorded.";
+
+            return RedirectToPage(
+                "Details",
+                new { id = Id });
         }
         catch (PaymentException ex)
         {
-            TempData["Error"] = ex.Message;
-            return RedirectToPage(new { id = Id });
-        }
+            if (Payment is null)
+            {
+                return BadRequest(ex.Message);
+            }
 
-        TempData["Success"] = "Payment recorded. The customer has been notified.";
-        return RedirectToPage("Details", new { id = Id });
+            ModelState.AddModelError(
+                string.Empty,
+                ex.Message);
+
+            return Page();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(
+                ex,
+                "Counter collection could not be confirmed for payment {PaymentId}",
+                Id);
+
+            return StatusCode(
+                StatusCodes.Status500InternalServerError,
+                "The payment could not be confirmed. Check its current status before recording it again.");
+        }
     }
 }

@@ -3,6 +3,7 @@ namespace RROMS.Web.Models.Payments;
 public class PaymentOrderInfo
 {
     public int OrderId { get; set; }
+    public string OrderStatus { get; set; } = string.Empty;
 
     /// <summary>
     /// The customer's user ID, or null for a guest order.

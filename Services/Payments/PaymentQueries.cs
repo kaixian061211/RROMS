@@ -77,7 +77,9 @@ public class PaymentQueries : IPaymentQueries
         var orders = await _orders.GetOrdersForCustomerAsync(
             customerUserId);
 
-        var orderIds = orders.Select(o => o.OrderId).ToList();
+        var orderIds = orders
+            .Select(o => o.OrderId)
+            .ToList();
 
         if (orderIds.Count == 0)
         {
@@ -225,6 +227,7 @@ public class PaymentQueries : IPaymentQueries
             {
                 PaymentId = payment.PaymentId,
                 OrderId = payment.OrderId,
+                OrderStatus = order?.OrderStatus ?? string.Empty,
 
                 CustomerId = order?.CustomerUserId,
                 CustomerName = order?.CustomerName ?? "-",

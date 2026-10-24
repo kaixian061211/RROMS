@@ -6,15 +6,18 @@ using RROMS.Web.Services.Payments;
 
 namespace RROMS.Web.Pages.Payments;
 
-/// <summary>All payments, with filters. Staff and administrators only; exports are administrators only.</summary>
 [Authorize(Roles = PaymentRoles.AdminOrStaff)]
 public class IndexModel : PageModel
 {
     private readonly IPaymentQueries _queries;
+    private readonly ILogger<IndexModel> _logger;
 
-    public IndexModel(IPaymentQueries queries)
+    public IndexModel(
+        IPaymentQueries queries,
+        ILogger<IndexModel> logger)
     {
         _queries = queries;
+        _logger = logger;
     }
 
     [BindProperty(SupportsGet = true)]
@@ -22,10 +25,37 @@ public class IndexModel : PageModel
 
     public List<PaymentDetails> Rows { get; private set; } = new();
 
-    public decimal PaidTotal => Rows.Where(r => r.Status == PaymentStatus.Paid).Sum(r => r.Amount);
+    public decimal PaidTotal =>
+        Rows
+            .Where(row => row.Status == PaymentStatus.Paid)
+            .Sum(row => row.Amount);
 
-    public async Task OnGetAsync()
+    public async Task<IActionResult> OnGetAsync()
     {
-        Rows = await _queries.SearchAsync(Filter);
+        if (!ModelState.IsValid)
+        {
+            return Page();
+        }
+
+        try
+        {
+            Rows = await _queries.SearchAsync(Filter);
+            return Page();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(
+                ex,
+                "Could not load the payment transaction list");
+
+            Response.StatusCode =
+                StatusCodes.Status500InternalServerError;
+
+            ModelState.AddModelError(
+                string.Empty,
+                "Payments could not be loaded. Please try again later.");
+
+            return Page();
+        }
     }
 }

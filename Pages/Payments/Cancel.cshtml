@@ -1,27 +1,55 @@
 @page
 @model RROMS.Web.Pages.Payments.CancelModel
+@using RROMS.Web.Models.Payments
+
 @{
-    ViewData["Title"] = "Payment cancelled";
+    ViewData["Title"] = Model.Cancelled
+        ? "Checkout cancelled"
+        : "Checkout status";
 }
 
 <partial name="_PaymentPageHeader" />
 
 <div class="status-panel text-center">
     <div class="status-icon pending mb-3" aria-hidden="true">!</div>
-    <h1 class="h3">Payment cancelled</h1>
-    @if (Model.Problem is not null)
+
+    <h1 class="h3">@ViewData["Title"]</h1>
+
+    <p class="text-muted">
+        Order #@Model.Payment.OrderId
+    </p>
+
+    <p>@Model.Message</p>
+
+    <div asp-validation-summary="All"
+         class="text-danger mb-3"
+         role="alert"></div>
+
+    @if (Model.CanCancel)
     {
-        <p class="text-muted">@Model.Problem</p>
+        <form method="post" class="mb-3">
+            <input type="hidden" asp-for="PaymentId" />
+            <input type="hidden" asp-for="Attempt" />
+
+            <button type="submit" class="btn btn-outline-danger">
+                Cancel this checkout
+            </button>
+        </form>
     }
-    else
-    {
-        <p class="text-muted">Nothing was charged. Your order is still waiting for payment.</p>
-    }
+
     <div class="d-flex justify-content-center gap-2">
-        @if (Model.OrderId.HasValue)
+        @if (Model.Payment.Status == PaymentStatus.Failed)
         {
-            <a class="btn btn-primary" asp-page="Checkout" asp-route-orderId="@Model.OrderId">Choose how to pay</a>
+            <a class="btn btn-primary"
+               asp-page="CheckOut"
+               asp-route-orderId="@Model.Payment.OrderId">
+                Choose how to pay
+            </a>
         }
-        <a class="btn btn-outline-secondary" asp-page="MyOrders">My orders</a>
+
+        <a class="btn btn-outline-secondary"
+           asp-page="MyOrders">
+            My orders
+        </a>
     </div>
 </div>

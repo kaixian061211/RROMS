@@ -2,10 +2,21 @@
 @model RROMS.Web.Pages.Payments.DetailsModel
 @{
     ViewData["Title"] = "Payment details";
+
     var payment = Model.Payment!;
-    var customerText = string.IsNullOrWhiteSpace(payment.CustomerEmail)
-        ? payment.CustomerName
-        : $"{payment.CustomerName} ({payment.CustomerEmail})";
+
+    var canManage =
+        User.IsInRole(PaymentRoles.Staff) ||
+        User.IsInRole(PaymentRoles.Admin);
+
+    var onlinePayment =
+        payment.RecordedByStaffId is null &&
+        PaymentMethod.IsOnline(payment.Method);
+
+    var customerText =
+        string.IsNullOrWhiteSpace(payment.CustomerEmail)
+            ? payment.CustomerName
+            : $"{payment.CustomerName} ({payment.CustomerEmail})";
 }
 
 <partial name="_PaymentPageHeader" />
@@ -13,51 +24,152 @@
 <div class="row g-4">
     <div class="col-lg-7">
         <div class="d-flex align-items-center gap-3 mb-3">
-            <h1 class="h3 mb-0">Payment @payment.ReceiptNo</h1>
-            <span class="badge @PaymentFormatter.StatusBadge(payment.Status)">@PaymentFormatter.StatusLabel(payment.Status)</span>
+            <h1 class="h3 mb-0">
+                Payment @payment.ReceiptNo
+            </h1>
+            <span class="badge @PaymentFormatter.StatusBadge(payment.Status)">
+                @PaymentFormatter.StatusLabel(payment.Status)
+            </span>
         </div>
 
         <div class="d-flex flex-wrap gap-2 mb-4">
             @if (payment.HasReceipt)
             {
-                <a class="btn btn-primary" asp-page="Receipt" asp-route-id="@payment.PaymentId">Download receipt</a>
+                <a class="btn btn-primary"
+                   asp-page="Receipt"
+                   asp-route-id="@payment.PaymentId">
+                    Download receipt
+                </a>
             }
-            @if (payment.IsAwaitingCounter)
+
+            @if (payment.CanCollectAtCounter && canManage)
             {
-                <a class="btn btn-primary" asp-page="Collect" asp-route-id="@payment.PaymentId">Collect payment</a>
+                <a class="btn btn-primary"
+                   asp-page="Collect"
+                   asp-route-id="@payment.PaymentId">
+                    Collect payment
+                </a>
             }
-            @if (payment.Status == PaymentStatus.Paid && User.IsInRole(PaymentRoles.Admin))
+
+            @if (payment.Status == PaymentStatus.Paid && canManage)
             {
-                <form method="post" asp-page-handler="Refund" asp-route-id="@payment.PaymentId" class="d-inline"
-                      onsubmit="return confirm('Refund @PaymentFormatter.Money(payment.Amount) in full? This cannot be undone.');">
-                    <input type="text" name="reason" maxlength="200" class="form-control form-control-sm d-inline-block w-auto me-1"
-                           placeholder="Reason (optional)" aria-label="Refund reason" />
-                    <button type="submit" class="btn btn-outline-danger">Refund in full</button>
+                <form method="post"
+                      asp-page-handler="Refund"
+                      asp-route-id="@payment.PaymentId"
+                      class="d-inline">
+
+                    <input type="text"
+                           name="reason"
+                           maxlength="200"
+                           class="form-control form-control-sm d-inline-block w-auto me-1"
+                           placeholder="Reason (optional)"
+                           aria-label="Refund reason" />
+
+                    <button type="submit"
+                            class="btn btn-outline-danger"
+                            onclick="return confirm('Refund @PaymentFormatter.Money(payment.Amount) in full? A confirmed failed attempt may be retried.');">
+                        @(onlinePayment
+                            ? "Refund / retry in full"
+                            : "Refund in full")
+                    </button>
+
+                    @if (onlinePayment &&
+                         !string.IsNullOrWhiteSpace(
+                             payment.StripePaymentIntentId))
+                    {
+                        <button type="submit"
+                                asp-page-handler="RecheckRefund"
+                                asp-route-id="@payment.PaymentId"
+                                class="btn btn-outline-secondary">
+                            Recheck refund
+                        </button>
+
+                        <div class="small text-muted mt-2">
+                            Recheck pending refunds. A new refund is created
+                            only when no refund exists or the previous attempt
+                            is confirmed failed/cancelled.
+                        </div>
+                    }
                 </form>
             }
-            <a class="btn btn-outline-secondary" asp-page="Index">Back to all payments</a>
+
+            <a class="btn btn-outline-secondary"
+               asp-page="Index">
+                Back to manage payments
+            </a>
         </div>
 
         <div class="bill p-4">
-            <div class="bill-row"><span class="label">Customer</span><span>@customerText</span></div>
-            <div class="bill-row"><span class="label">Order</span><span>@payment.OrderLabel</span></div>
-            <div class="bill-row"><span class="label">Method</span><span>@PaymentFormatter.MethodLabel(payment.Method)</span></div>
-            <div class="bill-row"><span class="label">Recorded by (staff)</span><span>@payment.StaffName</span></div>
+            <div class="bill-row">
+                <span class="label">Customer</span>
+                <span>@customerText</span>
+            </div>
+
+            <div class="bill-row">
+                <span class="label">Order</span>
+                <span>@payment.OrderLabel</span>
+            </div>
+
+            <div class="bill-row">
+                <span class="label">Method</span>
+                <span>
+                    @PaymentFormatter.MethodLabel(payment.Method)
+                </span>
+            </div>
+
+            <div class="bill-row">
+                <span class="label">Recorded by (staff)</span>
+                <span>@payment.StaffName</span>
+            </div>
+
             @if (!string.IsNullOrEmpty(payment.TransactionRef))
             {
-                <div class="bill-row"><span class="label">Stripe reference</span><span class="text-break">@payment.TransactionRef</span></div>
+                <div class="bill-row">
+                    <span class="label">Stripe reference</span>
+                    <span class="text-break">
+                        @payment.TransactionRef
+                    </span>
+                </div>
             }
-            <div class="bill-row"><span class="label">Created</span><span>@PaymentFormatter.When(payment.CreatedAt)</span></div>
-            <div class="bill-row"><span class="label">Paid</span><span>@PaymentFormatter.When(payment.PaidAt)</span></div>
+
+            <div class="bill-row">
+                <span class="label">Created</span>
+                <span>
+                    @PaymentFormatter.When(payment.CreatedAt)
+                </span>
+            </div>
+
+            <div class="bill-row">
+                <span class="label">Paid</span>
+                <span>
+                    @PaymentFormatter.When(payment.PaidAt)
+                </span>
+            </div>
+
             @if (payment.RefundedAt.HasValue)
             {
-                <div class="bill-row"><span class="label">Refunded</span><span>@PaymentFormatter.When(payment.RefundedAt)</span></div>
+                <div class="bill-row">
+                    <span class="label">Refunded</span>
+                    <span>
+                        @PaymentFormatter.When(payment.RefundedAt)
+                    </span>
+                </div>
+
                 @if (!string.IsNullOrWhiteSpace(payment.RefundReason))
                 {
-                    <div class="bill-row"><span class="label">Refund reason</span><span>@payment.RefundReason</span></div>
+                    <div class="bill-row">
+                        <span class="label">Refund reason</span>
+                        <span>@payment.RefundReason</span>
+                    </div>
                 }
             }
-            <div class="bill-total"><span>Amount</span><span>@PaymentFormatter.Money(payment.Amount)</span></div>
+
+            <div class="bill-total">
+                <span>Amount</span>
+                <span>
+                    @PaymentFormatter.Money(payment.Amount)
+                </span>
+            </div>
         </div>
     </div>
 </div>

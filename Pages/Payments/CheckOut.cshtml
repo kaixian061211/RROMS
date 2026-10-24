@@ -13,6 +13,10 @@
         <p class="text-muted">Choose how you'd like to pay.</p>
 
         <form method="post">
+            <div asp-validation-summary="All"
+                class="text-danger mb-3"
+                role="alert"></div>
+
             <input type="hidden" asp-for="OrderId" />
 
             <div class="d-grid gap-2 mb-4">
@@ -29,7 +33,7 @@
             </div>
 
             <button type="submit" class="btn btn-primary btn-lg">Continue</button>
-            <a class="btn btn-link" asp-page="MyOrders">Back to my orders</a>
+            <a class="btn btn-link" asp-page="MyOrders">Back to orders for payment</a>
         </form>
     </div>
 

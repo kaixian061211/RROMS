@@ -1,3 +1,5 @@
+using OrderStatuses = RROMS.Web.Models.OrdersAndReservations.OrderStatus;
+
 namespace RROMS.Web.Models.Payments;
 
 /// <summary>
@@ -8,6 +10,7 @@ public class PaymentDetails
 {
     public int PaymentId { get; set; }
     public int OrderId { get; set; }
+    public string OrderStatus { get; set; } = string.Empty;
 
     public int? CustomerId { get; set; }
     public string CustomerName { get; set; } = "-";
@@ -37,6 +40,9 @@ public class PaymentDetails
     public bool IsAwaitingCounter =>
         Status == PaymentStatus.Pending &&
         Method == PaymentMethod.PayAtCounter;
+
+    public bool CanCollectAtCounter =>
+        IsAwaitingCounter && OrderStatus != OrderStatuses.Cancelled;
 
     public bool HasReceipt =>
         Status is PaymentStatus.Paid or PaymentStatus.Refunded;
