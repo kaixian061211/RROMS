@@ -26,13 +26,24 @@
             {
                 <a class="btn btn-primary" asp-page="Collect" asp-route-id="@payment.PaymentId">Collect payment</a>
             }
-            @if (payment.Status == PaymentStatus.Paid && User.IsInRole(PaymentRoles.Admin))
+            @if (payment.Status == PaymentStatus.Paid && User.IsInRole(PaymentRoles.Staff))
             {
-                <form method="post" asp-page-handler="Refund" asp-route-id="@payment.PaymentId" class="d-inline"
-                      onsubmit="return confirm('Refund @PaymentFormatter.Money(payment.Amount) in full? This cannot be undone.');">
-                    <input type="text" name="reason" maxlength="200" class="form-control form-control-sm d-inline-block w-auto me-1"
-                           placeholder="Reason (optional)" aria-label="Refund reason" />
-                    <button type="submit" class="btn btn-outline-danger">Refund in full</button>
+                <form method="post"
+                    asp-page-handler="Refund"
+                    asp-route-id="@payment.PaymentId"
+                    class="d-inline"
+                    onsubmit="return confirm('Refund @PaymentFormatter.Money(payment.Amount) in full? This cannot be undone.');">
+
+                    <input type="text"
+                        name="reason"
+                        maxlength="200"
+                        class="form-control form-control-sm d-inline-block w-auto me-1"
+                        placeholder="Reason (optional)"
+                        aria-label="Refund reason" />
+
+                    <button type="submit" class="btn btn-outline-danger">
+                        Refund in full
+                    </button>
                 </form>
             }
             <a class="btn btn-outline-secondary" asp-page="Index">Back to all payments</a>

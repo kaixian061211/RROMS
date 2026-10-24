@@ -48,8 +48,8 @@ public interface IPaymentService
     Task VoidPendingAsync(int paymentId, int staffUserId);
 
     /// <summary>
-    /// Admin refund in full, with an optional reason (max 200 characters).
-    /// Online payments are refunded through Stripe.
-    /// </summary>
-    Task RefundAsync(int paymentId, int adminUserId, string? reason = null);
+/// Staff refund in full, with an optional reason (max 200 characters).
+/// Online payments are refunded through Stripe.
+/// </summary>
+Task RefundAsync(int paymentId, int staffUserId, string? reason = null);
 }

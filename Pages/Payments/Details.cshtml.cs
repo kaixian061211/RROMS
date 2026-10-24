@@ -6,43 +6,83 @@ using RROMS.Web.Services.Payments;
 
 namespace RROMS.Web.Pages.Payments;
 
-/// <summary>One payment in full. Staff and administrators only; refunds are administrators only.</summary>
 [Authorize(Roles = PaymentRoles.AdminOrStaff)]
 public class DetailsModel : PageModel
 {
     private readonly IPaymentQueries _queries;
     private readonly IPaymentService _payments;
+    private readonly ILogger<DetailsModel> _logger;
 
-    public DetailsModel(IPaymentQueries queries, IPaymentService payments)
+    public DetailsModel(
+        IPaymentQueries queries,
+        IPaymentService payments,
+        ILogger<DetailsModel> logger)
     {
         _queries = queries;
         _payments = payments;
+        _logger = logger;
     }
 
     public PaymentDetails? Payment { get; private set; }
 
     public async Task<IActionResult> OnGetAsync(int id)
     {
-        Payment = await _queries.GetDetailsAsync(id);
-        return Payment is null ? NotFound() : Page();
-    }
-
-    public async Task<IActionResult> OnPostRefundAsync(int id, string? reason)
-    {
-        // The page is open to staff, but refunds are for administrators only.
-        if (!User.IsInRole(PaymentRoles.Admin))
+        if (id <= 0 || !ModelState.IsValid)
         {
-            return Forbid();
+            return BadRequest("Choose a valid payment.");
         }
 
         try
         {
-            await _payments.RefundAsync(id, User.GetPaymentUserId(), reason);
-            TempData["Success"] = "Payment refunded.";
+            Payment = await _queries.GetDetailsAsync(id);
+
+            return Payment is null
+                ? NotFound()
+                : Page();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(
+                ex,
+                "Could not load payment {PaymentId}",
+                id);
+
+            return StatusCode(
+                StatusCodes.Status500InternalServerError,
+                "Payment details could not be loaded. Please try again later.");
+        }
+    }
+
+    public async Task<IActionResult> OnPostRefundAsync(int id, string? reason)
+    {
+        if (!User.IsInRole(PaymentRoles.Staff))
+            return Forbid();
+
+        if (!User.TryGetPaymentUserId(out var staffId) || staffId <= 0)
+            return Forbid();
+
+        if (id <= 0 || !ModelState.IsValid)
+            return BadRequest("The refund request is invalid.");
+
+        try
+        {
+            await _payments.RefundAsync(id, staffId, reason);
+            TempData["Success"] = "Refund recorded.";
         }
         catch (PaymentException ex)
         {
             TempData["Error"] = ex.Message;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(
+                ex,
+                "Refund could not be completed for payment {PaymentId}",
+                id);
+
+            return StatusCode(
+                StatusCodes.Status500InternalServerError,
+                "The refund result could not be confirmed here. Check the payment details and Stripe before trying again.");
         }
 
         return RedirectToPage(new { id });

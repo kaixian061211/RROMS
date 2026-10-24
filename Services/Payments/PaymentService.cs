@@ -534,68 +534,90 @@ public class PaymentService : IPaymentService
     // Refunds
     // ------------------------------------------------------------------------------------
 
-    public async Task RefundAsync(
-        int paymentId,
-        int adminUserId,
-        string? reason = null)
+    // ------------------------------------------------------------------------------------
+// Refunds (staff)
+// ------------------------------------------------------------------------------------
+
+public async Task RefundAsync(
+    int paymentId,
+    int staffUserId,
+    string? reason = null)
+{
+    if (paymentId <= 0 || staffUserId <= 0)
+        throw new PaymentException("The payment or staff ID is invalid.");
+
+    reason = string.IsNullOrWhiteSpace(reason) ? null : reason.Trim();
+
+    if (reason is { Length: > 200 })
+        throw new PaymentException("The refund reason can be at most 200 characters.");
+
+    var payment = await _db.Payments.AsNoTracking()
+        .SingleOrDefaultAsync(p => p.PaymentId == paymentId)
+        ?? throw new PaymentException("We couldn't find that payment.");
+
+    if (payment.PaymentStatus != PaymentStatus.Paid)
+        throw new PaymentException("Only paid payments can be refunded.");
+
+    if (payment.Amount <= 0 || payment.Amount > 99999999.99m
+        || decimal.Round(payment.Amount, 2) != payment.Amount)
     {
-        reason = string.IsNullOrWhiteSpace(reason)
-            ? null
-            : reason.Trim();
-
-        if (reason is { Length: > 200 })
-        {
-            throw new PaymentException(
-                "The refund reason can be at most 200 characters.");
-        }
-
-        var payment = await _db.Payments
-            .AsNoTracking()
-            .FirstOrDefaultAsync(p => p.PaymentId == paymentId)
-            ?? throw new PaymentException("We couldn't find that payment.");
-
-        if (payment.PaymentStatus != PaymentStatus.Paid)
-        {
-            throw new PaymentException(
-                "Only paid payments can be refunded.");
-        }
-
-        if (!string.IsNullOrEmpty(payment.StripePaymentIntentId))
-        {
-            await _stripe.RefundAsync(
-                payment.StripePaymentIntentId,
-                idempotencyKey: $"refund-payment-{payment.PaymentId}");
-        }
-        else if (!string.IsNullOrEmpty(payment.TransactionRef)
-                 && payment.PaymentMethod != PaymentMethod.PayAtCounter
-                 && PaymentMethod.IsOnline(payment.PaymentMethod)
-                 && payment.RecordedByStaffId is null)
-        {
-            throw new PaymentException(
-                "This online payment has no Stripe charge reference. Refund it in the Stripe Dashboard.");
-        }
-
-        DateTime refundedAt = DateTime.Now;
-
-        var updated = await _db.Payments
-            .Where(p => p.PaymentId == paymentId
-                     && p.PaymentStatus == PaymentStatus.Paid)
-            .ExecuteUpdateAsync(s => s
-                .SetProperty(p => p.PaymentStatus, PaymentStatus.Refunded)
-                .SetProperty(p => p.RefundedAt, (DateTime?)refundedAt)
-                .SetProperty(p => p.RefundedByStaffId, (int?)adminUserId)
-                .SetProperty(p => p.RefundReason, reason));
-
-        if (updated == 0)
-        {
-            throw new PaymentException(
-                "This payment has already been refunded.");
-        }
-
-        await NotifyAsync(
-            paymentId,
-            (n, details) => n.PaymentRefundedAsync(details));
+        throw new PaymentException("This payment has an invalid refund amount.");
     }
+
+    bool onlinePayment = payment.RecordedByStaffId is null
+        && PaymentMethod.IsOnline(payment.PaymentMethod);
+
+    if (onlinePayment)
+    {
+        if (string.IsNullOrWhiteSpace(payment.StripePaymentIntentId))
+        {
+            throw new PaymentException(
+                "This online payment has no Stripe PaymentIntent reference. Check it in Stripe before refunding.");
+        }
+
+        await _stripe.RefundAsync(
+            payment.StripePaymentIntentId,
+            payment.Amount,
+            $"refund-payment-{payment.PaymentId}");
+    }
+    else if (payment.RecordedByStaffId is not > 0
+        || !PaymentMethod.CounterMethods.Contains(payment.PaymentMethod)
+        || !string.IsNullOrWhiteSpace(payment.StripePaymentIntentId)
+        || !string.IsNullOrWhiteSpace(payment.TransactionRef))
+    {
+        throw new PaymentException(
+            "The payment references do not match an online or staff-recorded counter payment. Check the record before refunding.");
+    }
+
+    // Counter refunds record money already returned manually by the staff member.
+    DateTime refundedAt = DateTime.Now;
+
+    var updated = await _db.Payments
+        .Where(p => p.PaymentId == paymentId
+            && p.PaymentStatus == PaymentStatus.Paid
+            && p.CreatedAt == payment.CreatedAt
+            && p.OrderId == payment.OrderId
+            && p.Amount == payment.Amount
+            && p.PaymentMethod == payment.PaymentMethod
+            && p.RecordedByStaffId == payment.RecordedByStaffId
+            && p.TransactionRef == payment.TransactionRef
+            && p.StripePaymentIntentId == payment.StripePaymentIntentId)
+        .ExecuteUpdateAsync(s => s
+            .SetProperty(p => p.PaymentStatus, PaymentStatus.Refunded)
+            .SetProperty(p => p.RefundedAt, (DateTime?)refundedAt)
+            .SetProperty(p => p.RefundedByStaffId, (int?)staffUserId)
+            .SetProperty(p => p.RefundReason, reason));
+
+    if (updated == 0)
+    {
+        throw new PaymentException(
+            "The payment changed while the refund was being processed. Check its current status and Stripe before trying again.");
+    }
+
+    await NotifyAsync(
+        paymentId,
+        (notifier, details) => notifier.PaymentRefundedAsync(details));
+}
 
     private async Task<bool> OwnsAsync(
         Payment payment,
@@ -611,7 +633,21 @@ public class PaymentService : IPaymentService
         int paymentId,
         Func<IPaymentNotifier, PaymentDetails, Task> send)
     {
-        var details = await _queries.GetDetailsAsync(paymentId);
+        PaymentDetails? details;
+
+        try
+        {
+            details = await _queries.GetDetailsAsync(paymentId);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(
+                ex,
+                "Could not load notification details for payment {PaymentId}",
+                paymentId);
+
+            return;
+        }
 
         if (details is null)
         {
