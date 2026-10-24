@@ -6,7 +6,7 @@ namespace RROMS.Web.Pages.Payments;
 
 /// <summary>
 /// TEMPORARY: lists the signed-in customer's orders with their payment so the checkout can be reached.
-/// The ordering module will provide the real page - keep its links to /Payments/Checkout?orderId=...
+/// The ordering module will provide the real page - keep its links to /Payments/CheckOut?orderId=...
 /// </summary>
 [Authorize]
 public class MyOrdersModel : PageModel

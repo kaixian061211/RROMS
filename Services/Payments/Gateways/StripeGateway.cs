@@ -154,11 +154,43 @@ public class StripeGateway : IStripeGateway
 
     public async Task<string> RefundAsync(
         string paymentIntentId,
+        decimal amount,
         string idempotencyKey)
     {
+        if (string.IsNullOrWhiteSpace(paymentIntentId)
+            || string.IsNullOrWhiteSpace(idempotencyKey))
+        {
+            throw new PaymentException(
+                "The Stripe refund reference is missing.");
+        }
+
+        if (amount <= 0
+            || amount > 99999999.99m
+            || decimal.Round(amount, 2) != amount)
+        {
+            throw new PaymentException(
+                "The refund amount is invalid.");
+        }
+
+        if (string.IsNullOrWhiteSpace(_settings.Currency)
+            || _settings.Currency.Trim().Length != 3)
+        {
+            throw new PaymentException(
+                "The refund currency is not configured correctly.");
+        }
+
+        if (string.IsNullOrWhiteSpace(_settings.SecretKey))
+        {
+            throw new PaymentException(
+                "Stripe refunds are not configured. Add the Stripe test key before refunding an online payment.");
+        }
+
+        var expectedAmount = ToMinorUnits(amount);
+
         var options = new RefundCreateOptions
         {
-            PaymentIntent = paymentIntentId
+            PaymentIntent = paymentIntentId,
+            Amount = expectedAmount
         };
 
         var requestOptions = new RequestOptions
@@ -168,21 +200,90 @@ public class StripeGateway : IStripeGateway
 
         try
         {
-            var refund = await new RefundService(GetClient()).CreateAsync(
-                options,
-                requestOptions);
+            var service = new RefundService(GetClient());
 
-            return refund.Id;
+            var existing = await service.ListAsync(
+                new RefundListOptions
+                {
+                    PaymentIntent = paymentIntentId,
+                    Limit = 1
+                });
+
+            var created = existing.Data.FirstOrDefault()
+                ?? await service.CreateAsync(options, requestOptions);
+
+            if (string.IsNullOrWhiteSpace(created.Id))
+            {
+                throw new PaymentException(
+                    "Stripe did not return a refund reference. Check Stripe before trying again.",
+                    paymentMayBeInProgress: true);
+            }
+
+            // Retrieve the latest status, including when reusing an existing refund.
+            var refund = await service.GetAsync(created.Id);
+
+            if (refund.Id != created.Id
+                || refund.PaymentIntentId != paymentIntentId
+                || refund.Amount != expectedAmount
+                || !string.Equals(
+                    refund.Currency,
+                    _settings.Currency.Trim(),
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                _logger.LogWarning(
+                    "Stripe refund {RefundId} did not match the expected payment details",
+                    created.Id);
+
+                throw new PaymentException(
+                    "The refund details do not match this payment. Check Stripe before trying again.",
+                    paymentMayBeInProgress: true);
+            }
+
+            _logger.LogInformation(
+                "Stripe refund {RefundId} has status {Status}",
+                refund.Id,
+                refund.Status);
+
+            return refund.Status switch
+            {
+                "succeeded" => refund.Id,
+
+                "pending" or "requires_action" =>
+                    throw new PaymentException(
+                        "The Stripe refund is awaiting confirmation. The payment remains marked paid. Check the existing refund in Stripe before submitting another request.",
+                        paymentMayBeInProgress: true),
+
+                "failed" or "canceled" =>
+                    throw new PaymentException(
+                        "The Stripe refund failed or was cancelled. The payment remains marked paid. Check Stripe before attempting another refund."),
+
+                _ => throw new PaymentException(
+                    "Stripe has not confirmed the refund. Check its status in Stripe before trying again.",
+                    paymentMayBeInProgress: true)
+            };
         }
         catch (StripeException ex)
         {
             _logger.LogError(
                 ex,
-                "Stripe refused the refund for {PaymentIntentId}",
+                "Stripe refund could not be confirmed for {PaymentIntentId}",
                 paymentIntentId);
 
             throw new PaymentException(
-                $"Stripe could not process the refund: {ex.StripeError?.Message ?? ex.Message}");
+                "We could not confirm the refund with Stripe. Check the existing refund before submitting another request.",
+                paymentMayBeInProgress: true);
+        }
+        catch (Exception ex)
+            when (ex is HttpRequestException or OperationCanceledException)
+        {
+            _logger.LogWarning(
+                ex,
+                "Refund response was interrupted for {PaymentIntentId}",
+                paymentIntentId);
+
+            throw new PaymentException(
+                "The connection was interrupted while checking the refund. Check Stripe before trying again.",
+                paymentMayBeInProgress: true);
         }
     }
 

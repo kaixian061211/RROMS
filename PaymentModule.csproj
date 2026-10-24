@@ -1,9 +1,10 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
   <PropertyGroup>
     <RootNamespace>RROMS.Web</RootNamespace>
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>48258dfa-bd1a-4869-9a9b-5dc28f0a2508</UserSecretsId>
   </PropertyGroup>
   <ItemGroup>
     <Compile Remove="Tests/**/*.cs" />

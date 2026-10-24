@@ -1,5 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using QuestPDF.Infrastructure;
+using System.Security.Claims;
+using RROMS.Web.Models.Payments;
 using RROMS.Web.Data;
 using RROMS.Web.Services.Payments;
 using RROMS.Web.Services.Payments.Gateways;
@@ -48,6 +50,25 @@ if (!app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseRouting();
 app.UseAuthentication();
+if (app.Environment.IsDevelopment())
+{
+    app.Use(async (context, next) =>
+    {
+        // Match the order/reservation demo: customer 1 and local staff access.
+        // Real signed-in users retain their own identity; no demo cookie is stored.
+        if (context.User.Identity?.IsAuthenticated != true)
+        {
+            context.User = new ClaimsPrincipal(new ClaimsIdentity(new[]
+            {
+                new Claim(ClaimTypes.NameIdentifier, "1"),
+                new Claim(ClaimTypes.Name, "Development user"),
+                new Claim(ClaimTypes.Role, PaymentRoles.Customer),
+                new Claim(ClaimTypes.Role, PaymentRoles.Staff)
+            }, "DevelopmentFallback"));
+        }
+        await next();
+    });
+}
 app.UseAuthorization();
 
 app.MapStaticAssets();

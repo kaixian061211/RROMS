@@ -15,7 +15,7 @@
         <p class="text-muted">Thank you. We've received @PaymentFormatter.Money(payment.Amount) for order @payment.OrderLabel.</p>
         <div class="d-flex justify-content-center gap-2">
             <a class="btn btn-primary" asp-page="Receipt" asp-route-id="@payment.PaymentId">Download receipt</a>
-            <a class="btn btn-outline-secondary" asp-page="History">Payment history</a>
+            <a class="btn btn-outline-secondary" asp-page="History">My payments</a>
         </div>
     }
     else if (payment.IsAwaitingCounter)
@@ -27,7 +27,7 @@
             <div class="bill-row"><span class="label">Order</span><span>@payment.OrderLabel</span></div>
             <div class="bill-row"><span class="label">Payment reference</span><span>@payment.ReceiptNo</span></div>
         </div>
-        <a class="btn btn-outline-secondary" asp-page="MyOrders">Back to my orders</a>
+        <a class="btn btn-outline-secondary" asp-page="MyOrders">Back to orders for payment</a>
     }
     else if (payment.Status == PaymentStatus.Pending)
     {
@@ -41,14 +41,17 @@
         <div class="status-icon refunded mb-3" aria-hidden="true">&#8634;</div>
         <h1 class="h3">Payment refunded</h1>
         <p class="text-muted">@PaymentFormatter.Money(payment.Amount) for order @payment.OrderLabel has been refunded.</p>
-        <a class="btn btn-outline-secondary" asp-page="History">Payment history</a>
+        <a class="btn btn-outline-secondary" asp-page="History">My payments</a>
     }
     else
     {
         <div class="status-icon failed mb-3" aria-hidden="true">&#10005;</div>
         <h1 class="h3">Payment didn't go through</h1>
-        <p class="text-muted">You haven't been charged. You can try again with the same or a different method.</p>
-        <a class="btn btn-primary" asp-page="Checkout" asp-route-orderId="@payment.OrderId">Try again</a>
+        <p class="text-muted">
+            This payment is not confirmed. Check your payment status before trying again.
+            Contact the restaurant if your bank shows a charge.
+        </p>
+        <a class="btn btn-primary" asp-page="CheckOut" asp-route-orderId="@payment.OrderId">Try again</a>
     }
 </div>
 

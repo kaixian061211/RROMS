@@ -1,5 +1,5 @@
 @page
-@model RROMS.Web.Pages.Payments.CheckoutModel
+@model RROMS.Web.Pages.Payments.CheckOutModel
 @{
     ViewData["Title"] = "Pay for your order";
     var order = Model.Order!;
@@ -20,7 +20,7 @@
             <input type="hidden" asp-for="OrderId" />
 
             <div class="d-grid gap-2 mb-4">
-                @foreach (var option in CheckoutModel.MethodOptions)
+                @foreach (var option in CheckOutModel.MethodOptions)
                 {
                     <label class="method-option">
                         <input type="radio" name="Method" value="@option.Value" checked="@(option.Value == Model.Method)" />
@@ -33,7 +33,7 @@
             </div>
 
             <button type="submit" class="btn btn-primary btn-lg">Continue</button>
-            <a class="btn btn-link" asp-page="MyOrders">Back to my orders</a>
+            <a class="btn btn-link" asp-page="MyOrders">Back to orders for payment</a>
         </form>
     </div>
 

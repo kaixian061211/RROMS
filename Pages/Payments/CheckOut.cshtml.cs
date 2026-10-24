@@ -8,18 +8,18 @@ using RROMS.Web.Services.Payments;
 namespace RROMS.Web.Pages.Payments;
 
 [Authorize]
-public class CheckoutModel : PageModel
+public class CheckOutModel : PageModel
 {
     private readonly IPaymentService _payments;
     private readonly IPaymentQueries _queries;
     private readonly IPaymentOrderProvider _orders;
-    private readonly ILogger<CheckoutModel> _logger;
+    private readonly ILogger<CheckOutModel> _logger;
 
-    public CheckoutModel(
+    public CheckOutModel(
         IPaymentService payments,
         IPaymentQueries queries,
         IPaymentOrderProvider orders,
-        ILogger<CheckoutModel> logger)
+        ILogger<CheckOutModel> logger)
     {
         _payments = payments;
         _queries = queries;

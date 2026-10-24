@@ -43,6 +43,7 @@ else
                         <td>@OrderFormatter.Table(o.TableId)</td>
                         <td><span class="badge @OrderFormatter.StatusBadge(o.Status)">@OrderFormatter.StatusLabel(o.Status)</span></td>
                         <td class="text-end">
+                            <a asp-page="/Payments/CheckOut" asp-route-orderId="@o.OrderId" class="btn btn-sm btn-outline-success">Payment</a>
                             <a asp-page="Details" asp-route-id="@o.OrderId" class="btn btn-sm btn-outline-primary">View</a>
                         </td>
                     </tr>

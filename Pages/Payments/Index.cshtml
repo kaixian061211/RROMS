@@ -1,7 +1,7 @@
 @page
 @model RROMS.Web.Pages.Payments.IndexModel
 @{
-    ViewData["Title"] = "All payments";
+    ViewData["Title"] = "Manage payments";
     var presets = new (DateRangePreset Value, string Label)[]
     {
         (DateRangePreset.All, "All dates"),
@@ -14,7 +14,7 @@
 
 <partial name="_PaymentPageHeader" />
 
-<h1 class="h3 mb-3">All payments</h1>
+<h1 class="h3 mb-3">Manage payments</h1>
 
 <form method="get" class="bg-white border rounded p-3 mb-3">
     <div class="row g-2 align-items-end">

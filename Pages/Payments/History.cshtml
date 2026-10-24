@@ -1,12 +1,12 @@
 @page
 @model RROMS.Web.Pages.Payments.HistoryModel
 @{
-    ViewData["Title"] = "Payment history";
+    ViewData["Title"] = "My payments";
 }
 
 <partial name="_PaymentPageHeader" />
 
-<h1 class="h3 mb-3">Payment history</h1>
+<h1 class="h3 mb-3">My payments</h1>
 
 @if (Model.Payments.Count == 0)
 {
@@ -44,7 +44,7 @@ else
                             }
                             else if (payment.Status == PaymentStatus.Pending || payment.Status == PaymentStatus.Failed)
                             {
-                                <a class="btn btn-sm btn-outline-secondary" asp-page="Checkout" asp-route-orderId="@payment.OrderId">
+                                <a class="btn btn-sm btn-outline-secondary" asp-page="CheckOut" asp-route-orderId="@payment.OrderId">
                                     @(payment.Status == PaymentStatus.Failed ? "Try again" : "Change payment")
                                 </a>
                             }

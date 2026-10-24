@@ -1,4 +1,5 @@
-﻿@using RROMS.Web.Models.Payments
+@using RROMS.Web.Models.Payments
+@inject Microsoft.AspNetCore.Hosting.IWebHostEnvironment HostEnvironment
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -37,15 +38,19 @@
                         <li class="nav-item">
                             <a class="nav-link text-dark" asp-area="" asp-page="/Privacy">Privacy</a>
                         </li>
+                        @if (HostEnvironment.IsDevelopment())
+                        {
+                            <li class="nav-item"><a class="nav-link text-dark" asp-page="/Payments/Demo">Payments</a></li>
+                        }
                         @if (User.IsInRole(PaymentRoles.Customer))
                         {
-                            <li class="nav-item"><a class="nav-link text-dark" asp-page="/Payments/MyOrders">My orders</a></li>
+                            <li class="nav-item"><a class="nav-link text-dark" asp-page="/Payments/MyOrders">Orders for payment</a></li>
                             <li class="nav-item"><a class="nav-link text-dark" asp-page="/Payments/History">My payments</a></li>
                         }
                         @if (User.IsInRole(PaymentRoles.Staff) || User.IsInRole(PaymentRoles.Admin))
                         {
-                            <li class="nav-item"><a class="nav-link text-dark" asp-page="/Payments/Counter">Counter</a></li>
-                            <li class="nav-item"><a class="nav-link text-dark" asp-page="/Payments/Index">Payments</a></li>
+                            <li class="nav-item"><a class="nav-link text-dark" asp-page="/Payments/Counter">Counter payments</a></li>
+                            <li class="nav-item"><a class="nav-link text-dark" asp-page="/Payments/Index">Manage payments</a></li>
                         }
                     </ul>
                 </div>

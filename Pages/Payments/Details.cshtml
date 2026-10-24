@@ -22,9 +22,13 @@
             {
                 <a class="btn btn-primary" asp-page="Receipt" asp-route-id="@payment.PaymentId">Download receipt</a>
             }
-            @if (payment.IsAwaitingCounter)
+            @if (payment.IsAwaitingCounter && User.IsInRole(PaymentRoles.Staff))
             {
-                <a class="btn btn-primary" asp-page="Collect" asp-route-id="@payment.PaymentId">Collect payment</a>
+                <a class="btn btn-primary"
+                asp-page="Collect"
+                asp-route-id="@payment.PaymentId">
+                    Collect payment
+                </a>
             }
             @if (payment.Status == PaymentStatus.Paid && User.IsInRole(PaymentRoles.Staff))
             {
@@ -46,7 +50,7 @@
                     </button>
                 </form>
             }
-            <a class="btn btn-outline-secondary" asp-page="Index">Back to all payments</a>
+            <a class="btn btn-outline-secondary" asp-page="Index">Back to manage payments</a>
         </div>
 
         <div class="bill p-4">
