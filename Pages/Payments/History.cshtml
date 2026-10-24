@@ -10,7 +10,9 @@
 
 @if (Model.Payments.Count == 0)
 {
-    <div class="alert alert-info">You haven't made any payments yet.</div>
+    <div class="alert alert-info">
+        You haven't made any payments yet.
+    </div>
 }
 else
 {
@@ -33,19 +35,42 @@ else
                     <tr>
                         <td>@payment.ReceiptNo</td>
                         <td>@payment.OrderLabel</td>
-                        <td>@PaymentFormatter.MethodLabel(payment.Method)</td>
-                        <td><span class="badge @PaymentFormatter.StatusBadge(payment.Status)">@PaymentFormatter.StatusLabel(payment.Status)</span></td>
-                        <td class="num">@PaymentFormatter.Money(payment.Amount)</td>
-                        <td>@PaymentFormatter.When(payment.PaidAt ?? payment.CreatedAt)</td>
+                        <td>
+                            @PaymentFormatter.MethodLabel(payment.Method)
+                        </td>
+                        <td>
+                            <span class="badge @PaymentFormatter.StatusBadge(payment.Status)">
+                                @PaymentFormatter.StatusLabel(payment.Status)
+                            </span>
+                        </td>
+                        <td class="num">
+                            @PaymentFormatter.Money(payment.Amount)
+                        </td>
+                        <td>
+                            @PaymentFormatter.When(
+                                payment.PaidAt ?? payment.CreatedAt)
+                        </td>
                         <td class="text-end">
                             @if (payment.HasReceipt)
                             {
-                                <a class="btn btn-sm btn-outline-secondary" asp-page="Receipt" asp-route-id="@payment.PaymentId">Receipt</a>
+                                <a class="btn btn-sm btn-outline-secondary"
+                                   asp-page="Receipt"
+                                   asp-route-id="@payment.PaymentId">
+                                    Receipt
+                                </a>
                             }
-                            else if (payment.Status == PaymentStatus.Pending || payment.Status == PaymentStatus.Failed)
+                            else if (
+                                payment.OrderStatus !=
+                                RROMS.Web.Models.OrdersAndReservations.OrderStatus.Cancelled &&
+                                (payment.Status == PaymentStatus.Pending ||
+                                 payment.Status == PaymentStatus.Failed))
                             {
-                                <a class="btn btn-sm btn-outline-secondary" asp-page="CheckOut" asp-route-orderId="@payment.OrderId">
-                                    @(payment.Status == PaymentStatus.Failed ? "Try again" : "Change payment")
+                                <a class="btn btn-sm btn-outline-secondary"
+                                   asp-page="Checkout"
+                                   asp-route-orderId="@payment.OrderId">
+                                    @(payment.Status == PaymentStatus.Failed
+                                        ? "Try again"
+                                        : "Change payment")
                                 </a>
                             }
                         </td>

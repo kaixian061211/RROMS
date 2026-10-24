@@ -8,18 +8,18 @@ using RROMS.Web.Services.Payments;
 namespace RROMS.Web.Pages.Payments;
 
 [Authorize]
-public class CheckOutModel : PageModel
+public class CheckoutModel : PageModel
 {
     private readonly IPaymentService _payments;
     private readonly IPaymentQueries _queries;
     private readonly IPaymentOrderProvider _orders;
-    private readonly ILogger<CheckOutModel> _logger;
+    private readonly ILogger<CheckoutModel> _logger;
 
-    public CheckOutModel(
+    public CheckoutModel(
         IPaymentService payments,
         IPaymentQueries queries,
         IPaymentOrderProvider orders,
-        ILogger<CheckOutModel> logger)
+        ILogger<CheckoutModel> logger)
     {
         _payments = payments;
         _queries = queries;
@@ -57,7 +57,10 @@ public class CheckOutModel : PageModel
         };
 
     [BindProperty(SupportsGet = true)]
-    [Range(1, int.MaxValue, ErrorMessage = "Choose a valid order.")]
+    [Range(
+        1,
+        int.MaxValue,
+        ErrorMessage = "Choose a valid order.")]
     public int OrderId { get; set; }
 
     [BindProperty]
@@ -69,8 +72,8 @@ public class CheckOutModel : PageModel
 
     public async Task<IActionResult> OnGetAsync()
     {
-        if (!User.TryGetPaymentUserId(out var customerId)
-            || customerId <= 0)
+        if (!User.TryGetPaymentUserId(out var customerId) ||
+            customerId <= 0)
         {
             return Forbid();
         }
@@ -91,10 +94,19 @@ public class CheckOutModel : PageModel
 
             Order = order;
 
+            if (order.OrderStatus ==
+                RROMS.Web.Models.OrdersAndReservations.OrderStatus.Cancelled)
+            {
+                TempData["Error"] =
+                    "Cancelled orders cannot be paid.";
+
+                return RedirectToPage("MyOrders");
+            }
+
             var existing = await _queries.GetByOrderAsync(OrderId);
 
-            if (existing?.Status is PaymentStatus.Paid
-                or PaymentStatus.Refunded)
+            if (existing?.Status is
+                PaymentStatus.Paid or PaymentStatus.Refunded)
             {
                 TempData["Info"] =
                     "This order has already been paid or refunded.";
@@ -119,14 +131,14 @@ public class CheckOutModel : PageModel
 
     public async Task<IActionResult> OnPostAsync()
     {
-        if (!User.TryGetPaymentUserId(out var customerId)
-            || customerId <= 0)
+        if (!User.TryGetPaymentUserId(out var customerId) ||
+            customerId <= 0)
         {
             return Forbid();
         }
 
-        if (OrderId <= 0
-            || ModelState[nameof(OrderId)]?.Errors.Count > 0)
+        if (OrderId <= 0 ||
+            ModelState[nameof(OrderId)]?.Errors.Count > 0)
         {
             return BadRequest("Choose a valid order.");
         }
@@ -142,6 +154,15 @@ public class CheckOutModel : PageModel
 
             Order = order;
 
+            if (order.OrderStatus ==
+                RROMS.Web.Models.OrdersAndReservations.OrderStatus.Cancelled)
+            {
+                TempData["Error"] =
+                    "Cancelled orders cannot be paid.";
+
+                return RedirectToPage("MyOrders");
+            }
+
             if (!PaymentMethod.CheckoutChoices.Contains(Method))
             {
                 ModelState.AddModelError(
@@ -154,7 +175,8 @@ public class CheckOutModel : PageModel
                 return Page();
             }
 
-            var baseUrl = $"{Request.Scheme}://{Request.Host}";
+            var baseUrl =
+                $"{Request.Scheme}://{Request.Host}";
 
             var result = await _payments.StartCheckoutAsync(
                 OrderId,
@@ -169,7 +191,10 @@ public class CheckOutModel : PageModel
 
             return RedirectToPage(
                 "Success",
-                new { paymentId = result.Payment.PaymentId });
+                new
+                {
+                    paymentId = result.Payment.PaymentId
+                });
         }
         catch (PaymentException ex)
         {
@@ -178,7 +203,10 @@ public class CheckOutModel : PageModel
                 return BadRequest(ex.Message);
             }
 
-            ModelState.AddModelError(string.Empty, ex.Message);
+            ModelState.AddModelError(
+                string.Empty,
+                ex.Message);
+
             return Page();
         }
         catch (Exception ex)
@@ -201,18 +229,22 @@ public class CheckOutModel : PageModel
             Response.StatusCode =
                 StatusCodes.Status500InternalServerError;
 
-            ModelState.AddModelError(string.Empty, message);
+            ModelState.AddModelError(
+                string.Empty,
+                message);
+
             return Page();
         }
     }
 
-    private async Task<PaymentOrderInfo?> FindOrderAsync(int customerId)
+    private async Task<PaymentOrderInfo?> FindOrderAsync(
+        int customerId)
     {
         var order = await _orders.GetOrderAsync(OrderId);
 
-        return order is not null
-            && order.CustomerUserId == customerId
-                ? order
-                : null;
+        return order is not null &&
+               order.CustomerUserId == customerId
+            ? order
+            : null;
     }
 }

@@ -5,8 +5,8 @@ using RROMS.Web.Services.Payments;
 namespace RROMS.Web.Pages.Payments;
 
 /// <summary>
-/// TEMPORARY: lists the signed-in customer's orders with their payment so the checkout can be reached.
-/// The ordering module will provide the real page - keep its links to /Payments/CheckOut?orderId=...
+/// Temporary list of customer orders and their payments.
+/// The ordering module will eventually provide the real page.
 /// </summary>
 [Authorize]
 public class MyOrdersModel : PageModel
@@ -14,7 +14,9 @@ public class MyOrdersModel : PageModel
     private readonly IPaymentOrderProvider _orders;
     private readonly IPaymentQueries _queries;
 
-    public MyOrdersModel(IPaymentOrderProvider orders, IPaymentQueries queries)
+    public MyOrdersModel(
+        IPaymentOrderProvider orders,
+        IPaymentQueries queries)
     {
         _orders = orders;
         _queries = queries;
@@ -24,23 +26,30 @@ public class MyOrdersModel : PageModel
 
     public async Task OnGetAsync()
     {
-        var orders = (await _orders.GetOrdersForCustomerAsync(User.GetPaymentUserId()))
+        var orders = (
+                await _orders.GetOrdersForCustomerAsync(
+                    User.GetPaymentUserId()))
             .OrderByDescending(o => o.OrderId)
             .ToList();
 
-        var payments = await _queries.GetByOrdersAsync(orders.Select(o => o.OrderId));
+        var payments = await _queries.GetByOrdersAsync(
+            orders.Select(o => o.OrderId));
 
         Orders = orders.Select(o =>
         {
-            payments.TryGetValue(o.OrderId, out var payment);
+            payments.TryGetValue(
+                o.OrderId,
+                out var payment);
 
             return new OrderLine
             {
                 OrderId = o.OrderId,
+                OrderStatus = o.OrderStatus,
                 TotalAmount = o.TotalAmount,
                 PaymentId = payment?.PaymentId,
                 Status = payment?.Status,
-                IsAwaitingCounter = payment?.IsAwaitingCounter ?? false
+                IsAwaitingCounter =
+                    payment?.IsAwaitingCounter ?? false
             };
         }).ToList();
     }
@@ -48,6 +57,7 @@ public class MyOrdersModel : PageModel
     public class OrderLine
     {
         public int OrderId { get; set; }
+        public string OrderStatus { get; set; } = string.Empty;
         public decimal TotalAmount { get; set; }
         public int? PaymentId { get; set; }
         public string? Status { get; set; }

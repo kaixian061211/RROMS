@@ -3,15 +3,15 @@ using RROMS.Web.Models.Payments;
 namespace RROMS.Web.Services.Payments;
 
 /// <summary>
-/// Every change to a payment goes through here. Business-rule problems are reported by
-/// throwing <see cref="PaymentException"/> with a message that is safe to show.
-/// An order has ONE payment row (unique index): a retry re-opens that row instead of adding another.
+/// Every change to a payment goes through here.
+/// Business-rule problems throw PaymentException with a safe message.
+/// An order has one payment row: a retry reopens that row.
 /// </summary>
 public interface IPaymentService
 {
     /// <summary>
-    /// Customer checkout: creates (or re-opens) the order's payment and, for online methods, a Stripe
-    /// Checkout page. <paramref name="baseUrl"/> is e.g. https://localhost:7001 (used for return links).
+    /// Creates or reopens an order payment and, for online methods,
+    /// creates a Stripe Checkout page.
     /// </summary>
     Task<PaymentResult> StartCheckoutAsync(
         int orderId,
@@ -21,20 +21,21 @@ public interface IPaymentService
 
     /// <summary>
     /// Validates a verified Stripe confirmation and saves its references.
-    /// Returns true only for a new paid transition; duplicate/reference-only updates return false.
+    /// Returns true only for a new paid transition.
     /// </summary>
-    Task<bool> MarkPaidOnlineAsync(OnlinePaymentConfirmation confirmation);
+    Task<bool> MarkPaidOnlineAsync(
+        OnlinePaymentConfirmation confirmation);
 
     /// <summary>
-    /// Webhook / checkout error: the online payment failed or expired. Returns false if it was already handled.
-    /// When <paramref name="sessionId"/> is given, only the attempt that owns that Stripe session is failed,
-    /// so an old attempt's late "expired" event can't fail a newer attempt.
+    /// Marks an online attempt failed or expired.
+    /// A supplied Session ID must match the current attempt.
     /// </summary>
-    Task<bool> MarkFailedAsync(int paymentId, string? sessionId = null);
+    Task<bool> MarkFailedAsync(
+        int paymentId,
+        string? sessionId = null);
 
     /// <summary>
-    /// The customer came back from Stripe without paying.
-    /// <paramref name="attempt"/> identifies which attempt the link belonged to.
+    /// Cancels the customer's current online attempt.
     /// </summary>
     Task CancelOnlineAttemptAsync(
         int paymentId,
@@ -42,14 +43,30 @@ public interface IPaymentService
         long? attempt = null);
 
     /// <summary>Staff took the money at the counter.</summary>
-    Task CollectAtCounterAsync(int paymentId, int staffUserId, string method);
+    Task CollectAtCounterAsync(
+        int paymentId,
+        int staffUserId,
+        string method);
 
-    /// <summary>Staff cancel a waiting counter payment (customer left, changed mind...).</summary>
-    Task VoidPendingAsync(int paymentId, int staffUserId);
+    /// <summary>Staff cancel a waiting counter payment.</summary>
+    Task VoidPendingAsync(
+        int paymentId,
+        int staffUserId);
 
     /// <summary>
-/// Staff refund in full, with an optional reason (max 200 characters).
-/// Online payments are refunded through Stripe.
-/// </summary>
-Task RefundAsync(int paymentId, int staffUserId, string? reason = null);
+    /// Refunds in full, with an optional reason of at most 200 characters.
+    /// Online payments are refunded through Stripe.
+    /// </summary>
+    Task RefundAsync(
+        int paymentId,
+        int staffUserId,
+        string? reason = null);
+
+    /// <summary>
+    /// Checks an existing Stripe refund without submitting another request.
+    /// </summary>
+    Task RecheckRefundAsync(
+        int paymentId,
+        int staffUserId,
+        string? reason = null);
 }

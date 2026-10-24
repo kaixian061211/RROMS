@@ -9,14 +9,19 @@
 <div class="d-flex justify-content-between align-items-end mb-3">
     <div>
         <h1 class="h3 mb-1">Counter payments</h1>
-        <p class="text-muted mb-0">Orders waiting to be paid at the restaurant, oldest first.</p>
+        <p class="text-muted mb-0">
+            Orders waiting to be paid at the restaurant, oldest first.
+        </p>
     </div>
-    <a class="btn btn-outline-secondary btn-sm" asp-page="Counter">Refresh</a>
+    <a class="btn btn-outline-secondary btn-sm"
+       asp-page="Counter">Refresh</a>
 </div>
 
 @if (Model.Queue.Count == 0)
 {
-    <div class="alert alert-success">Nothing is waiting to be collected.</div>
+    <div class="alert alert-success">
+        Nothing is waiting to be collected.
+    </div>
 }
 else
 {
@@ -39,14 +44,38 @@ else
                         <td>@payment.ReceiptNo</td>
                         <td>@payment.OrderLabel</td>
                         <td>@payment.CustomerName</td>
-                        <td>@PaymentFormatter.When(payment.CreatedAt)</td>
-                        <td class="num">@PaymentFormatter.Money(payment.Amount)</td>
+                        <td>
+                            @PaymentFormatter.When(payment.CreatedAt)
+                        </td>
+                        <td class="num">
+                            @PaymentFormatter.Money(payment.Amount)
+                        </td>
                         <td class="text-end">
-                            <form method="post" asp-page-handler="Void" asp-route-paymentId="@payment.PaymentId"
-                                  class="d-inline" onsubmit="return confirm('Cancel this payment? The customer will need to choose a payment method again.');">
-                                <button type="submit" class="btn btn-sm btn-outline-danger">Cancel</button>
+                            <form method="post"
+                                  asp-page-handler="Void"
+                                  asp-route-paymentId="@payment.PaymentId"
+                                  class="d-inline"
+                                  onsubmit="return confirm('Cancel this payment? The customer will need to choose a payment method again.');">
+                                <button type="submit"
+                                        class="btn btn-sm btn-outline-danger">
+                                    Cancel
+                                </button>
                             </form>
-                            <a class="btn btn-sm btn-primary" asp-page="Collect" asp-route-id="@payment.PaymentId">Collect</a>
+
+                            @if (payment.CanCollectAtCounter)
+                            {
+                                <a class="btn btn-sm btn-primary"
+                                   asp-page="Collect"
+                                   asp-route-id="@payment.PaymentId">
+                                    Collect
+                                </a>
+                            }
+                            else
+                            {
+                                <span class="text-muted ms-2">
+                                    Order cancelled
+                                </span>
+                            }
                         </td>
                     </tr>
                 }

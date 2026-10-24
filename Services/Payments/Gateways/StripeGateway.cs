@@ -3,7 +3,6 @@ using System.Globalization;
 using Microsoft.Extensions.Options;
 using Stripe;
 using Stripe.Checkout;
-// Stripe's SDK also has a PaymentMethod class, so say which one we mean.
 using Payment = RROMS.Web.Models.Payments.Payment;
 using PaymentMethod = RROMS.Web.Models.Payments.PaymentMethod;
 
@@ -31,9 +30,11 @@ public class StripeGateway : IStripeGateway
     {
         var client = GetClient();
 
-        // Stripe only accepts an expiry between 30 minutes and 24 hours from the moment it
-        // receives the request, so stay safely inside that window.
-        var expiryMinutes = Math.Clamp(_settings.CheckoutExpiryMinutes, 31, 1440);
+        // Stripe accepts an expiry between 30 minutes and 24 hours.
+        var expiryMinutes = Math.Clamp(
+            _settings.CheckoutExpiryMinutes,
+            31,
+            1440);
 
         var options = new SessionCreateOptions
         {
@@ -42,7 +43,8 @@ public class StripeGateway : IStripeGateway
             {
                 ToStripeMethodType(payment.PaymentMethod)
             },
-            ClientReferenceId = payment.PaymentId.ToString(CultureInfo.InvariantCulture),
+            ClientReferenceId = payment.PaymentId.ToString(
+                CultureInfo.InvariantCulture),
             CustomerEmail = string.IsNullOrWhiteSpace(customerEmail)
                 ? null
                 : customerEmail,
@@ -51,9 +53,12 @@ public class StripeGateway : IStripeGateway
             ExpiresAt = DateTime.UtcNow.AddMinutes(expiryMinutes),
             Metadata = new Dictionary<string, string>
             {
-                ["payment_id"] = payment.PaymentId.ToString(CultureInfo.InvariantCulture),
-                ["order_id"] = payment.OrderId.ToString(CultureInfo.InvariantCulture),
-                ["attempt_ticks"] = payment.CreatedAt.Ticks.ToString(CultureInfo.InvariantCulture)
+                ["payment_id"] = payment.PaymentId.ToString(
+                    CultureInfo.InvariantCulture),
+                ["order_id"] = payment.OrderId.ToString(
+                    CultureInfo.InvariantCulture),
+                ["attempt_ticks"] = payment.CreatedAt.Ticks.ToString(
+                    CultureInfo.InvariantCulture)
             },
             LineItems = new List<SessionLineItemOptions>
             {
@@ -64,20 +69,22 @@ public class StripeGateway : IStripeGateway
                     {
                         Currency = _settings.Currency,
                         UnitAmount = ToMinorUnits(payment.Amount),
-                        ProductData = new SessionLineItemPriceDataProductDataOptions
-                        {
-                            Name = $"RROMS order #{payment.OrderId}"
-                        }
+                        ProductData =
+                            new SessionLineItemPriceDataProductDataOptions
+                            {
+                                Name = $"RROMS order #{payment.OrderId}"
+                            }
                     }
                 }
             }
         };
 
-        // A payment has ONE row for all its attempts, and CreatedAt is reset by every new attempt,
-        // so it makes the key unique per attempt while still protecting against network retries.
+        // CreatedAt changes for each new payment attempt.
+        // The key remains stable for retries of the same attempt.
         var requestOptions = new RequestOptions
         {
-            IdempotencyKey = $"checkout-payment-{payment.PaymentId}-{payment.CreatedAt.Ticks}"
+            IdempotencyKey =
+                $"checkout-payment-{payment.PaymentId}-{payment.CreatedAt.Ticks}"
         };
 
         try
@@ -99,9 +106,9 @@ public class StripeGateway : IStripeGateway
                 payment.PaymentId);
 
             bool definiteRejection =
-                ex.HttpStatusCode == HttpStatusCode.BadRequest
-                && ex.StripeError?.Type == "invalid_request_error"
-                && ex.StripeError?.Code != "idempotency_key_in_use";
+                ex.HttpStatusCode == HttpStatusCode.BadRequest &&
+                ex.StripeError?.Type == "invalid_request_error" &&
+                ex.StripeError?.Code != "idempotency_key_in_use";
 
             throw new PaymentException(
                 definiteRejection
@@ -134,7 +141,7 @@ public class StripeGateway : IStripeGateway
         }
         catch (StripeException)
         {
-            // Expire fails if the session is already expired or already paid. Ask Stripe which one.
+            // It may already be expired or already paid.
             try
             {
                 var session = await service.GetAsync(sessionId);
@@ -152,28 +159,52 @@ public class StripeGateway : IStripeGateway
         }
     }
 
-    public async Task<string> RefundAsync(
+    public Task<string> RefundAsync(
         string paymentIntentId,
         decimal amount,
         string idempotencyKey)
     {
-        if (string.IsNullOrWhiteSpace(paymentIntentId)
-            || string.IsNullOrWhiteSpace(idempotencyKey))
+        if (string.IsNullOrWhiteSpace(idempotencyKey))
         {
             throw new PaymentException(
                 "The Stripe refund reference is missing.");
         }
 
-        if (amount <= 0
-            || amount > 99999999.99m
-            || decimal.Round(amount, 2) != amount)
+        return ProcessRefundAsync(
+            paymentIntentId,
+            amount,
+            idempotencyKey);
+    }
+
+    public Task<string> RecheckRefundAsync(
+        string paymentIntentId,
+        decimal amount) =>
+        ProcessRefundAsync(
+            paymentIntentId,
+            amount,
+            idempotencyKey: null);
+
+    private async Task<string> ProcessRefundAsync(
+        string paymentIntentId,
+        decimal amount,
+        string? idempotencyKey)
+    {
+        if (string.IsNullOrWhiteSpace(paymentIntentId))
+        {
+            throw new PaymentException(
+                "The Stripe refund reference is missing.");
+        }
+
+        if (amount <= 0 ||
+            amount > 99999999.99m ||
+            decimal.Round(amount, 2) != amount)
         {
             throw new PaymentException(
                 "The refund amount is invalid.");
         }
 
-        if (string.IsNullOrWhiteSpace(_settings.Currency)
-            || _settings.Currency.Trim().Length != 3)
+        if (string.IsNullOrWhiteSpace(_settings.Currency) ||
+            _settings.Currency.Trim().Length != 3)
         {
             throw new PaymentException(
                 "The refund currency is not configured correctly.");
@@ -187,80 +218,87 @@ public class StripeGateway : IStripeGateway
 
         var expectedAmount = ToMinorUnits(amount);
 
-        var options = new RefundCreateOptions
-        {
-            PaymentIntent = paymentIntentId,
-            Amount = expectedAmount
-        };
-
-        var requestOptions = new RequestOptions
-        {
-            IdempotencyKey = idempotencyKey
-        };
-
         try
         {
             var service = new RefundService(GetClient());
 
-            var existing = await service.ListAsync(
-                new RefundListOptions
+            Refund? succeeded = null;
+            Refund? active = null;
+            Refund? failed = null;
+
+            // Stripe lists newest first.
+            // Check all pages so an older pending/succeeded refund is not missed.
+            await foreach (
+                var listed in service.ListAutoPagingAsync(
+                    new RefundListOptions
+                    {
+                        PaymentIntent = paymentIntentId,
+                        Limit = 100
+                    }))
+            {
+                var refund = await GetVerifiedRefundAsync(
+                    service,
+                    listed.Id,
+                    paymentIntentId,
+                    expectedAmount);
+
+                if (refund.Status == "succeeded")
+                {
+                    succeeded ??= refund;
+                }
+                else if (refund.Status is "failed" or "canceled")
+                {
+                    failed ??= refund;
+                }
+                else
+                {
+                    active ??= refund;
+                }
+            }
+
+            var existing = succeeded ?? active ?? failed;
+
+            if (existing is not null)
+            {
+                if (existing.Status == "succeeded")
+                {
+                    return existing.Id;
+                }
+
+                if (existing.Status is not ("failed" or "canceled") ||
+                    idempotencyKey is null)
+                {
+                    return RequireSucceededRefund(existing);
+                }
+
+                // Concurrent clicks and interrupted retries use the same key.
+                idempotencyKey += "-after-" + existing.Id;
+            }
+            else if (idempotencyKey is null)
+            {
+                throw new PaymentException(
+                    "No Stripe refund was found for this payment. Use Refund / retry in full to request one.");
+            }
+
+            var created = await service.CreateAsync(
+                new RefundCreateOptions
                 {
                     PaymentIntent = paymentIntentId,
-                    Limit = 1
+                    Amount = expectedAmount
+                },
+                new RequestOptions
+                {
+                    IdempotencyKey = idempotencyKey
                 });
 
-            var created = existing.Data.FirstOrDefault()
-                ?? await service.CreateAsync(options, requestOptions);
+            // A cached idempotent response may contain an old pending status.
+            var confirmed = await GetVerifiedRefundAsync(
+                service,
+                created.Id,
+                paymentIntentId,
+                expectedAmount);
 
-            if (string.IsNullOrWhiteSpace(created.Id))
-            {
-                throw new PaymentException(
-                    "Stripe did not return a refund reference. Check Stripe before trying again.",
-                    paymentMayBeInProgress: true);
-            }
-
-            // Retrieve the latest status, including when reusing an existing refund.
-            var refund = await service.GetAsync(created.Id);
-
-            if (refund.Id != created.Id
-                || refund.PaymentIntentId != paymentIntentId
-                || refund.Amount != expectedAmount
-                || !string.Equals(
-                    refund.Currency,
-                    _settings.Currency.Trim(),
-                    StringComparison.OrdinalIgnoreCase))
-            {
-                _logger.LogWarning(
-                    "Stripe refund {RefundId} did not match the expected payment details",
-                    created.Id);
-
-                throw new PaymentException(
-                    "The refund details do not match this payment. Check Stripe before trying again.",
-                    paymentMayBeInProgress: true);
-            }
-
-            _logger.LogInformation(
-                "Stripe refund {RefundId} has status {Status}",
-                refund.Id,
-                refund.Status);
-
-            return refund.Status switch
-            {
-                "succeeded" => refund.Id,
-
-                "pending" or "requires_action" =>
-                    throw new PaymentException(
-                        "The Stripe refund is awaiting confirmation. The payment remains marked paid. Check the existing refund in Stripe before submitting another request.",
-                        paymentMayBeInProgress: true),
-
-                "failed" or "canceled" =>
-                    throw new PaymentException(
-                        "The Stripe refund failed or was cancelled. The payment remains marked paid. Check Stripe before attempting another refund."),
-
-                _ => throw new PaymentException(
-                    "Stripe has not confirmed the refund. Check its status in Stripe before trying again.",
-                    paymentMayBeInProgress: true)
-            };
+            return RequireSucceededRefund(confirmed);
         }
         catch (StripeException ex)
         {
@@ -287,7 +325,68 @@ public class StripeGateway : IStripeGateway
         }
     }
 
-    public Event ConstructWebhookEvent(string json, string signatureHeader)
+    private async Task<Refund> GetVerifiedRefundAsync(
+        RefundService service,
+        string refundId,
+        string paymentIntentId,
+        long expectedAmount)
+    {
+        if (string.IsNullOrWhiteSpace(refundId))
+        {
+            throw new PaymentException(
+                "Stripe did not return a refund reference. Check Stripe before trying again.",
+                true);
+        }
+
+        var refund = await service.GetAsync(refundId);
+
+        if (refund.Id != refundId ||
+            refund.PaymentIntentId != paymentIntentId ||
+            refund.Amount != expectedAmount ||
+            !string.Equals(
+                refund.Currency,
+                _settings.Currency.Trim(),
+                StringComparison.OrdinalIgnoreCase))
+        {
+            _logger.LogWarning(
+                "Stripe refund {RefundId} did not match the expected payment details",
+                refundId);
+
+            throw new PaymentException(
+                "The refund details do not match this payment. Check Stripe before trying again.",
+                true);
+        }
+
+        _logger.LogInformation(
+            "Stripe refund {RefundId} has status {Status}",
+            refund.Id,
+            refund.Status);
+
+        return refund;
+    }
+
+    private static string RequireSucceededRefund(Refund refund) =>
+        refund.Status switch
+        {
+            "succeeded" => refund.Id,
+
+            "pending" or "requires_action" =>
+                throw new PaymentException(
+                    "The Stripe refund is awaiting confirmation. The payment remains marked paid. Use Recheck refund to check it again.",
+                    paymentMayBeInProgress: true),
+
+            "failed" or "canceled" =>
+                throw new PaymentException(
+                    "The Stripe refund failed or was cancelled. The payment remains marked paid. Use Refund / retry in full to request another attempt."),
+
+            _ => throw new PaymentException(
+                "Stripe has not confirmed the refund. Check its status in Stripe before trying again.",
+                paymentMayBeInProgress: true)
+        };
+
+    public Event ConstructWebhookEvent(
+        string json,
+        string signatureHeader)
     {
         if (string.IsNullOrWhiteSpace(_settings.WebhookSecret))
         {
@@ -295,8 +394,6 @@ public class StripeGateway : IStripeGateway
                 "Stripe:WebhookSecret is not configured.");
         }
 
-        // throwOnApiVersionMismatch: false -> the SDK's pinned API version may differ from the
-        // one your Stripe account uses; we only read fields that exist in both.
         return EventUtility.ConstructEvent(
             json,
             signatureHeader,
@@ -315,16 +412,20 @@ public class StripeGateway : IStripeGateway
         return _client ??= new StripeClient(_settings.SecretKey);
     }
 
-    /// <summary>Maps our PaymentMethod values onto Stripe's payment method types.</summary>
-    private static string ToStripeMethodType(string paymentMethod) => paymentMethod switch
-    {
-        PaymentMethod.Card => "card",
-        PaymentMethod.OnlineBanking => "fpx",
-        PaymentMethod.EWallet => "grabpay",
-        _ => throw new PaymentException("That payment method can't be paid online.")
-    };
+    private static string ToStripeMethodType(string paymentMethod) =>
+        paymentMethod switch
+        {
+            PaymentMethod.Card => "card",
+            PaymentMethod.OnlineBanking => "fpx",
+            PaymentMethod.EWallet => "grabpay",
 
-    /// <summary>Stripe wants whole sen: RM 85.50 becomes 8550.</summary>
+            _ => throw new PaymentException(
+                "That payment method can't be paid online.")
+        };
+
+    // Stripe wants whole sen: RM85.50 becomes 8550.
     private static long ToMinorUnits(decimal amount) =>
-        (long)Math.Round(amount * 100m, MidpointRounding.AwayFromZero);
+        (long)Math.Round(
+            amount * 100m,
+            MidpointRounding.AwayFromZero);
 }

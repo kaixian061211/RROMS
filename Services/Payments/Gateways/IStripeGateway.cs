@@ -23,6 +23,13 @@ public interface IStripeGateway
         decimal amount,
         string idempotencyKey);
 
+    /// <summary>
+    /// Checks an existing Stripe refund without creating another refund.
+    /// </summary>
+    Task<string> RecheckRefundAsync(
+        string paymentIntentId,
+        decimal amount);
+
     Event ConstructWebhookEvent(
         string json,
         string signatureHeader);
