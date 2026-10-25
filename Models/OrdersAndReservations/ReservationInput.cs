@@ -8,16 +8,19 @@ public class ReservationInput
     [Display(Name = "Table")]
     public int TableId { get; set; }
 
+    // The date and party size are nullable so that an empty field is caught by [Required] and gets its message.
+    // As a plain DateOnly or int, an empty field fails before that, with "The value '' is invalid."
     [Display(Name = "Date")]
     [Required(ErrorMessage = "Please choose a date.")]
-    public DateOnly ReservationDate { get; set; }
+    public DateOnly? ReservationDate { get; set; }
 
     [Display(Name = "Time")]
     public TimeOnly TimeSlot { get; set; }
 
     [Display(Name = "Party size")]
+    [Required(ErrorMessage = "Please enter the party size.")]
     [Range(1, int.MaxValue, ErrorMessage = "Party size must be at least 1.")]
-    public int PartySize { get; set; } = 2;
+    public int? PartySize { get; set; } = 2;
 
     [Display(Name = "Special request (optional)")]
     [StringLength(500, ErrorMessage = "Special requests can be at most 500 characters.")]

@@ -67,6 +67,6 @@ public class EditModel : PageModel
         }
 
         TempData["StatusMessage"] = $"{ReservationFormatter.Reference(Id)} has been updated.";
-        return RedirectToPage("Index", new { date = ReservationFormatter.InputDate(Input.ReservationDate) });
+        return RedirectToPage("Index", new { date = ReservationFormatter.InputDate(result.Reservation!.ReservationDate) });
     }
 }
