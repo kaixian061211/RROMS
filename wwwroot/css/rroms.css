@@ -1,0 +1,1110 @@
+/* =============================================================================
+   RROMS design system ("kopitiam")
+   The look of a Malaysian coffee shop: marble tabletops, white enamel, painted
+   shop signs, and the order docket that goes to the kitchen. Bootstrap stays;
+   this file re-themes it and adds a few RROMS components (rr-*).
+   Live examples: /Dev/StyleGuide (Development only). Rules: DESIGN.md.
+   ========================================================================== */
+
+
+/* 1. Fonts (stored in wwwroot/fonts, SIL Open Font License) ---------------- */
+
+@font-face {
+    font-family: "Plus Jakarta Sans";
+    font-style: normal;
+    font-weight: 400 700;
+    font-display: swap;
+    src: url("../fonts/PlusJakartaSans-latin.woff2") format("woff2");
+}
+
+@font-face {
+    font-family: "Zilla Slab";
+    font-style: normal;
+    font-weight: 600;
+    font-display: swap;
+    src: url("../fonts/ZillaSlab-SemiBold-latin.woff2") format("woff2");
+}
+
+@font-face {
+    font-family: "Zilla Slab";
+    font-style: normal;
+    font-weight: 700;
+    font-display: swap;
+    src: url("../fonts/ZillaSlab-Bold-latin.woff2") format("woff2");
+}
+
+
+/* 2. Tokens --------------------------------------------------------------- */
+
+:root {
+    /* Palette */
+    --rr-marble: #f1f3f1;        /* page background: the tabletop */
+    --rr-marble-deep: #e3e8e4;   /* the kitchen pass behind the order rail, pressed states */
+    --rr-enamel: #ffffff;        /* cards, dockets, header */
+    --rr-kopi: #1d1a17;          /* text */
+    --rr-muted: #5d625c;         /* secondary text */
+    --rr-line: #d8dcd7;          /* borders and rules */
+    --rr-line-strong: #c3c9c3;   /* form field borders */
+    --rr-pandan: #0b6b4f;        /* actions, links, chosen options, confirmed / ready */
+    --rr-pandan-dark: #08513c;
+    --rr-pandan-tint: #e1f0e9;
+    --rr-kaya: #e9b23c;          /* needs attention: pending, new. A fill only, never text on white */
+    --rr-kaya-ink: #6f4b00;
+    --rr-kaya-tint: #fbf0d4;
+    --rr-sambal: #c2381c;        /* cancel, errors, refused */
+    --rr-sambal-dark: #9c2c15;
+    --rr-sambal-tint: #f8e2dc;
+    --rr-teh: #a86b3c;           /* in progress: preparing */
+    --rr-teh-ink: #6e4220;
+    --rr-teh-tint: #f3e6da;
+
+    /* Type */
+    --rr-font-display: "Zilla Slab", Rockwell, "Roboto Slab", Georgia, serif;
+    --rr-font-body: "Plus Jakarta Sans", "Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue", Arial, sans-serif;
+    --rr-font-mono: "Cascadia Mono", Consolas, ui-monospace, "SFMono-Regular", Menlo, monospace;
+
+    /* Shape */
+    --rr-radius-control: .5rem;
+    --rr-radius-card: .75rem;
+    --rr-radius-paper: .1875rem;
+    --rr-shadow-paper: 0 1px 1px rgba(29, 26, 23, .08), 0 8px 18px -10px rgba(29, 26, 23, .35);
+    --rr-touch: 2.75rem;         /* smallest tap target */
+
+    /* Bootstrap, mapped onto the palette */
+    --bs-body-font-family: var(--rr-font-body);
+    --bs-body-font-size: 1rem;
+    --bs-body-line-height: 1.55;
+    --bs-body-color: #1d1a17;
+    --bs-body-color-rgb: 29, 26, 23;
+    --bs-body-bg: #f1f3f1;
+    --bs-body-bg-rgb: 241, 243, 241;
+    --bs-emphasis-color: #1d1a17;
+    --bs-emphasis-color-rgb: 29, 26, 23;
+    --bs-secondary-color: #5d625c;
+    --bs-secondary-color-rgb: 93, 98, 92;
+    --bs-secondary-bg: #e3e8e4;
+    --bs-tertiary-bg: #f6f7f6;
+    --bs-heading-color: #1d1a17;
+    --bs-border-color: #d8dcd7;
+    --bs-border-color-translucent: rgba(29, 26, 23, .12);
+    --bs-border-radius: .5rem;
+    --bs-border-radius-sm: .375rem;
+    --bs-border-radius-lg: .75rem;
+    --bs-link-color: #0b6b4f;
+    --bs-link-color-rgb: 11, 107, 79;
+    --bs-link-hover-color: #08513c;
+    --bs-link-hover-color-rgb: 8, 81, 60;
+    --bs-focus-ring-color: rgba(11, 107, 79, .35);
+    --bs-code-color: #6e4220;
+
+    --bs-primary: #0b6b4f;
+    --bs-primary-rgb: 11, 107, 79;
+    --bs-primary-text-emphasis: #08513c;
+    --bs-primary-bg-subtle: #e1f0e9;
+    --bs-primary-border-subtle: #b5d6c7;
+    --bs-success: #0b6b4f;
+    --bs-success-rgb: 11, 107, 79;
+    --bs-success-text-emphasis: #08513c;
+    --bs-success-bg-subtle: #e1f0e9;
+    --bs-success-border-subtle: #b5d6c7;
+    --bs-warning: #e9b23c;
+    --bs-warning-rgb: 233, 178, 60;
+    --bs-warning-text-emphasis: #6f4b00;
+    --bs-warning-bg-subtle: #fbf0d4;
+    --bs-warning-border-subtle: #f0d48e;
+    --bs-danger: #c2381c;
+    --bs-danger-rgb: 194, 56, 28;
+    --bs-danger-text-emphasis: #9c2c15;
+    --bs-danger-bg-subtle: #f8e2dc;
+    --bs-danger-border-subtle: #ebb5a8;
+    --bs-info: #a86b3c;
+    --bs-info-rgb: 168, 107, 60;
+    --bs-info-text-emphasis: #6e4220;
+    --bs-info-bg-subtle: #f3e6da;
+    --bs-info-border-subtle: #ddbfa5;
+    --bs-secondary: #6e736d;
+    --bs-secondary-rgb: 110, 115, 109;
+    --bs-secondary-text-emphasis: #3f433e;
+    --bs-secondary-bg-subtle: #eceeeb;
+    --bs-secondary-border-subtle: #d0d4cf;
+    --bs-dark: #1d1a17;
+    --bs-dark-rgb: 29, 26, 23;
+    --bs-light: #f6f7f6;
+    --bs-light-rgb: 246, 247, 246;
+    --bs-form-invalid-color: #9c2c15;
+    --bs-form-invalid-border-color: #c2381c;
+    --bs-form-valid-border-color: #0b6b4f;
+}
+
+
+/* 3. Base ----------------------------------------------------------------- */
+
+html {
+    font-size: 15px;
+}
+
+@media (min-width: 768px) {
+    html {
+        font-size: 16px;
+    }
+}
+
+body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    -webkit-font-smoothing: antialiased;
+}
+
+/* Lining figures: Zilla Slab's default digits rise and fall like lowercase, which suits prose but not
+   times and table numbers. Everything set in the slab uses them. */
+h1, h2, h3, .h1, .h2, .h3 {
+    font-family: var(--rr-font-display);
+    font-weight: 700;
+    font-variant-numeric: lining-nums;
+    letter-spacing: -.01em;
+    line-height: 1.15;
+    text-wrap: balance;
+}
+
+h1, .h1 { font-size: clamp(1.875rem, 1.45rem + 1.4vw, 2.5rem); }
+h2, .h2 { font-size: clamp(1.375rem, 1.2rem + .6vw, 1.625rem); }
+h3, .h3 { font-size: 1.25rem; }
+
+h4, h5, h6, .h4, .h5, .h6 {
+    font-family: var(--rr-font-body);
+    font-weight: 700;
+    line-height: 1.3;
+}
+
+h4, .h4 { font-size: 1.0625rem; }
+h5, .h5, h6, .h6 { font-size: 1rem; }
+
+p, li {
+    text-wrap: pretty;
+}
+
+a {
+    text-underline-offset: .18em;
+}
+
+:focus-visible {
+    outline: 3px solid rgba(11, 107, 79, .45);
+    outline-offset: 2px;
+}
+
+/* Reference numbers (RES-001841, ORD-001256) look like what the kitchen printer prints. */
+.rr-ref {
+    font-family: var(--rr-font-mono);
+    font-size: .875em;
+    letter-spacing: .02em;
+    color: var(--rr-muted);
+}
+
+/* Money and anything that lines up in columns. */
+.rr-money,
+.table td,
+.table th {
+    font-variant-numeric: tabular-nums;
+}
+
+.rr-money {
+    white-space: nowrap;
+}
+
+/* A small label above a heading or a value. Only for real labels ("Seating", "Table"). */
+.rr-label {
+    display: block;
+    font-size: .75rem;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--rr-muted);
+}
+
+.rr-lede {
+    font-size: 1.0625rem;
+    color: var(--rr-muted);
+    max-width: 38rem;
+}
+
+/* Customer pages are one comfortable column; staff pages use the full width. */
+.rr-narrow {
+    max-width: 44rem;
+}
+
+/* Page side margins: at least 16px on a phone, more on a wide screen. */
+.container-xxl {
+    --bs-gutter-x: 2rem;
+}
+
+@media (min-width: 992px) {
+    .container-xxl {
+        --bs-gutter-x: 3rem;
+    }
+}
+
+
+/* 4. Bootstrap, re-themed ------------------------------------------------- */
+
+.btn {
+    --bs-btn-font-weight: 600;
+    --bs-btn-padding-x: 1.125rem;
+    --bs-btn-padding-y: .5625rem;
+    --bs-btn-border-radius: var(--rr-radius-control);
+    --bs-btn-focus-box-shadow: 0 0 0 .2rem rgba(var(--bs-btn-focus-shadow-rgb), .35);
+}
+
+.btn-sm {
+    --bs-btn-padding-x: .75rem;
+    --bs-btn-padding-y: .3125rem;
+    --bs-btn-font-size: .875rem;
+}
+
+.btn-lg {
+    --bs-btn-padding-x: 1.5rem;
+    --bs-btn-padding-y: .75rem;
+    --bs-btn-font-size: 1.0625rem;
+}
+
+.btn-primary,
+.btn-success {
+    --bs-btn-color: #fff;
+    --bs-btn-bg: var(--rr-pandan);
+    --bs-btn-border-color: var(--rr-pandan);
+    --bs-btn-hover-color: #fff;
+    --bs-btn-hover-bg: var(--rr-pandan-dark);
+    --bs-btn-hover-border-color: var(--rr-pandan-dark);
+    --bs-btn-focus-shadow-rgb: 11, 107, 79;
+    --bs-btn-active-color: #fff;
+    --bs-btn-active-bg: #063f2f;
+    --bs-btn-active-border-color: #063f2f;
+    --bs-btn-disabled-color: #fff;
+    --bs-btn-disabled-bg: var(--rr-pandan);
+    --bs-btn-disabled-border-color: var(--rr-pandan);
+}
+
+.btn-outline-primary,
+.btn-outline-success {
+    --bs-btn-color: var(--rr-pandan);
+    --bs-btn-border-color: var(--rr-pandan);
+    --bs-btn-hover-color: #fff;
+    --bs-btn-hover-bg: var(--rr-pandan);
+    --bs-btn-hover-border-color: var(--rr-pandan);
+    --bs-btn-focus-shadow-rgb: 11, 107, 79;
+    --bs-btn-active-color: #fff;
+    --bs-btn-active-bg: var(--rr-pandan-dark);
+    --bs-btn-active-border-color: var(--rr-pandan-dark);
+    --bs-btn-disabled-color: var(--rr-pandan);
+    --bs-btn-disabled-border-color: var(--rr-pandan);
+}
+
+.btn-danger {
+    --bs-btn-color: #fff;
+    --bs-btn-bg: var(--rr-sambal);
+    --bs-btn-border-color: var(--rr-sambal);
+    --bs-btn-hover-color: #fff;
+    --bs-btn-hover-bg: var(--rr-sambal-dark);
+    --bs-btn-hover-border-color: var(--rr-sambal-dark);
+    --bs-btn-focus-shadow-rgb: 194, 56, 28;
+    --bs-btn-active-color: #fff;
+    --bs-btn-active-bg: #7d230f;
+    --bs-btn-active-border-color: #7d230f;
+}
+
+.btn-outline-danger {
+    --bs-btn-color: var(--rr-sambal);
+    --bs-btn-border-color: #dfa293;
+    --bs-btn-hover-color: #fff;
+    --bs-btn-hover-bg: var(--rr-sambal);
+    --bs-btn-hover-border-color: var(--rr-sambal);
+    --bs-btn-focus-shadow-rgb: 194, 56, 28;
+    --bs-btn-active-color: #fff;
+    --bs-btn-active-bg: var(--rr-sambal-dark);
+    --bs-btn-active-border-color: var(--rr-sambal-dark);
+}
+
+.btn-outline-secondary,
+.btn-light {
+    --bs-btn-color: var(--rr-kopi);
+    --bs-btn-bg: var(--rr-enamel);
+    --bs-btn-border-color: var(--rr-line-strong);
+    --bs-btn-hover-color: var(--rr-kopi);
+    --bs-btn-hover-bg: var(--rr-marble);
+    --bs-btn-hover-border-color: #a9b0a9;
+    --bs-btn-focus-shadow-rgb: 29, 26, 23;
+    --bs-btn-active-color: var(--rr-kopi);
+    --bs-btn-active-bg: var(--rr-marble-deep);
+    --bs-btn-active-border-color: #a9b0a9;
+}
+
+.form-label {
+    font-weight: 600;
+    margin-bottom: .375rem;
+}
+
+.form-control,
+.form-select {
+    border-color: var(--rr-line-strong);
+    border-radius: var(--rr-radius-control);
+    padding-top: .5625rem;
+    padding-bottom: .5625rem;
+    background-color: var(--rr-enamel);
+}
+
+.form-control:focus,
+.form-select:focus {
+    border-color: var(--rr-pandan);
+    box-shadow: 0 0 0 .2rem rgba(11, 107, 79, .2);
+}
+
+.form-control::placeholder {
+    color: #8a8f88;
+}
+
+.form-text {
+    color: var(--rr-muted);
+}
+
+.form-check-input:checked {
+    background-color: var(--rr-pandan);
+    border-color: var(--rr-pandan);
+}
+
+.form-check-input:focus {
+    border-color: var(--rr-pandan);
+    box-shadow: 0 0 0 .2rem rgba(11, 107, 79, .2);
+}
+
+.nav-pills {
+    --bs-nav-pills-link-active-bg: var(--rr-kopi);
+    --bs-nav-pills-link-active-color: #fff;
+    --bs-nav-pills-border-radius: 999px;
+    --bs-nav-link-color: var(--rr-kopi);
+    --bs-nav-link-hover-color: var(--rr-kopi);
+    --bs-nav-link-font-weight: 600;
+    --bs-nav-link-padding-x: .875rem;
+    --bs-nav-link-padding-y: .375rem;
+    gap: .375rem;
+}
+
+.nav-pills .nav-link:not(.active) {
+    background: var(--rr-enamel);
+    box-shadow: inset 0 0 0 1px var(--rr-line);
+}
+
+.nav-pills .nav-link:not(.active):hover {
+    box-shadow: inset 0 0 0 1px #a9b0a9;
+}
+
+.card {
+    --bs-card-border-color: var(--rr-line);
+    --bs-card-border-radius: var(--rr-radius-card);
+    --bs-card-inner-border-radius: calc(var(--rr-radius-card) - 1px);
+    --bs-card-cap-bg: var(--rr-enamel);
+    --bs-card-bg: var(--rr-enamel);
+}
+
+.table {
+    --bs-table-bg: var(--rr-enamel);
+    --bs-table-border-color: var(--rr-line);
+}
+
+/* Keeps a visually hidden label (an "Actions" header) inside the scrolling box, so it can't widen the page. */
+.table-responsive {
+    position: relative;
+}
+
+.table > thead th {
+    font-size: .75rem;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--rr-muted);
+    border-bottom-color: var(--rr-line-strong);
+}
+
+.alert {
+    --bs-alert-border-radius: var(--rr-radius-control);
+    border-left-width: 4px;
+}
+
+.badge {
+    --bs-badge-font-weight: 700;
+    --bs-badge-padding-x: .6em;
+    --bs-badge-padding-y: .4em;
+    --bs-badge-border-radius: 999px;
+    letter-spacing: .02em;
+}
+
+
+/* 5. Shell: header, navigation, footer, test-login bar --------------------- */
+
+.rr-header {
+    background: var(--rr-enamel);
+    border-bottom: 1px solid var(--rr-line);
+}
+
+.rr-header .navbar {
+    --bs-navbar-padding-y: .625rem;
+    --bs-navbar-color: var(--rr-muted);
+    --bs-navbar-hover-color: var(--rr-kopi);
+    --bs-navbar-active-color: var(--rr-pandan);
+    --bs-navbar-nav-link-padding-x: .75rem;
+    --bs-navbar-toggler-border-color: var(--rr-line-strong);
+    --bs-navbar-toggler-focus-width: .2rem;
+}
+
+.rr-wordmark {
+    font-family: var(--rr-font-display);
+    font-variant-numeric: lining-nums;
+    font-weight: 700;
+    font-size: 1.625rem;
+    letter-spacing: .04em;
+    color: var(--rr-kopi);
+    line-height: 1;
+    display: inline-flex;
+    align-items: baseline;
+    gap: .375rem;
+}
+
+.rr-wordmark:hover {
+    color: var(--rr-kopi);
+}
+
+/* The brand mark: a kaya-yellow dot after the name. */
+.rr-wordmark::after {
+    content: "";
+    align-self: flex-start;
+    width: .4375rem;
+    height: .4375rem;
+    margin-top: .0625rem;
+    border-radius: 50%;
+    background: var(--rr-kaya);
+}
+
+.rr-header .nav-link {
+    font-weight: 600;
+    border-radius: var(--rr-radius-control);
+}
+
+.rr-header .nav-link:hover {
+    background: var(--rr-marble);
+}
+
+.rr-header .nav-link.active {
+    background: var(--rr-pandan-tint);
+}
+
+.rr-main {
+    flex: 1 0 auto;
+    padding-top: 2rem;
+    padding-bottom: 3rem;
+}
+
+.rr-footer {
+    border-top: 1px solid var(--rr-line);
+    color: var(--rr-muted);
+    font-size: .875rem;
+    padding: 1.25rem 0 calc(1.25rem + env(safe-area-inset-bottom, 0px));
+}
+
+.rr-footer a {
+    color: inherit;
+}
+
+/* Development only: looks like a tool, so nobody mistakes it for part of the restaurant's app. */
+.rr-devbar {
+    background: var(--rr-kopi);
+    color: #e9e6e1;
+    font-size: .8125rem;
+}
+
+.rr-devbar strong {
+    color: #fff;
+}
+
+.rr-devbar a {
+    color: var(--rr-kaya);
+}
+
+.rr-devbar__tag {
+    font-family: var(--rr-font-mono);
+    font-size: .75rem;
+    color: var(--rr-kaya);
+    letter-spacing: .04em;
+}
+
+
+/* 6. Components ----------------------------------------------------------- */
+
+/* Page header: what this page is, one line of context, and its main action. */
+.rr-page-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 1rem 1.5rem;
+    margin-bottom: 1.75rem;
+}
+
+.rr-page-header h1 {
+    margin-bottom: 0;
+}
+
+.rr-page-header .rr-lede {
+    margin: .5rem 0 0;
+}
+
+.rr-page-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .5rem;
+}
+
+/* Status pill. The modifier says what the status means, so every module can map its own statuses:
+   attention = waiting for someone (pending), progress = being worked on (preparing),
+   good = done well (confirmed, ready, paid), done = finished (served, completed),
+   off = no longer happening (cancelled, refunded), bad = went wrong (failed). */
+.rr-status {
+    display: inline-flex;
+    align-items: center;
+    gap: .4em;
+    padding: .3em .7em .3em .6em;
+    border-radius: 999px;
+    font-size: .75rem;
+    font-weight: 700;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    line-height: 1.2;
+}
+
+.rr-status::before {
+    content: "";
+    width: .5em;
+    height: .5em;
+    border-radius: 50%;
+    background: currentColor;
+}
+
+.rr-status--attention { background: var(--rr-kaya-tint); color: var(--rr-kaya-ink); }
+.rr-status--attention::before { background: var(--rr-kaya); }
+.rr-status--progress { background: var(--rr-teh-tint); color: var(--rr-teh-ink); }
+.rr-status--good { background: var(--rr-pandan-tint); color: var(--rr-pandan-dark); }
+.rr-status--done { background: #e4e6e3; color: var(--rr-kopi); }
+.rr-status--off { background: #eceeeb; color: #6e736d; }
+.rr-status--off::before { background: #a3a8a2; }
+.rr-status--bad { background: var(--rr-sambal-tint); color: var(--rr-sambal-dark); }
+
+/* Docket: the RROMS signature. Anything that changes hands (an order, a booking, a receipt) is a
+   paper docket with a torn top edge, a monospace reference, and a dashed tear line above the total. */
+.rr-docket {
+    --rr-paper: var(--rr-enamel);
+    position: relative;
+    margin-top: .5rem;
+    padding: 1rem 1.125rem 1.125rem;
+    background: var(--rr-paper);
+    border-radius: 0 0 var(--rr-radius-paper) var(--rr-radius-paper);
+    filter: drop-shadow(0 1px 1px rgba(29, 26, 23, .1)) drop-shadow(0 6px 10px rgba(29, 26, 23, .1));
+}
+
+.rr-docket::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: -.5rem;
+    height: .5rem;
+    background:
+        linear-gradient(135deg, transparent 50%, var(--rr-paper) 50%) 0 0 / .5rem .5rem repeat-x,
+        linear-gradient(225deg, transparent 50%, var(--rr-paper) 50%) 0 0 / .5rem .5rem repeat-x;
+}
+
+.rr-docket__head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: .75rem;
+    margin-bottom: .75rem;
+}
+
+.rr-docket__title {
+    display: block;
+    font-family: var(--rr-font-display);
+    font-variant-numeric: lining-nums;
+    font-size: 1.5rem;
+    font-weight: 700;
+    line-height: 1.1;
+}
+
+.rr-docket__lines {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: .375rem;
+}
+
+.rr-docket__line {
+    display: grid;
+    grid-template-columns: 2.25rem 1fr auto;
+    gap: .5rem;
+    align-items: baseline;
+}
+
+.rr-docket__qty {
+    font-family: var(--rr-font-mono);
+    font-weight: 700;
+}
+
+.rr-docket__amount {
+    font-family: var(--rr-font-mono);
+    font-variant-numeric: tabular-nums;
+}
+
+.rr-docket__total {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: .75rem;
+    margin-top: .875rem;
+    padding-top: .75rem;
+    border-top: 2px dashed var(--rr-line-strong);
+    font-weight: 700;
+}
+
+.rr-docket__total .rr-money {
+    font-family: var(--rr-font-mono);
+    font-size: 1.125rem;
+}
+
+.rr-docket__meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: .5rem;
+    margin-top: .5rem;
+    font-size: .875rem;
+    color: var(--rr-muted);
+}
+
+/* The next step takes the width; a Cancel beside it stays small. */
+.rr-docket__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .5rem;
+    margin-top: 1rem;
+}
+
+.rr-docket__actions > :first-child {
+    flex: 1 1 auto;
+}
+
+/* Board: columns of dockets hanging from a rail, like the ticket rail above a kitchen pass. */
+.rr-board {
+    display: grid;
+    grid-template-columns: repeat(var(--rr-board-columns, 4), minmax(0, 1fr));
+    gap: 1rem;
+    padding: 1rem;
+    background: var(--rr-marble-deep);
+    border-radius: var(--rr-radius-card);
+}
+
+@media (max-width: 1199.98px) {
+    .rr-board { --rr-board-columns: 2; }
+}
+
+@media (max-width: 575.98px) {
+    .rr-board { --rr-board-columns: 1; padding: .75rem; }
+}
+
+.rr-board__column {
+    min-width: 0;
+}
+
+.rr-board__title {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: .5rem;
+    margin: 0;
+    padding-bottom: .625rem;
+    font-family: var(--rr-font-body);
+    font-size: .8125rem;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+}
+
+.rr-board__count {
+    min-width: 1.75rem;
+    padding: .125rem .5rem;
+    border-radius: 999px;
+    background: var(--rr-enamel);
+    text-align: center;
+    font-family: var(--rr-font-mono);
+    letter-spacing: 0;
+}
+
+/* The rail itself: a steel bar the dockets hang from. */
+.rr-board__rail {
+    height: .5rem;
+    border-radius: 999px;
+    background: linear-gradient(#f5f7f6, #a9b2ac 55%, #8e9891);
+    box-shadow: 0 1px 1px rgba(29, 26, 23, .2);
+}
+
+.rr-board__dockets {
+    display: grid;
+    gap: 1.25rem;
+    padding: .25rem .375rem 0;
+}
+
+.rr-board__empty {
+    margin: 1rem .375rem 0;
+    font-size: .875rem;
+    color: var(--rr-muted);
+}
+
+/* Date block: the day a booking is for, like a tear-off calendar. */
+.rr-dateblock {
+    display: inline-grid;
+    justify-items: center;
+    min-width: 4rem;
+    border: 1px solid var(--rr-line-strong);
+    border-radius: var(--rr-radius-control);
+    overflow: hidden;
+    background: var(--rr-enamel);
+    text-align: center;
+    line-height: 1;
+}
+
+.rr-dateblock__day {
+    width: 100%;
+    padding: .3rem 0;
+    background: var(--rr-kopi);
+    color: #fff;
+    font-size: .6875rem;
+    font-weight: 700;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+}
+
+.rr-dateblock__date {
+    padding-top: .375rem;
+    font-family: var(--rr-font-display);
+    font-variant-numeric: lining-nums;
+    font-size: 1.75rem;
+    font-weight: 700;
+}
+
+.rr-dateblock__month {
+    padding: .125rem 0 .4rem;
+    font-size: .6875rem;
+    font-weight: 700;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--rr-muted);
+}
+
+/* Slip: one booking in a list, with its date block. */
+.rr-slip {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 1rem;
+    align-items: start;
+    padding: 1rem;
+    background: var(--rr-enamel);
+    border: 1px solid var(--rr-line);
+    border-radius: var(--rr-radius-card);
+}
+
+.rr-slip__title {
+    font-weight: 700;
+    font-size: 1.0625rem;
+}
+
+/* Choice tiles: radio buttons drawn as tiles (seatings, tables, payment methods).
+   Markup: <input type="radio" class="btn-check" id="x"> <label class="rr-tile" for="x">…</label> */
+.rr-tiles {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(var(--rr-tile-width, 3.25rem), 1fr));
+    gap: .5rem;
+}
+
+.rr-tiles--wide {
+    --rr-tile-width: 7rem;
+}
+
+.rr-tile {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: var(--rr-touch);
+    padding: .5rem .625rem;
+    border: 1px solid var(--rr-line-strong);
+    border-radius: var(--rr-radius-control);
+    background: var(--rr-enamel);
+    font-weight: 600;
+    text-align: center;
+    cursor: pointer;
+    user-select: none;
+    transition: background-color .12s, border-color .12s, color .12s;
+}
+
+.rr-tile:hover {
+    border-color: var(--rr-pandan);
+}
+
+.rr-tile small {
+    font-weight: 500;
+    color: var(--rr-muted);
+}
+
+.btn-check:checked + .rr-tile {
+    background: var(--rr-pandan);
+    border-color: var(--rr-pandan);
+    color: #fff;
+}
+
+.btn-check:checked + .rr-tile small {
+    color: rgba(255, 255, 255, .8);
+}
+
+.btn-check:focus-visible + .rr-tile {
+    outline: 3px solid rgba(11, 107, 79, .45);
+    outline-offset: 2px;
+}
+
+.btn-check:disabled + .rr-tile {
+    background: var(--rr-marble);
+    color: #9aa09a;
+    text-decoration: line-through;
+    cursor: not-allowed;
+}
+
+.rr-tile-group + .rr-tile-group {
+    margin-top: .75rem;
+}
+
+/* Stepper: − quantity +. The input stays a real number field the form sends. */
+.rr-stepper {
+    display: inline-flex;
+    align-items: stretch;
+    border: 1px solid var(--rr-line-strong);
+    border-radius: var(--rr-radius-control);
+    background: var(--rr-enamel);
+    overflow: hidden;
+}
+
+.rr-stepper__button {
+    width: var(--rr-touch);
+    min-height: var(--rr-touch);
+    border: 0;
+    background: transparent;
+    font-size: 1.25rem;
+    line-height: 1;
+    color: var(--rr-pandan);
+}
+
+.rr-stepper__button:hover {
+    background: var(--rr-pandan-tint);
+}
+
+.rr-stepper__input {
+    width: 3rem;
+    border: 0;
+    border-left: 1px solid var(--rr-line);
+    border-right: 1px solid var(--rr-line);
+    text-align: center;
+    font-family: var(--rr-font-mono);
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    -moz-appearance: textfield;
+    appearance: textfield;
+}
+
+.rr-stepper__input::-webkit-outer-spin-button,
+.rr-stepper__input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.rr-stepper__input:focus {
+    outline: none;
+    background: var(--rr-pandan-tint);
+}
+
+/* Steps: where something is in its journey (an order: pending, preparing, ready, served). */
+.rr-steps {
+    display: grid;
+    grid-template-columns: repeat(var(--rr-steps, 4), minmax(0, 1fr));
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    counter-reset: none;
+}
+
+.rr-steps li {
+    position: relative;
+    padding-top: 1.5rem;
+    font-size: .8125rem;
+    font-weight: 600;
+    color: var(--rr-muted);
+}
+
+.rr-steps li::before {
+    content: "";
+    position: absolute;
+    top: .25rem;
+    left: 0;
+    width: .875rem;
+    height: .875rem;
+    border-radius: 50%;
+    background: var(--rr-enamel);
+    border: 2px solid var(--rr-line-strong);
+    z-index: 1;
+}
+
+.rr-steps li::after {
+    content: "";
+    position: absolute;
+    top: .625rem;
+    left: .875rem;
+    right: 0;
+    height: 2px;
+    background: var(--rr-line-strong);
+}
+
+.rr-steps li:last-child::after {
+    display: none;
+}
+
+.rr-steps li.is-done,
+.rr-steps li.is-current {
+    color: var(--rr-kopi);
+}
+
+.rr-steps li.is-done::before {
+    background: var(--rr-pandan);
+    border-color: var(--rr-pandan);
+}
+
+.rr-steps li.is-done::after {
+    background: var(--rr-pandan);
+}
+
+.rr-steps li.is-current::before {
+    background: var(--rr-enamel);
+    border: 4px solid var(--rr-pandan);
+}
+
+/* Empty state: what will appear here, and how to make the first one. */
+.rr-empty {
+    padding: 2.5rem 1.5rem;
+    border: 2px dashed var(--rr-line-strong);
+    border-radius: var(--rr-radius-card);
+    text-align: center;
+    color: var(--rr-muted);
+}
+
+.rr-empty__title {
+    margin-bottom: .25rem;
+    font-weight: 700;
+    color: var(--rr-kopi);
+}
+
+.rr-empty .btn {
+    margin-top: 1rem;
+}
+
+/* Feature card: one thing a role can do (the dashboards). */
+.rr-feature {
+    position: relative;
+    height: 100%;
+    padding: 1.125rem 1.25rem;
+    background: var(--rr-enamel);
+    border: 1px solid var(--rr-line);
+    border-radius: var(--rr-radius-card);
+    transition: border-color .12s, transform .12s;
+}
+
+.rr-feature:hover {
+    border-color: var(--rr-pandan);
+}
+
+.rr-feature__title {
+    margin-bottom: .25rem;
+    font-family: var(--rr-font-display);
+    font-variant-numeric: lining-nums;
+    font-size: 1.25rem;
+    font-weight: 700;
+}
+
+.rr-feature__title a {
+    color: var(--rr-kopi);
+    text-decoration: none;
+}
+
+.rr-feature__title a::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+}
+
+.rr-feature__meta {
+    margin-top: .75rem;
+    font-size: .8125rem;
+    color: var(--rr-muted);
+}
+
+.rr-feature--soon {
+    background: transparent;
+    border-style: dashed;
+    color: var(--rr-muted);
+}
+
+.rr-feature--soon:hover {
+    border-color: var(--rr-line);
+}
+
+.rr-feature--soon .rr-feature__title {
+    color: var(--rr-muted);
+}
+
+/* Panel: a plain white surface for a form or a group of details. */
+.rr-panel {
+    padding: 1.5rem;
+    background: var(--rr-enamel);
+    border: 1px solid var(--rr-line);
+    border-radius: var(--rr-radius-card);
+}
+
+/* Action bar: the page's main action. On a phone it stays at the bottom of the screen. */
+@media (max-width: 767.98px) {
+    .rr-actionbar {
+        position: sticky;
+        bottom: 0;
+        z-index: 10;
+        margin: 1.5rem calc(-1 * var(--bs-gutter-x, .75rem)) 0;
+        padding: .75rem var(--bs-gutter-x, .75rem) calc(.75rem + env(safe-area-inset-bottom, 0px));
+        background: var(--rr-enamel);
+        border-top: 1px solid var(--rr-line);
+        box-shadow: 0 -8px 16px -12px rgba(29, 26, 23, .3);
+    }
+}
+
+
+/* 7. Motion --------------------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        transition-duration: 0s !important;
+        animation-duration: 0s !important;
+    }
+}
