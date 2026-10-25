@@ -24,13 +24,13 @@
            class="btn btn-outline-secondary" aria-label="Previous day">&lsaquo;</a>
         <label for="date" class="visually-hidden">Date</label>
         <input id="date" name="date" type="date" class="form-control w-auto" value="@dateValue" />
+        <a asp-page="Index" asp-route-date="@ReservationFormatter.InputDate(Model.SelectedDate.AddDays(1))" asp-route-status="@Model.StatusFilter"
+           class="btn btn-outline-secondary" aria-label="Next day">&rsaquo;</a>
         @if (Model.StatusFilter is not null)
         {
             <input type="hidden" name="status" value="@Model.StatusFilter" />
         }
         <button type="submit" class="btn btn-outline-secondary">Show</button>
-        <a asp-page="Index" asp-route-date="@ReservationFormatter.InputDate(Model.SelectedDate.AddDays(1))" asp-route-status="@Model.StatusFilter"
-           class="btn btn-outline-secondary" aria-label="Next day">&rsaquo;</a>
         @if (!isToday)
         {
             <a asp-page="Index" asp-route-status="@Model.StatusFilter" class="btn btn-link">Today</a>
