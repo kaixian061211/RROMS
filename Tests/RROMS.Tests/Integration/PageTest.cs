@@ -5,6 +5,7 @@ using AngleSharp.Dom;
 using AngleSharp.Html.Dom;
 using Microsoft.Extensions.DependencyInjection;
 using RROMS.Web.Data;
+using RROMS.Web.Models.Dev;
 
 namespace RROMS.Tests.Integration;
 
@@ -16,8 +17,8 @@ namespace RROMS.Tests.Integration;
 /// </summary>
 public abstract class PageTest : IClassFixture<TestWebApp>, IAsyncLifetime
 {
-    /// <summary>Program.cs signs every Development visitor in as customer 1 (and as staff).</summary>
-    protected const int TestCustomer = 1;
+    /// <summary>The customer the page tests sign in as, unless a test class chooses someone else.</summary>
+    protected static int TestCustomer => TestUsers.CustomerA.Id;
     protected const int OtherCustomer = 9001;
 
     protected static DateOnly Tomorrow => DateOnly.FromDateTime(DateTime.Today.AddDays(1));
@@ -34,9 +35,35 @@ public abstract class PageTest : IClassFixture<TestWebApp>, IAsyncLifetime
 
     protected HttpClient Client { get; }
 
-    public Task InitializeAsync() => WithDatabaseAsync(TestDatabase.EmptyAsync);
+    /// <summary>Who each test starts signed in as. Null starts it signed out.</summary>
+    protected virtual TestUser? SignedInAs => TestUsers.CustomerA;
+
+    public async Task InitializeAsync()
+    {
+        await WithDatabaseAsync(TestDatabase.EmptyAsync);
+        if (SignedInAs is not null)
+            await SignInAsAsync(SignedInAs);
+    }
 
     public Task DisposeAsync() => WithDatabaseAsync(TestDatabase.EmptyAsync);
+
+    /// <summary>
+    /// Signs in through the Development test login, the way a tester does: opens /Dev/SwitchUser and presses
+    /// that user's button. The client keeps the sign-in cookie, so every request after this is that user.
+    /// </summary>
+    protected async Task SignInAsAsync(TestUser user)
+    {
+        var switchPage = await GetPageAsync("/Dev/SwitchUser");
+        await SubmitAsync(switchPage.Forms.Single(f =>
+            f.QuerySelector<IHtmlInputElement>("input[name=id]")?.Value == user.Id.ToString()));
+    }
+
+    /// <summary>Presses Sign out on the test login page.</summary>
+    protected async Task SignOutAsync()
+    {
+        var switchPage = await GetPageAsync("/Dev/SwitchUser");
+        await SubmitAsync(switchPage.Forms.Single(f => TextOf(f) == "Sign out"));
+    }
 
     /// <summary>
     /// Runs some work with the app's own DbContext, to set up or check rows directly. Emptying the tables goes

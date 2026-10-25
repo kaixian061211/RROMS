@@ -1,6 +1,7 @@
 using AngleSharp.Dom;
 using AngleSharp.Html.Dom;
 using Microsoft.EntityFrameworkCore;
+using RROMS.Web.Models.Dev;
 using RROMS.Web.Models.OrdersAndReservations;
 
 namespace RROMS.Tests.Integration;
@@ -12,11 +13,17 @@ public class StaffReservationPageTests : PageTest
 {
     public StaffReservationPageTests(TestWebApp app) : base(app) { }
 
+    protected override TestUser? SignedInAs => TestUsers.Staff;
+
     private string TomorrowsList => $"/Reservations/Manage?date={Tomorrow:yyyy-MM-dd}";
 
-    /// <summary>A booking made the way a customer makes one, through the booking form.</summary>
+    /// <summary>
+    /// A booking made the way a customer makes one: Customer A signs in and uses the booking form, then
+    /// staff sign back in.
+    /// </summary>
     private async Task<int> CustomerBooksAsync(int table)
     {
+        await SignInAsAsync(TestUsers.CustomerA);
         var form = MainForm(await GetPageAsync("/Reservations/Create"));
         await SubmitAsync(form, new()
         {
@@ -25,6 +32,7 @@ public class StaffReservationPageTests : PageTest
             ["Input.TableId"] = table.ToString(),
             ["Input.PartySize"] = "2"
         });
+        await SignInAsAsync(TestUsers.Staff);
         return await WithDatabaseAsync(db => db.Set<Reservation>().Where(r => r.TableId == table).Select(r => r.ReservationId).SingleAsync());
     }
 
@@ -50,6 +58,7 @@ public class StaffReservationPageTests : PageTest
         Assert.Contains($"{ReservationFormatter.Reference(id)} is now confirmed.", TextOf(afterConfirm));
         Assert.Equal(new[] { "Cancel" }, ButtonsFor(afterConfirm, id));
         Assert.Equal(ReservationStatus.Confirmed, await SavedStatusAsync(id));
+        await SignInAsAsync(TestUsers.CustomerA);
         Assert.Contains("Confirmed", TextOf(await GetPageAsync("/Reservations")));
     }
 

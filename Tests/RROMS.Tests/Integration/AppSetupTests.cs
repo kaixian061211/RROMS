@@ -1,5 +1,6 @@
 using System.Net;
 using Microsoft.EntityFrameworkCore;
+using RROMS.Web.Models.Dev;
 
 namespace RROMS.Tests.Integration;
 
@@ -22,7 +23,7 @@ public class AppSetupTests : PageTest
     }
 }
 
-/// <summary>Outside Development nobody is signed in until the login module exists, so every page refuses.</summary>
+/// <summary>Outside Development nobody can sign in until the login module exists, so every page refuses.</summary>
 [Trait("Type", "Integration")]
 public class OutsideDevelopmentTests : IClassFixture<ProductionWebApp>
 {
@@ -52,5 +53,24 @@ public class OutsideDevelopmentTests : IClassFixture<ProductionWebApp>
         var response = await _client.GetAsync(url);
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact(DisplayName = "TC-00-05 Outside Development the test login doesn't exist: /Dev/SwitchUser answers like a made-up address, signs nobody in, and no page shows the test-login bar")]
+    [Trait("Technique", "Security")]
+    public async Task NoTestLoginOutsideDevelopment()
+    {
+        var signInAsAdmin = new Dictionary<string, string> { ["id"] = TestUsers.Admin.Id.ToString() };
+
+        var get = await _client.GetAsync("/Dev/SwitchUser");
+        var post = await _client.PostAsync("/Dev/SwitchUser?handler=SignIn", new FormUrlEncodedContent(signInAsAdmin));
+        var madeUpPost = await _client.PostAsync("/Dev/NoSuchPage?handler=SignIn", new FormUrlEncodedContent(signInAsAdmin));
+        var afterPost = await _client.GetAsync("/Reservations/Manage");
+        var home = await _client.GetStringAsync("/");
+
+        Assert.Equal(HttpStatusCode.NotFound, get.StatusCode);
+        // The app answers a POST to any address it doesn't have with 405 (only GET is allowed there), so the same here.
+        Assert.Equal(madeUpPost.StatusCode, post.StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized, afterPost.StatusCode);   // the POST signed nobody in
+        Assert.DoesNotContain("test-user-bar", home);
     }
 }

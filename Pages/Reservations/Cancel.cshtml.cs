@@ -1,19 +1,21 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using RROMS.Web.Models.OrdersAndReservations;
+using RROMS.Web.Models.Payments;
 using RROMS.Web.Services.OrdersAndReservations;
+using RROMS.Web.Services.Payments;
 
 namespace RROMS.Web.Pages.Reservations;
 
+[Authorize(Roles = PaymentRoles.Customer)]
 public class CancelModel : PageModel
 {
     private readonly IReservationService _reservations;
-    private readonly IWebHostEnvironment _environment;
 
-    public CancelModel(IReservationService reservations, IWebHostEnvironment environment)
+    public CancelModel(IReservationService reservations)
     {
         _reservations = reservations;
-        _environment = environment;
     }
 
     [BindProperty(SupportsGet = true)]
@@ -29,10 +31,7 @@ public class CancelModel : PageModel
 
     public async Task<IActionResult> OnGetAsync()
     {
-        if (!User.TryGetCustomerId(_environment, out var customerId))
-            return Unauthorized();
-
-        var result = await _reservations.GetForChangeAsync(customerId, Id);
+        var result = await _reservations.GetForChangeAsync(User.GetPaymentUserId(), Id);
         if (!result.Succeeded)
         {
             ErrorMessage = result.ErrorMessage;
@@ -46,15 +45,13 @@ public class CancelModel : PageModel
 
     public async Task<IActionResult> OnPostAsync()
     {
-        if (!User.TryGetCustomerId(_environment, out var customerId))
-            return Unauthorized();
         if (!ModelState.IsValid)
         {
             ErrorMessage = "Something went wrong. Please reload the page and try again.";
             return Page();
         }
 
-        var result = await _reservations.CancelAsync(customerId, Id, RowVersion);
+        var result = await _reservations.CancelAsync(User.GetPaymentUserId(), Id, RowVersion);
         if (!result.Succeeded)
         {
             ErrorMessage = result.ErrorMessage;

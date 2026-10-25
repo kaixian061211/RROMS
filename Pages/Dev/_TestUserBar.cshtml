@@ -1,0 +1,21 @@
+@* Who the Development test login has signed in. The layout shows this only in Development. *@
+@using System.Security.Claims
+@{
+    var signedIn = User.Identity?.IsAuthenticated == true;
+    var roles = string.Join(", ", User.FindAll(ClaimTypes.Role).Select(claim => claim.Value));
+    var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+}
+<div class="test-user-bar bg-warning-subtle border-bottom border-warning-subtle small">
+    <div class="container d-flex flex-wrap align-items-center column-gap-3 py-1">
+        <span class="fw-semibold">Test login (Development only)</span>
+        @if (signedIn)
+        {
+            <span>Signed in as <strong>@User.Identity!.Name</strong> · @roles · user #@userId</span>
+        }
+        else
+        {
+            <span>Not signed in</span>
+        }
+        <a class="ms-auto" asp-page="/Dev/SwitchUser">@(signedIn ? "Switch user" : "Choose a test user")</a>
+    </div>
+</div>

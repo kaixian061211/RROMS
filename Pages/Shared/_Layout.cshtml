@@ -12,6 +12,10 @@
     <link rel="stylesheet" href="~/PaymentModule.styles.css" asp-append-version="true" />
 </head>
 <body>
+    @if (HostEnvironment.IsDevelopment())
+    {
+        <partial name="/Pages/Dev/_TestUserBar.cshtml" />
+    }
     <header>
         <nav class="navbar navbar-expand-xl navbar-toggleable-xl navbar-light bg-white border-bottom box-shadow mb-3">
             <div class="container">
@@ -25,19 +29,24 @@
                         <li class="nav-item">
                             <a class="nav-link text-dark" asp-area="" asp-page="/Index">Home</a>
                         </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-page="/Reservations/Index">Reservations</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-page="/Orders/Index">My orders</a>
-                        </li>
-                        @* TODO: show these two only to staff once the login module exists. *@
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-page="/Reservations/Manage/Index">Manage reservations</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-page="/Orders/Queue">Order queue</a>
-                        </li>
+                        @if (User.IsInRole(PaymentRoles.Customer))
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link text-dark" asp-area="" asp-page="/Reservations/Index">Reservations</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link text-dark" asp-area="" asp-page="/Orders/Index">My orders</a>
+                            </li>
+                        }
+                        @if (User.IsInRole(PaymentRoles.Staff) || User.IsInRole(PaymentRoles.Admin))
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link text-dark" asp-area="" asp-page="/Reservations/Manage/Index">Manage reservations</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link text-dark" asp-area="" asp-page="/Orders/Queue">Order queue</a>
+                            </li>
+                        }
                         <li class="nav-item">
                             <a class="nav-link text-dark" asp-area="" asp-page="/Privacy">Privacy</a>
                         </li>

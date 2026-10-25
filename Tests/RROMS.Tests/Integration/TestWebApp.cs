@@ -22,7 +22,7 @@ public class TestWebApp : WebApplicationFactory<Program>
     }
 }
 
-/// <summary>The app as it runs anywhere but Development: no test customer, and no way into the staff pages.</summary>
+/// <summary>The app as it runs anywhere but Development: no test login, so nobody can sign in.</summary>
 public class ProductionWebApp : TestWebApp
 {
     protected override string EnvironmentName => Environments.Production;

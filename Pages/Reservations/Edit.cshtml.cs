@@ -1,19 +1,21 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using RROMS.Web.Models.OrdersAndReservations;
+using RROMS.Web.Models.Payments;
 using RROMS.Web.Services.OrdersAndReservations;
+using RROMS.Web.Services.Payments;
 
 namespace RROMS.Web.Pages.Reservations;
 
+[Authorize(Roles = PaymentRoles.Customer)]
 public class EditModel : PageModel
 {
     private readonly IReservationService _reservations;
-    private readonly IWebHostEnvironment _environment;
 
-    public EditModel(IReservationService reservations, IWebHostEnvironment environment)
+    public EditModel(IReservationService reservations)
     {
         _reservations = reservations;
-        _environment = environment;
     }
 
     [BindProperty(SupportsGet = true)]
@@ -33,10 +35,7 @@ public class EditModel : PageModel
 
     public async Task<IActionResult> OnGetAsync()
     {
-        if (!User.TryGetCustomerId(_environment, out var customerId))
-            return Unauthorized();
-
-        var result = await _reservations.GetForChangeAsync(customerId, Id);
+        var result = await _reservations.GetForChangeAsync(User.GetPaymentUserId(), Id);
         if (!result.Succeeded)
         {
             BlockedMessage = result.ErrorMessage;
@@ -51,12 +50,10 @@ public class EditModel : PageModel
 
     public async Task<IActionResult> OnPostAsync()
     {
-        if (!User.TryGetCustomerId(_environment, out var customerId))
-            return Unauthorized();
         if (!ModelState.IsValid)
             return Page();
 
-        var result = await _reservations.ModifyAsync(customerId, Id, Input, RowVersion);
+        var result = await _reservations.ModifyAsync(User.GetPaymentUserId(), Id, Input, RowVersion);
         if (!result.Succeeded)
         {
             ModelState.AddModelError(string.Empty, result.ErrorMessage!);
