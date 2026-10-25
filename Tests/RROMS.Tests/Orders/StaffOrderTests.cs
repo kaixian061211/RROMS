@@ -243,4 +243,39 @@ public class StaffOrderTests : DatabaseTest
 
         Assert.Equal(expected, OrderFormatter.PaymentLabel(payment));
     }
+
+    // TC-17-17 to TC-17-25 are the browser and UAT tests in the report workbook.
+    [Theory(DisplayName = "TC-17-26 Cancel a pending order for each payment state: refused while a payment is going or done")]
+    [Trait("Technique", "Decision table")]
+    [InlineData(null, null, null)]
+    [InlineData(PaymentStatus.Failed, PaymentMethod.Card, null)]
+    [InlineData(PaymentStatus.Refunded, PaymentMethod.Cash, null)]
+    [InlineData(PaymentStatus.Pending, PaymentMethod.PayAtCounter,
+        "This order is waiting to be paid at the counter. Cancel that payment under Counter payments first, then cancel the order.")]
+    [InlineData(PaymentStatus.Pending, PaymentMethod.Card,
+        "The customer is paying for this order online. Wait until the payment finishes or runs out, then try again.")]
+    [InlineData(PaymentStatus.Paid, PaymentMethod.Cash,
+        "This order has been paid, so it can't be cancelled. Refund the payment first.")]
+    public async Task CancelForEachPaymentState(string? status, string? method, string? expectedError)
+    {
+        var order = await AddOrderAsync();
+        if (status is not null)
+        {
+            var paidAt = status is PaymentStatus.Paid or PaymentStatus.Refunded ? DateTime.Now : (DateTime?)null;
+            var db = NewContext();
+            db.Payments.Add(new Payment
+            {
+                OrderId = order.OrderId, Amount = 3.80m, PaymentMethod = method!, PaymentStatus = status,
+                CreatedAt = DateTime.Now, PaidAt = paidAt, RefundedAt = status == PaymentStatus.Refunded ? DateTime.Now : null
+            });
+            await db.SaveChangesAsync();
+        }
+
+        var offered = (await FindInQueueAsync(order.OrderId))!.AllowedStatusChanges;
+        var result = await MoveAsync(order.OrderId, OrderStatus.Cancelled);
+
+        Assert.Equal(expectedError, result.ErrorMessage);
+        Assert.Equal(expectedError is null, offered.Contains(OrderStatus.Cancelled));   // the queue offers Cancel only when it would work
+        Assert.Equal(expectedError is null ? OrderStatus.Cancelled : OrderStatus.Pending, (await ReloadAsync(order.OrderId)).Status);
+    }
 }

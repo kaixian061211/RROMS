@@ -180,6 +180,12 @@ public class OrderService : IOrderService
         // A customer can pay online while the order is still pending. Cancelling it then would keep their money.
         if (newStatus == OrderStatus.Cancelled && payment?.Status == PaymentStatus.Paid)
             return "This order has been paid, so it can't be cancelled. Refund the payment first.";
+        // The same while a payment is still going: Stripe takes the money even if the order was cancelled in the meantime.
+        // An online payment ends by itself when its checkout runs out; staff can void a counter payment.
+        if (newStatus == OrderStatus.Cancelled && payment?.Status == PaymentStatus.Pending)
+            return payment.IsAwaitingCounter
+                ? "This order is waiting to be paid at the counter. Cancel that payment under Counter payments first, then cancel the order."
+                : "The customer is paying for this order online. Wait until the payment finishes or runs out, then try again.";
         // TODO: agree with the payment module whether an order must be paid before it can be marked completed.
         return null;
     }
