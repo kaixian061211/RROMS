@@ -5,7 +5,10 @@
 <div class="row g-3">
     <div class="col-sm-6">
         <label asp-for="ReservationDate" class="form-label"></label>
-        <input asp-for="ReservationDate" type="date" asp-format="{0:yyyy-MM-dd}" class="form-control" />
+        @* min stops the date picker offering past dates; data-msg-min is the browser check's message for one typed in. *@
+        <input asp-for="ReservationDate" type="date" asp-format="{0:yyyy-MM-dd}" class="form-control"
+               min="@ReservationFormatter.InputDate(DateOnly.FromDateTime(DateTime.Today))"
+               data-msg-min="Please choose a date and time in the future." />
         <span asp-validation-for="ReservationDate" class="text-danger"></span>
     </div>
     <div class="col-sm-6">
@@ -28,7 +31,7 @@
     </div>
     <div class="col-sm-6">
         <label asp-for="PartySize" class="form-label"></label>
-        <input asp-for="PartySize" class="form-control" />
+        <input asp-for="PartySize" class="form-control" min="1" data-msg-min="Party size must be at least 1." />
         <span asp-validation-for="PartySize" class="text-danger"></span>
     </div>
     <div class="col-12">
