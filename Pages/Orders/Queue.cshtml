@@ -2,22 +2,28 @@
 @model QueueModel
 @{
     ViewData["Title"] = "Order queue";
+    // The board: with no filter, one column per active status (pending to served); with a filter, just that status.
+    var columns = Model.StatusFilter is null ? OrderFormatter.Steps : new[] { Model.StatusFilter };
+    var ordersByStatus = Model.Orders.ToLookup(item => item.Order.Status);
 }
 
-<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
-    <h1 class="h3 mb-0">Order queue</h1>
-    <form method="get" class="d-flex flex-wrap gap-2">
-        <label for="status" class="visually-hidden">Status</label>
-        <select id="status" name="status" class="form-select w-auto">
-            <option value="" selected="@(Model.StatusFilter is null)">All active orders</option>
-            @foreach (var status in OrderStatus.All)
-            {
-                <option value="@status" selected="@(status == Model.StatusFilter)">@OrderFormatter.StatusFilterLabel(status)</option>
-            }
-        </select>
-        <button type="submit" class="btn btn-outline-primary">Show</button>
-    </form>
-</div>
+<header class="rr-page-header">
+    <div>
+        <h1>Order queue</h1>
+        <p class="rr-lede">Oldest orders at the top of each column. New orders show up by themselves: the page reloads every 30 seconds.</p>
+    </div>
+</header>
+
+@* Status filter: links, so one tap applies it and the choice is in the address. *@
+<nav class="nav nav-pills mb-4" aria-label="Status">
+    <a asp-page="Queue" class="nav-link @(Model.StatusFilter is null ? "active" : null)"
+       aria-current="@(Model.StatusFilter is null ? "page" : null)">All active orders</a>
+    @foreach (var status in OrderStatus.All)
+    {
+        <a asp-page="Queue" asp-route-status="@status" class="nav-link @(status == Model.StatusFilter ? "active" : null)"
+           aria-current="@(status == Model.StatusFilter ? "page" : null)">@OrderFormatter.StatusFilterLabel(status)</a>
+    }
+</nav>
 
 @if (Model.StatusMessage is not null)
 {
@@ -34,62 +40,70 @@
     </div>
 }
 
-@if (Model.Orders.Count == 0)
-{
-    <div class="text-center text-muted border rounded py-5">
-        @(Model.StatusFilter is null ? "No orders waiting. New orders show up here by themselves." : "No orders with this status.")
-    </div>
-}
-else
-{
-    <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-3">
-        @foreach (var item in Model.Orders)
-        {
-            var order = item.Order;
-            <div class="col">
-                <div class="card h-100">
-                    <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
-                        <div>
-                            <strong>@OrderFormatter.Table(order.TableId)</strong>
-                            <span class="small text-muted ms-1">@OrderFormatter.Reference(order.OrderId)</span>
-                        </div>
-                        <span class="badge @OrderFormatter.StatusBadge(order.Status)">@OrderFormatter.StatusLabel(order.Status)</span>
-                    </div>
-                    <div class="card-body">
-                        <p class="small text-muted mb-2">Placed @OrderFormatter.Time(order.CreatedAt) (@OrderFormatter.Waiting(order.CreatedAt))</p>
-                        <ul class="list-unstyled mb-3">
-                            @foreach (var line in item.Lines)
-                            {
-                                <li><strong>@line.Item.Quantity ×</strong> @line.MenuItemName</li>
-                            }
-                        </ul>
-                        <div class="d-flex justify-content-between align-items-center">
-                            <span class="badge @OrderFormatter.PaymentBadge(item.Payment)">@OrderFormatter.PaymentLabel(item.Payment)</span>
-                            <strong>@OrderFormatter.Money(order.Total)</strong>
-                        </div>
-                    </div>
-                    @if (item.AllowedStatusChanges.Count > 0)
+@* The ticket rail: each column is a status, and its orders hang from the rail as dockets. *@
+<div class="rr-board @(Model.StatusFilter is null ? null : "rr-board--single")">
+    @foreach (var status in columns)
+    {
+        var orders = ordersByStatus[status].ToList();
+        var label = OrderFormatter.StatusFilterLabel(status);
+        <section class="rr-board__column" aria-label="@label">
+            <h2 class="rr-board__title">@label <span class="rr-count">@orders.Count</span></h2>
+            <div class="rr-board__rail"></div>
+            @if (orders.Count == 0)
+            {
+                <p class="rr-board__empty">No orders.</p>
+            }
+            else
+            {
+                <div class="rr-board__dockets">
+                    @foreach (var item in orders)
                     {
-                        <div class="card-footer d-flex flex-wrap gap-2">
-                            @foreach (var next in item.AllowedStatusChanges)
+                        var order = item.Order;
+                        <article class="rr-docket" aria-label="@OrderFormatter.Table(order.TableId), @OrderFormatter.Reference(order.OrderId)">
+                            <div class="rr-docket__head">
+                                <div>
+                                    <span class="rr-docket__title">@OrderFormatter.Table(order.TableId)</span>
+                                    <span class="rr-ref d-block">@OrderFormatter.Reference(order.OrderId)</span>
+                                    <span class="small text-muted">@OrderFormatter.Time(order.CreatedAt) · @OrderFormatter.Waiting(order.CreatedAt)</span>
+                                </div>
+                            </div>
+                            <ol class="rr-docket__lines">
+                                @foreach (var line in item.Lines)
+                                {
+                                    <li class="rr-docket__line"><span class="rr-docket__qty">@line.Item.Quantity ×</span> <span>@line.MenuItemName</span></li>
+                                }
+                            </ol>
+                            <div class="rr-docket__total">
+                                <span>Total</span>
+                                <span class="rr-money">@OrderFormatter.Money(order.Total)</span>
+                            </div>
+                            <div class="rr-docket__meta">
+                                <span class="@OrderFormatter.PaymentBadge(item.Payment)">@OrderFormatter.PaymentLabel(item.Payment)</span>
+                            </div>
+                            @if (item.AllowedStatusChanges.Count > 0)
                             {
-                                <form method="post" asp-page-handler="ChangeStatus" asp-route-status="@Model.StatusFilter">
-                                    <input type="hidden" name="id" value="@order.OrderId" />
-                                    <input type="hidden" name="newStatus" value="@next" />
-                                    <input type="hidden" name="rowVersion" value="@Convert.ToBase64String(order.RowVersion)" />
-                                    <button type="submit" class="btn btn-sm @OrderFormatter.StatusActionButton(next)"
-                                            onclick="@(next == OrderStatus.Cancelled ? "return confirm('Cancel this order?');" : null)">
-                                        @OrderFormatter.StatusAction(next)
-                                    </button>
-                                </form>
+                                <div class="rr-docket__actions">
+                                    @foreach (var next in item.AllowedStatusChanges)
+                                    {
+                                        <form method="post" asp-page-handler="ChangeStatus" asp-route-status="@Model.StatusFilter">
+                                            <input type="hidden" name="id" value="@order.OrderId" />
+                                            <input type="hidden" name="newStatus" value="@next" />
+                                            <input type="hidden" name="rowVersion" value="@Convert.ToBase64String(order.RowVersion)" />
+                                            <button type="submit" class="btn btn-sm @OrderFormatter.StatusActionButton(next)"
+                                                    onclick="@(next == OrderStatus.Cancelled ? "return confirm('Cancel this order?');" : null)">
+                                                @OrderFormatter.StatusAction(next)
+                                            </button>
+                                        </form>
+                                    }
+                                </div>
                             }
-                        </div>
+                        </article>
                     }
                 </div>
-            </div>
-        }
-    </div>
-}
+            }
+        </section>
+    }
+</div>
 
 @section Scripts {
     <script>

@@ -32,9 +32,13 @@ public class OrderQueuePageTests : PageTest
     private Task<string> SavedStatusAsync(int orderId) =>
         WithDatabaseAsync(db => db.Set<Order>().Where(o => o.OrderId == orderId).Select(o => o.Status).SingleAsync());
 
-    /// <summary>The order's card on the queue.</summary>
+    /// <summary>The order's docket on the queue.</summary>
     private static IElement CardFor(IHtmlDocument queue, int orderId) =>
-        queue.QuerySelectorAll(".card").Single(card => TextOf(card).Contains(OrderFormatter.Reference(orderId)));
+        queue.QuerySelectorAll(".rr-docket").Single(card => TextOf(card).Contains(OrderFormatter.Reference(orderId)));
+
+    /// <summary>The board column the order's docket hangs in, such as "Pending".</summary>
+    private static string? ColumnOf(IHtmlDocument queue, int orderId) =>
+        CardFor(queue, orderId).Closest(".rr-board__column")?.GetAttribute("aria-label");
 
     private static IEnumerable<string> ButtonsOn(IElement card) => card.QuerySelectorAll("button").Select(TextOf);
 
@@ -59,7 +63,7 @@ public class OrderQueuePageTests : PageTest
         Assert.Contains("2 × Nasi Lemak", card);
         Assert.Contains("1 × Teh Tarik", card);
         Assert.Contains("RM 29.60", card);
-        Assert.Contains("Pending", card);
+        Assert.Equal("Pending", ColumnOf(queue, orderId));
         Assert.Contains("Not paid", card);
         Assert.Equal(new[] { "Start preparing", "Cancel" }, ButtonsOn(CardFor(queue, orderId)));
 
@@ -67,6 +71,7 @@ public class OrderQueuePageTests : PageTest
 
         Assert.Contains($"{OrderFormatter.Reference(orderId)} is now preparing.", TextOf(afterPress));
         Assert.Equal(new[] { "Mark ready" }, ButtonsOn(CardFor(afterPress, orderId)));
+        Assert.Equal("Preparing", ColumnOf(afterPress, orderId));
         Assert.Equal(OrderStatus.Preparing, await SavedStatusAsync(orderId));
         await SignInAsAsync(TestUsers.CustomerA);
         Assert.Contains("Preparing", TextOf(await GetPageAsync($"/Orders/Details/{orderId}")));

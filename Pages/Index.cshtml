@@ -1,10 +1,49 @@
 ﻿@page
 @model IndexModel
+@using RROMS.Web.Models.OrdersAndReservations
 @{
-    ViewData["Title"] = "Home page";
+    ViewData["Title"] = "Book a table";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+<div class="row align-items-center gy-5 gx-lg-5 py-lg-4">
+    <div class="col-lg-7">
+        <h1 class="rr-home-title">Book a table, then order from it.</h1>
+        <p class="rr-lede mt-3">
+            Reserve a lunch or dinner seating ahead. Once you're sitting down, order nasi lemak, char kway teow
+            or teh tarik from your phone, and pay at the counter or online.
+        </p>
+        <div class="d-flex flex-wrap gap-2 mt-4">
+            <a class="btn btn-primary btn-lg" asp-page="/Reservations/Create">Book a table</a>
+            <a class="btn btn-outline-secondary btn-lg" asp-page="/Orders/Create">Order at your table</a>
+        </div>
+    </div>
+
+    <div class="col-lg-5">
+        @* The seatings a table can be booked for, printed like a docket. *@
+        <section class="rr-docket rr-home-seatings" aria-labelledby="seatings-title">
+            <div class="rr-docket__head">
+                <h2 class="rr-docket__title" id="seatings-title">Seatings</h2>
+            </div>
+            <dl class="mb-0">
+                <dt class="rr-label">Lunch</dt>
+                <dd class="rr-home-times">
+                    @foreach (var slot in ReservationTimeSlots.Lunch)
+                    {
+                        <span>@ReservationFormatter.Time(slot)</span>
+                    }
+                </dd>
+                <dt class="rr-label">Dinner</dt>
+                <dd class="rr-home-times mb-0">
+                    @foreach (var slot in ReservationTimeSlots.Dinner)
+                    {
+                        <span>@ReservationFormatter.Time(slot)</span>
+                    }
+                </dd>
+            </dl>
+            <div class="rr-docket__total">
+                <span>Booked by seating</span>
+                <a asp-page="/Reservations/Create">Choose one</a>
+            </div>
+        </section>
+    </div>
 </div>

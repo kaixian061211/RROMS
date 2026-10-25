@@ -1,0 +1,508 @@
+@page
+@model RROMS.Web.Pages.Dev.StyleGuideModel
+@{
+    ViewData["Title"] = "Design system";
+}
+
+<header class="rr-page-header">
+    <div>
+        <span class="rr-label">Development only</span>
+        <h1>RROMS design system</h1>
+        <p class="rr-lede">
+            The look of a kopitiam: marble tabletops, white enamel, painted shop signs, and the docket that goes
+            to the kitchen. Build every page from these pieces. DESIGN.md in the repo has the rules and the markup.
+        </p>
+    </div>
+</header>
+
+<nav class="nav nav-pills mb-5" aria-label="On this page">
+    <a class="nav-link" href="#principles">Principles</a>
+    <a class="nav-link" href="#colour">Colour</a>
+    <a class="nav-link" href="#type">Type</a>
+    <a class="nav-link" href="#words">Words</a>
+    <a class="nav-link" href="#buttons">Buttons</a>
+    <a class="nav-link" href="#status">Status</a>
+    <a class="nav-link" href="#forms">Forms</a>
+    <a class="nav-link" href="#dockets">Dockets</a>
+    <a class="nav-link" href="#board">Order rail</a>
+    <a class="nav-link" href="#lists">Lists</a>
+    <a class="nav-link" href="#pieces">Page pieces</a>
+</nav>
+
+<section class="sg-section" id="principles">
+    <h2>Principles</h2>
+    <ul class="sg-principles">
+        <li><strong>One action colour.</strong> Pandan green is for things people can do: buttons, links, the option they chose. Status colours describe a state and are never pressed.</li>
+        <li><strong>Records are dockets.</strong> Anything that changes hands (a booking, an order, a receipt) is shown as a paper docket with its reference number in monospace.</li>
+        <li><strong>Two densities.</strong> Customers get one comfortable column and big tap targets, with the main action at the bottom on a phone. Staff get the full width and an action beside each row.</li>
+        <li><strong>Summary before detail.</strong> Lead with what needs attention (what's pending, what's ready), then the rest.</li>
+        <li><strong>Real content only.</strong> Real dishes, prices in RM, and real statuses. No placeholder text, no invented figures.</li>
+        <li><strong>One bold thing.</strong> The docket is the signature. Everything around it stays plain: no gradients, no extra shadows, no decoration.</li>
+    </ul>
+</section>
+
+<section class="sg-section" id="colour">
+    <h2>Colour</h2>
+    <p class="text-muted">Use the tokens (<code>var(--rr-pandan)</code>) or the Bootstrap classes, which already use them (<code>btn-primary</code>, <code>text-bg-warning</code>, <code>alert-danger</code>).</p>
+    <div class="sg-swatches">
+        <div class="sg-swatch"><span class="sg-chip" style="background:#f1f3f1"></span><strong>Marble</strong><span class="rr-ref">#F1F3F1 · --rr-marble</span><span>Page background, the tabletop.</span></div>
+        <div class="sg-swatch"><span class="sg-chip" style="background:#ffffff"></span><strong>Enamel</strong><span class="rr-ref">#FFFFFF · --rr-enamel</span><span>Cards, dockets, the header.</span></div>
+        <div class="sg-swatch"><span class="sg-chip" style="background:#1d1a17"></span><strong>Kopi-O</strong><span class="rr-ref">#1D1A17 · --rr-kopi</span><span>Text and headings.</span></div>
+        <div class="sg-swatch"><span class="sg-chip" style="background:#0b6b4f"></span><strong>Pandan</strong><span class="rr-ref">#0B6B4F · --rr-pandan</span><span>Actions, links, chosen options, confirmed and ready.</span></div>
+        <div class="sg-swatch"><span class="sg-chip" style="background:#e9b23c"></span><strong>Kaya</strong><span class="rr-ref">#E9B23C · --rr-kaya</span><span>Needs attention: pending, new. A fill behind dark text, never text on white.</span></div>
+        <div class="sg-swatch"><span class="sg-chip" style="background:#a86b3c"></span><strong>Teh</strong><span class="rr-ref">#A86B3C · --rr-teh</span><span>Being worked on: preparing.</span></div>
+        <div class="sg-swatch"><span class="sg-chip" style="background:#c2381c"></span><strong>Sambal</strong><span class="rr-ref">#C2381C · --rr-sambal</span><span>Cancel, errors, refusals.</span></div>
+        <div class="sg-swatch"><span class="sg-chip" style="background:#d8dcd7"></span><strong>Line</strong><span class="rr-ref">#D8DCD7 · --rr-line</span><span>Borders and rules. Secondary text is <span class="rr-ref">#5D625C</span>.</span></div>
+    </div>
+</section>
+
+<section class="sg-section" id="type">
+    <h2>Type</h2>
+    <div class="row g-4">
+        <div class="col-lg-7">
+            <div class="sg-demo">
+                <span class="rr-label">Display · Zilla Slab · headings, table numbers, the wordmark</span>
+                <p class="h1 mt-2">Book a table, then order from it.</p>
+                <p class="h2">Manage reservations</p>
+                <p class="h3 mb-0">Table 6</p>
+            </div>
+        </div>
+        <div class="col-lg-5">
+            <div class="sg-demo h-100">
+                <span class="rr-label">Body · Plus Jakarta Sans · everything else</span>
+                <p class="mt-2">Reserve a lunch or dinner seating ahead. Once you're sitting down, order from your phone.</p>
+                <span class="rr-label">Monospace · references and money</span>
+                <p class="mt-2 mb-0"><span class="rr-ref">ORD-001257</span> · <span class="rr-ref">RES-001840</span> · <span class="rr-money">RM 26.90</span></p>
+            </div>
+        </div>
+    </div>
+    <p class="text-muted mt-3 mb-0">Headings use <code>h1</code>–<code>h3</code> (slab). Small uppercase labels use <code>rr-label</code>, only for real labels such as "Seating" or "Table". References use <code>rr-ref</code>; money uses <code>rr-money</code> so the digits line up.</p>
+</section>
+
+<section class="sg-section" id="words">
+    <h2>Words</h2>
+    <div class="row g-4">
+        <div class="col-md-6">
+            <ul class="sg-rules">
+                <li>Buttons say what happens: <strong>Book table</strong>, <strong>Start preparing</strong>, <strong>Cancel booking</strong>. Never "Submit" or "OK".</li>
+                <li>Sentence case everywhere: "Manage reservations", not "Manage Reservations".</li>
+                <li>After an action, say what happened: "RES-001840 is now confirmed."</li>
+            </ul>
+        </div>
+        <div class="col-md-6">
+            <ul class="sg-rules">
+                <li>Errors say what went wrong and what to do next: "That table is already booked for this seating. Choose another time or table."</li>
+                <li>Formats: <span class="rr-money">RM 85.50</span> · 26 Oct 2026, 7:30 PM · <span class="rr-ref">ORD-001257</span>. Use the formatter classes, never format inline.</li>
+                <li>Name things the way people know them: "My orders", "Order queue", not "Order entities".</li>
+            </ul>
+        </div>
+    </div>
+</section>
+
+<section class="sg-section" id="buttons">
+    <h2>Buttons</h2>
+    <div class="sg-demo d-flex flex-wrap align-items-center gap-2">
+        <button type="button" class="btn btn-primary">Book table</button>
+        <button type="button" class="btn btn-outline-secondary">Back to my reservations</button>
+        <button type="button" class="btn btn-outline-danger">Cancel booking</button>
+        <button type="button" class="btn btn-danger">Cancel this booking</button>
+        <button type="button" class="btn btn-primary btn-sm">Confirm</button>
+        <button type="button" class="btn btn-outline-secondary btn-sm">Edit</button>
+        <a href="#buttons">A plain link</a>
+    </div>
+    <p class="text-muted mt-3 mb-0">One <code>btn-primary</code> per view: the thing most people came to do. Everything else is <code>btn-outline-secondary</code>. Cancelling uses <code>btn-outline-danger</code>, and <code>btn-danger</code> only on the page that confirms it. Use <code>btn-sm</code> for actions on a row.</p>
+</section>
+
+<section class="sg-section" id="status">
+    <h2>Status</h2>
+    <p class="text-muted">A status pill is <code>&lt;span class="rr-status rr-status--good"&gt;Confirmed&lt;/span&gt;</code>. The modifier is what the status means, so each module maps its own statuses onto the same six.</p>
+    <div class="table-responsive">
+        <table class="table align-middle mb-0">
+            <thead>
+                <tr><th>Modifier</th><th>Means</th><th>Orders</th><th>Reservations</th><th>Payments (suggested)</th></tr>
+            </thead>
+            <tbody>
+                <tr><td><code>--attention</code></td><td>Waiting for someone</td><td><span class="rr-status rr-status--attention">Pending</span></td><td><span class="rr-status rr-status--attention">Pending</span></td><td><span class="rr-status rr-status--attention">Waiting at counter</span></td></tr>
+                <tr><td><code>--progress</code></td><td>Being worked on</td><td><span class="rr-status rr-status--progress">Preparing</span></td><td></td><td><span class="rr-status rr-status--progress">Paying online</span></td></tr>
+                <tr><td><code>--good</code></td><td>Done well, ready</td><td><span class="rr-status rr-status--good">Ready</span></td><td><span class="rr-status rr-status--good">Confirmed</span></td><td><span class="rr-status rr-status--good">Paid</span></td></tr>
+                <tr><td><code>--done</code></td><td>Finished</td><td><span class="rr-status rr-status--done">Served</span> <span class="rr-status rr-status--done">Completed</span></td><td><span class="rr-status rr-status--done">Completed</span></td><td></td></tr>
+                <tr><td><code>--off</code></td><td>No longer happening</td><td><span class="rr-status rr-status--off">Cancelled</span></td><td><span class="rr-status rr-status--off">Cancelled</span></td><td><span class="rr-status rr-status--off">Refunded</span></td></tr>
+                <tr><td><code>--bad</code></td><td>Went wrong</td><td></td><td></td><td><span class="rr-status rr-status--bad">Failed</span></td></tr>
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<section class="sg-section" id="forms">
+    <h2>Forms</h2>
+    <div class="row g-4">
+        <div class="col-lg-7">
+            <div class="rr-panel">
+                <div class="mb-4">
+                    <label class="form-label" for="sg-date">Date</label>
+                    <input class="form-control" id="sg-date" type="date" value="2026-10-26" style="max-width: 14rem" />
+                </div>
+
+                <fieldset class="mb-4">
+                    <legend class="form-label fs-6">Seating</legend>
+                    <div class="rr-tile-group">
+                        <span class="rr-label mb-2">Lunch</span>
+                        <div class="rr-tiles rr-tiles--wide">
+                            <input type="radio" class="btn-check" name="sg-slot" id="sg-slot-1200" />
+                            <label class="rr-tile" for="sg-slot-1200">12:00 PM</label>
+                            <input type="radio" class="btn-check" name="sg-slot" id="sg-slot-1330" />
+                            <label class="rr-tile" for="sg-slot-1330">1:30 PM</label>
+                        </div>
+                    </div>
+                    <div class="rr-tile-group">
+                        <span class="rr-label mb-2">Dinner</span>
+                        <div class="rr-tiles rr-tiles--wide">
+                            <input type="radio" class="btn-check" name="sg-slot" id="sg-slot-1800" />
+                            <label class="rr-tile" for="sg-slot-1800">6:00 PM</label>
+                            <input type="radio" class="btn-check" name="sg-slot" id="sg-slot-1930" checked />
+                            <label class="rr-tile" for="sg-slot-1930">7:30 PM</label>
+                            <input type="radio" class="btn-check" name="sg-slot" id="sg-slot-2100" />
+                            <label class="rr-tile" for="sg-slot-2100">9:00 PM</label>
+                        </div>
+                    </div>
+                </fieldset>
+
+                <fieldset class="mb-4">
+                    <legend class="form-label fs-6">Table</legend>
+                    <div class="rr-tiles">
+                        @for (var table = 1; table <= 10; table++)
+                        {
+                            <input type="radio" class="btn-check" name="sg-table" id="sg-table-@table" checked="@(table == 3)" disabled="@(table == 5)" />
+                            <label class="rr-tile" for="sg-table-@table">@table</label>
+                        }
+                    </div>
+                    <div class="form-text">Table 5 shows the "taken" state.</div>
+                </fieldset>
+
+                <div class="mb-4">
+                    <label class="form-label d-block" for="sg-party">Party size</label>
+                    <div class="rr-stepper" data-stepper>
+                        <button type="button" class="rr-stepper__button" data-step="-1" aria-label="One person fewer">&minus;</button>
+                        <input class="rr-stepper__input" id="sg-party" type="number" value="2" min="1" max="20" />
+                        <button type="button" class="rr-stepper__button" data-step="1" aria-label="One person more">+</button>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="form-label" for="sg-request">Special request (optional)</label>
+                    <textarea class="form-control is-invalid" id="sg-request" rows="2">A table by the window, a high chair, and a birthday cake at 8 pm with candles, please ...</textarea>
+                    <div class="invalid-feedback">Keep the special request to 500 characters or fewer.</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-5">
+            <ul class="sg-rules">
+                <li><strong>Choice tiles</strong> (<code>rr-tiles</code> + <code>rr-tile</code>) replace dropdowns when there are a few options people compare: seatings, tables, payment methods. Each tile is a real radio button (<code>btn-check</code>), so the form sends it like any other field.</li>
+                <li><strong>Steppers</strong> (<code>rr-stepper</code> with <code>data-stepper</code>) are for small counts: party size, quantities. The number stays a real input people can type into. Add <code>wwwroot/js/stepper.js</code> to the page's scripts.</li>
+                <li>Every field has a visible label. Optional fields say "(optional)"; required ones say nothing.</li>
+                <li>Validation messages sit under the field, in sambal, and say how to fix it. Fields that fail ASP.NET validation turn red by themselves (<code>input-validation-error</code>), tiles and steppers included.</li>
+                <li>A form's buttons go in <code>rr-actionbar</code>, straight inside the form. On a phone it stays at the bottom of the screen.</li>
+            </ul>
+        </div>
+    </div>
+</section>
+
+<section class="sg-section" id="dockets">
+    <h2>Dockets</h2>
+    <p class="text-muted">The signature. A docket is <code>rr-docket</code>: a head (title, reference, status), lines (<code>rr-docket__line</code> with quantity, item, amount), a dashed tear line before the total, then the next step.</p>
+    <div class="row g-4 align-items-start">
+        <div class="col-md-6 col-xl-4">
+            <span class="rr-label mb-3">In the kitchen</span>
+            <article class="rr-docket">
+                <div class="rr-docket__head">
+                    <div>
+                        <span class="rr-docket__title">Table 4</span>
+                        <span class="rr-ref">ORD-001256 · 9:08 PM</span>
+                    </div>
+                    <span class="rr-status rr-status--attention">Pending</span>
+                </div>
+                <ol class="rr-docket__lines">
+                    <li class="rr-docket__line"><span class="rr-docket__qty">2 ×</span> <span>Nasi Lemak</span> <span class="rr-docket__amount">RM 25.80</span></li>
+                    <li class="rr-docket__line"><span class="rr-docket__qty">3 ×</span> <span>Teh Tarik</span> <span class="rr-docket__amount">RM 11.40</span></li>
+                </ol>
+                <div class="rr-docket__total"><span>Total</span><span class="rr-money">RM 37.20</span></div>
+                <div class="rr-docket__meta"><span class="rr-status rr-status--off">Not paid</span><span>Placed 12 min ago</span></div>
+                <div class="rr-docket__actions">
+                    <button type="button" class="btn btn-primary">Start preparing</button>
+                    <button type="button" class="btn btn-outline-danger">Cancel</button>
+                </div>
+            </article>
+        </div>
+        <div class="col-md-6 col-xl-4">
+            <span class="rr-label mb-3">For the customer</span>
+            <article class="rr-docket">
+                <div class="rr-docket__head">
+                    <div>
+                        <span class="rr-docket__title">Table 6</span>
+                        <span class="rr-ref">ORD-001257 · 25 Oct, 9:08 PM</span>
+                    </div>
+                    <span class="rr-status rr-status--progress">Preparing</span>
+                </div>
+                <ol class="rr-steps mb-4" aria-label="Order progress">
+                    <li class="is-done">Pending</li>
+                    <li class="is-current" aria-current="step">Preparing</li>
+                    <li>Ready</li>
+                    <li>Served</li>
+                </ol>
+                <ol class="rr-docket__lines">
+                    <li class="rr-docket__line"><span class="rr-docket__qty">1 ×</span> <span>Char Kway Teow</span> <span class="rr-docket__amount">RM 13.90</span></li>
+                    <li class="rr-docket__line"><span class="rr-docket__qty">2 ×</span> <span>Cendol</span> <span class="rr-docket__amount">RM 13.00</span></li>
+                </ol>
+                <div class="rr-docket__total"><span>Total</span><span class="rr-money">RM 26.90</span></div>
+                <div class="rr-docket__actions">
+                    <button type="button" class="btn btn-primary">Go to payment</button>
+                </div>
+            </article>
+        </div>
+        <div class="col-xl-4">
+            <ul class="sg-rules">
+                <li>Use a docket for a record a person hands over or receives: an order, a booking, a payment receipt.</li>
+                <li>Not for navigation or settings. Those are plain cards (<code>rr-feature</code>, <code>rr-panel</code>).</li>
+                <li>A docket on its own on a page gets <code>rr-docket--narrow</code>, so it keeps the width of a paper slip.</li>
+                <li>The steps line (<code>rr-steps</code>) shows where something is in a fixed journey. It doesn't update by itself.</li>
+            </ul>
+        </div>
+    </div>
+</section>
+
+<section class="sg-section" id="board">
+    <h2>Order rail</h2>
+    <p class="text-muted">For staff boards: <code>rr-board</code> holds columns (<code>rr-board__column</code>), each with a title and count, a steel rail, and dockets hanging from it. Four columns on a wide screen, two on a tablet, one on a phone.</p>
+    <div class="rr-board">
+        <section class="rr-board__column" aria-label="Pending">
+            <h3 class="rr-board__title">Pending <span class="rr-count">1</span></h3>
+            <div class="rr-board__rail"></div>
+            <div class="rr-board__dockets">
+                <article class="rr-docket">
+                    <div class="rr-docket__head"><div><span class="rr-docket__title">Table 4</span><span class="rr-ref">ORD-001256 · 9:08 PM</span></div></div>
+                    <ol class="rr-docket__lines">
+                        <li class="rr-docket__line"><span class="rr-docket__qty">2 ×</span> <span>Nasi Lemak</span> <span class="rr-docket__amount"></span></li>
+                        <li class="rr-docket__line"><span class="rr-docket__qty">3 ×</span> <span>Teh Tarik</span> <span class="rr-docket__amount"></span></li>
+                    </ol>
+                    <div class="rr-docket__actions"><button type="button" class="btn btn-primary btn-sm">Start preparing</button></div>
+                </article>
+            </div>
+        </section>
+        <section class="rr-board__column" aria-label="Preparing">
+            <h3 class="rr-board__title">Preparing <span class="rr-count">1</span></h3>
+            <div class="rr-board__rail"></div>
+            <div class="rr-board__dockets">
+                <article class="rr-docket">
+                    <div class="rr-docket__head"><div><span class="rr-docket__title">Table 6</span><span class="rr-ref">ORD-001257 · 9:08 PM</span></div></div>
+                    <ol class="rr-docket__lines">
+                        <li class="rr-docket__line"><span class="rr-docket__qty">1 ×</span> <span>Char Kway Teow</span> <span class="rr-docket__amount"></span></li>
+                        <li class="rr-docket__line"><span class="rr-docket__qty">2 ×</span> <span>Cendol</span> <span class="rr-docket__amount"></span></li>
+                    </ol>
+                    <div class="rr-docket__actions"><button type="button" class="btn btn-primary btn-sm">Mark ready</button></div>
+                </article>
+            </div>
+        </section>
+        <section class="rr-board__column" aria-label="Ready">
+            <h3 class="rr-board__title">Ready <span class="rr-count">1</span></h3>
+            <div class="rr-board__rail"></div>
+            <div class="rr-board__dockets">
+                <article class="rr-docket">
+                    <div class="rr-docket__head"><div><span class="rr-docket__title">Table 2</span><span class="rr-ref">ORD-001258 · 9:08 PM</span></div></div>
+                    <ol class="rr-docket__lines">
+                        <li class="rr-docket__line"><span class="rr-docket__qty">3 ×</span> <span>Roti Canai (2 pieces)</span> <span class="rr-docket__amount"></span></li>
+                    </ol>
+                    <div class="rr-docket__actions"><button type="button" class="btn btn-primary btn-sm">Mark served</button></div>
+                </article>
+            </div>
+        </section>
+        <section class="rr-board__column" aria-label="Served">
+            <h3 class="rr-board__title">Served <span class="rr-count">0</span></h3>
+            <div class="rr-board__rail"></div>
+            <p class="rr-board__empty">Nothing served yet.</p>
+        </section>
+    </div>
+</section>
+
+<section class="sg-section" id="lists">
+    <h2>Lists</h2>
+    <p class="text-muted">A record in a customer's list is a slip (<code>rr-slip</code>): the details on the left, the status and actions on the right. A booking starts with a date block (<code>rr-dateblock</code>, a <code>&lt;time&gt;</code>), so people see the day before anything else. Buttons on a row carry the reference in a <code>visually-hidden</code> span, so a screen reader knows which one they're for.</p>
+    <div class="row g-4">
+        <div class="col-xl-6">
+            <ul class="list-unstyled d-grid gap-3 mb-0">
+                <li class="rr-slip">
+                    <time class="rr-dateblock" datetime="2026-10-26"><span class="rr-dateblock__day">Mon</span><span class="rr-dateblock__date">26</span><span class="rr-dateblock__month">Oct</span></time>
+                    <div class="rr-slip__body">
+                        <div>
+                            <div class="rr-slip__title">7:30 PM · Table 3 · 2 people</div>
+                            <span class="rr-ref">RES-001840</span>
+                            <p class="small text-muted mt-1 mb-0">Window seat please, it is our anniversary</p>
+                        </div>
+                        <div class="rr-slip__side">
+                            <span class="rr-status rr-status--attention">Pending</span>
+                            <div class="d-flex gap-2">
+                                <a class="btn btn-outline-secondary btn-sm" href="#lists">Change<span class="visually-hidden"> RES-001840</span></a>
+                                <a class="btn btn-outline-danger btn-sm" href="#lists">Cancel<span class="visually-hidden"> RES-001840</span></a>
+                            </div>
+                        </div>
+                    </div>
+                </li>
+                <li class="rr-slip">
+                    <div class="rr-slip__body">
+                        <div>
+                            <div class="rr-slip__title">Table 4 · 5 items · <span class="rr-money">RM 37.20</span></div>
+                            <span class="rr-ref">ORD-001256</span> <span class="small text-muted">· 25 Oct 2026, 9:08 PM</span>
+                        </div>
+                        <div class="rr-slip__side">
+                            <span class="rr-status rr-status--progress">Preparing</span>
+                            <div class="d-flex gap-2">
+                                <a class="btn btn-outline-primary btn-sm" href="#lists">Payment<span class="visually-hidden"> for ORD-001256</span></a>
+                                <a class="btn btn-outline-secondary btn-sm" href="#lists">View<span class="visually-hidden"> ORD-001256</span></a>
+                            </div>
+                        </div>
+                    </div>
+                </li>
+            </ul>
+        </div>
+        <div class="col-xl-6">
+            <ul class="rr-dishes">
+                <li class="rr-dish is-chosen">
+                    <label for="sg-dish-1"><span class="rr-dish__name">Nasi Lemak</span><span class="rr-dish__price">RM 12.90</span></label>
+                    <div class="rr-stepper" data-stepper>
+                        <button type="button" class="rr-stepper__button" data-step="-1" aria-label="One less Nasi Lemak">&minus;</button>
+                        <input class="rr-stepper__input" id="sg-dish-1" type="number" value="2" min="0" max="20" />
+                        <button type="button" class="rr-stepper__button" data-step="1" aria-label="One more Nasi Lemak">+</button>
+                    </div>
+                </li>
+                <li class="rr-dish">
+                    <label for="sg-dish-2"><span class="rr-dish__name">Teh Tarik</span><span class="rr-dish__price">RM 3.80</span></label>
+                    <div class="rr-stepper" data-stepper>
+                        <button type="button" class="rr-stepper__button" data-step="-1" aria-label="One less Teh Tarik">&minus;</button>
+                        <input class="rr-stepper__input" id="sg-dish-2" type="number" value="0" min="0" max="20" />
+                        <button type="button" class="rr-stepper__button" data-step="1" aria-label="One more Teh Tarik">+</button>
+                    </div>
+                </li>
+            </ul>
+            <p class="text-muted mt-2 mb-0">Dish rows (<code>rr-dishes</code> + <code>rr-dish</code>) list what can be ordered. A chosen dish gets <code>is-chosen</code>, which the order page's script sets.</p>
+        </div>
+    </div>
+</section>
+
+<section class="sg-section" id="pieces">
+    <h2>Page pieces</h2>
+
+    <h3 class="h4 mt-4">Page header</h3>
+    <div class="sg-demo">
+        <div class="rr-page-header mb-0">
+            <div>
+                <div class="h1 mb-0">My reservations</div>
+                <p class="rr-lede">Your upcoming bookings. Change or cancel them up to the seating.</p>
+            </div>
+            <div class="rr-page-actions"><button type="button" class="btn btn-primary">Book a table</button></div>
+        </div>
+    </div>
+    <p class="text-muted mt-2">Every page starts with <code>rr-page-header</code>: the title, one line of context if it helps, and the page's main action on the right.</p>
+
+    <h3 class="h4 mt-4">Filters</h3>
+    <div class="sg-demo">
+        <nav class="nav nav-pills" aria-label="Status">
+            <a class="nav-link active" aria-current="page" href="#pieces">All</a>
+            <a class="nav-link" href="#pieces">Pending</a>
+            <a class="nav-link" href="#pieces">Confirmed</a>
+            <a class="nav-link" href="#pieces">Cancelled</a>
+            <a class="nav-link" href="#pieces">Completed</a>
+        </nav>
+    </div>
+    <p class="text-muted mt-2">Filters are <code>nav-pills</code> links, so the choice is in the address and one tap applies it. No "Show" button.</p>
+
+    <h3 class="h4 mt-4">Messages</h3>
+    <div class="d-grid gap-2">
+        <div class="alert alert-success mb-0" role="status">Your reservation has been updated.</div>
+        <div class="alert alert-warning mb-0" role="status">Your booking was confirmed, so the change needs confirming again.</div>
+        <div class="alert alert-danger mb-0" role="alert">That table is already booked for this seating. Choose another time or table.</div>
+    </div>
+
+    <h3 class="h4 mt-4">Empty state</h3>
+    <div class="rr-empty">
+        <p class="rr-empty__title">No upcoming reservations</p>
+        <p class="mb-0">Book a table and it will show up here.</p>
+        <button type="button" class="btn btn-primary">Book a table</button>
+    </div>
+    <p class="text-muted mt-2">An empty list says what will appear and how to add the first one.</p>
+
+    <h3 class="h4 mt-4">Feature cards</h3>
+    <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-3">
+        <div class="col">
+            <div class="rr-feature">
+                <h4 class="rr-feature__title"><a href="#pieces">Reservations</a></h4>
+                <p class="text-muted mb-0">Book, change or cancel a table.</p>
+                <div class="rr-feature__meta">Story 5 · Cheah</div>
+            </div>
+        </div>
+        <div class="col">
+            <div class="rr-feature rr-feature--soon" aria-disabled="true">
+                <h4 class="rr-feature__title">Browse menu</h4>
+                <p class="mb-0">See what's on the menu.</p>
+                <div class="rr-feature__meta">Not built yet · Story 13 · Lim</div>
+            </div>
+        </div>
+    </div>
+
+    <h3 class="h4 mt-4">Staff list</h3>
+    <section aria-labelledby="sg-seating">
+        <h4 class="rr-group-title" id="sg-seating">7:30 PM <span class="rr-count">2</span></h4>
+        <ul class="rr-list">
+            <li class="rr-list__item is-attention">
+                <div class="rr-tableno"><span class="rr-label">Table</span> <span class="rr-tableno__number">3</span></div>
+                <div class="rr-list__main">
+                    <div class="fw-semibold">2 people · Customer #1</div>
+                    <span class="rr-ref">RES-001840</span>
+                    <p class="small text-muted mt-1 mb-0">Window seat please, it is our anniversary</p>
+                </div>
+                <span class="rr-status rr-status--attention">Pending</span>
+                <div class="rr-list__actions">
+                    <button type="button" class="btn btn-sm btn-success">Confirm</button>
+                    <button type="button" class="btn btn-sm btn-outline-danger">Cancel</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary">Edit</button>
+                </div>
+            </li>
+            <li class="rr-list__item">
+                <div class="rr-tableno"><span class="rr-label">Table</span> <span class="rr-tableno__number">7</span></div>
+                <div class="rr-list__main">
+                    <div class="fw-semibold">4 people · Customer #2</div>
+                    <span class="rr-ref">RES-001843</span>
+                </div>
+                <span class="rr-status rr-status--good">Confirmed</span>
+                <div class="rr-list__actions">
+                    <button type="button" class="btn btn-sm btn-outline-danger">Cancel</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary">Edit</button>
+                </div>
+            </li>
+        </ul>
+    </section>
+    <p class="text-muted mt-2">For staff lists that people work through: <code>rr-list</code> rows, grouped under an <code>rr-group-title</code> with an <code>rr-count</code>. A row waiting for someone gets <code>is-attention</code> (the kaya edge).</p>
+
+    <h3 class="h4 mt-4">Staff table</h3>
+    <div class="table-responsive">
+        <table class="table align-middle">
+            <thead>
+                <tr><th>Time</th><th>Table</th><th>Party</th><th>Customer</th><th>Status</th><th><span class="visually-hidden">Actions</span></th></tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>6:00 PM<br /><span class="rr-ref">RES-001842</span></td><td>Table 2</td><td>6 people</td><td>Customer #9001</td>
+                    <td><span class="rr-status rr-status--attention">Pending</span></td>
+                    <td class="text-end text-nowrap"><button type="button" class="btn btn-primary btn-sm">Confirm</button> <button type="button" class="btn btn-outline-danger btn-sm">Cancel</button></td>
+                </tr>
+                <tr>
+                    <td>7:30 PM<br /><span class="rr-ref">RES-001840</span></td><td>Table 3</td><td>2 people</td><td>Customer #1</td>
+                    <td><span class="rr-status rr-status--good">Confirmed</span></td>
+                    <td class="text-end text-nowrap"><button type="button" class="btn btn-outline-danger btn-sm">Cancel</button></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</section>
+
+@section Scripts {
+    <script src="~/js/stepper.js" asp-append-version="true"></script>
+}

@@ -1,31 +1,23 @@
-@* A reservation's details, shown on the Confirmation and Cancel pages. *@
+@* A reservation as a docket, shown on the Confirmation and Cancel pages. *@
 @model Reservation
 
-<div class="card">
-    <div class="card-body">
-        <dl class="row mb-0">
-            <dt class="col-sm-4">Reference</dt>
-            <dd class="col-sm-8">@ReservationFormatter.Reference(Model.ReservationId)</dd>
-
-            <dt class="col-sm-4">When</dt>
-            <dd class="col-sm-8">@ReservationFormatter.When(Model.ReservationDate, Model.TimeSlot)</dd>
-
-            <dt class="col-sm-4">Table</dt>
-            <dd class="col-sm-8">@ReservationFormatter.Table(Model.TableId)</dd>
-
-            <dt class="col-sm-4">Party size</dt>
-            <dd class="col-sm-8">@ReservationFormatter.PartySize(Model.PartySize)</dd>
-
-            @if (Model.SpecialRequest is not null)
-            {
-                <dt class="col-sm-4">Special request</dt>
-                <dd class="col-sm-8">@Model.SpecialRequest</dd>
-            }
-
-            <dt class="col-sm-4">Status</dt>
-            <dd class="col-sm-8 mb-0">
-                <span class="badge @ReservationFormatter.StatusBadge(Model.Status)">@ReservationFormatter.StatusLabel(Model.Status)</span>
-            </dd>
-        </dl>
+<article class="rr-docket rr-docket--narrow" aria-label="Booking @ReservationFormatter.Reference(Model.ReservationId)">
+    <div class="rr-docket__head">
+        <div>
+            <span class="rr-docket__title">@ReservationFormatter.When(Model.ReservationDate, Model.TimeSlot)</span>
+            <span class="d-block fw-semibold mt-1">@ReservationFormatter.Table(Model.TableId) · @ReservationFormatter.PartySize(Model.PartySize)</span>
+        </div>
+        <span class="@ReservationFormatter.StatusBadge(Model.Status)">@ReservationFormatter.StatusLabel(Model.Status)</span>
     </div>
-</div>
+
+    @if (Model.SpecialRequest is not null)
+    {
+        <span class="rr-label">Special request</span>
+        <p class="mb-0">@Model.SpecialRequest</p>
+    }
+
+    <div class="rr-docket__total">
+        <span>Reference</span>
+        <span class="rr-ref">@ReservationFormatter.Reference(Model.ReservationId)</span>
+    </div>
+</article>

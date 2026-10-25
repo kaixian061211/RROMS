@@ -5,9 +5,9 @@
     var roles = string.Join(", ", User.FindAll(ClaimTypes.Role).Select(claim => claim.Value));
     var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 }
-<div class="test-user-bar bg-warning-subtle border-bottom border-warning-subtle small">
-    <div class="container d-flex flex-wrap align-items-center column-gap-3 py-1">
-        <span class="fw-semibold">Test login (Development only)</span>
+<div class="test-user-bar rr-devbar">
+    <div class="container-xxl d-flex flex-wrap align-items-center column-gap-3 row-gap-1 py-1">
+        <span class="rr-devbar__tag">TEST LOGIN · DEVELOPMENT ONLY</span>
         @if (signedIn)
         {
             <span>Signed in as <strong>@User.Identity!.Name</strong> · @roles · user #@userId</span>
@@ -16,6 +16,9 @@
         {
             <span>Not signed in</span>
         }
-        <a class="ms-auto" asp-page="/Dev/SwitchUser">@(signedIn ? "Switch user" : "Choose a test user")</a>
+        <span class="ms-auto d-flex gap-3">
+            <a asp-page="/Dev/StyleGuide">Style guide</a>
+            <a asp-page="/Dev/SwitchUser">@(signedIn ? "Switch user" : "Choose a test user")</a>
+        </span>
     </div>
 </div>

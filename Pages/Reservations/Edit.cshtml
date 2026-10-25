@@ -1,42 +1,45 @@
 @page "{id:int}"
 @model EditModel
 @{
-    ViewData["Title"] = "Edit reservation";
+    ViewData["Title"] = "Change reservation";
 }
 
-<h1 class="h3 mb-3">
-    Edit reservation
-    <small class="text-muted fs-6">@ReservationFormatter.Reference(Model.Id)</small>
-</h1>
+<div class="rr-narrow">
+    <header class="rr-page-header">
+        <div>
+            <span class="rr-ref d-block mb-1">@ReservationFormatter.Reference(Model.Id)</span>
+            <h1>Change reservation</h1>
+        </div>
+    </header>
 
-@if (Model.BlockedMessage is not null)
-{
-    <div class="alert alert-warning" role="alert">@Model.BlockedMessage</div>
-    <a asp-page="Index" class="btn btn-outline-secondary">Back to my reservations</a>
-}
-else
-{
-    if (Model.IsConfirmed)
+    @if (Model.BlockedMessage is not null)
     {
-        <div class="alert alert-info" role="status">
-            This booking is confirmed. If you change the date, time, table or party size, the restaurant will need to confirm it again.
-        </div>
+        <div class="alert alert-warning" role="alert">@Model.BlockedMessage</div>
+        <a asp-page="Index" class="btn btn-outline-secondary">Back to my reservations</a>
     }
-    <div class="row">
-        <div class="col-lg-8">
-            <form method="post">
-                <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
-                <input type="hidden" asp-for="RowVersion" />
+    else
+    {
+        if (Model.IsConfirmed)
+        {
+            <div class="alert alert-info" role="status">
+                This booking is confirmed. If you change the date, time, table or party size, the restaurant will need to confirm it again.
+            </div>
+        }
+        <form method="post">
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+            <input type="hidden" asp-for="RowVersion" />
+            <div class="rr-panel">
                 <partial name="_ReservationFields" for="Input" />
-                <div class="d-flex flex-wrap gap-2 mt-4">
-                    <button type="submit" class="btn btn-primary">Save changes</button>
-                    <a asp-page="Index" class="btn btn-outline-secondary">Back to my reservations</a>
-                </div>
-            </form>
-        </div>
-    </div>
-}
+            </div>
+            <div class="rr-actionbar">
+                <button type="submit" class="btn btn-primary">Save changes</button>
+                <a asp-page="Index" class="btn btn-outline-secondary">Back<span class="d-none d-sm-inline"> to my reservations</span></a>
+            </div>
+        </form>
+    }
+</div>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/stepper.js" asp-append-version="true"></script>
 }

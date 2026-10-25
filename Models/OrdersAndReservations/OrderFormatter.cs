@@ -20,17 +20,29 @@ public static class OrderFormatter
         _ => status
     };
 
-    /// <summary>Bootstrap badge classes.</summary>
+    /// <summary>The status pill's classes (rr-status, see /Dev/StyleGuide): pending needs attention, preparing is in progress.</summary>
     public static string StatusBadge(string status) => status switch
     {
-        OrderStatus.Pending => "text-bg-warning",
-        OrderStatus.Preparing => "text-bg-info",
-        OrderStatus.Ready => "text-bg-primary",
-        OrderStatus.Served => "text-bg-dark",
-        OrderStatus.Completed => "text-bg-success",
-        OrderStatus.Cancelled => "text-bg-secondary",
-        _ => "text-bg-light"
+        OrderStatus.Pending => "rr-status rr-status--attention",
+        OrderStatus.Preparing => "rr-status rr-status--progress",
+        OrderStatus.Ready => "rr-status rr-status--good",
+        OrderStatus.Served or OrderStatus.Completed => "rr-status rr-status--done",
+        _ => "rr-status rr-status--off"
     };
+
+    /// <summary>The steps the customer's order page shows, in order. Completed and cancelled aren't steps.</summary>
+    public static readonly string[] Steps = { OrderStatus.Pending, OrderStatus.Preparing, OrderStatus.Ready, OrderStatus.Served };
+
+    /// <summary>
+    /// How one step looks for an order with this status: "is-done" once the order is past it, "is-current" for
+    /// the step it's at, null for steps still to come. A completed order is past them all.
+    /// </summary>
+    public static string? StepClass(string status, string step)
+    {
+        var reached = status == OrderStatus.Completed ? Steps.Length : Array.IndexOf(Steps, status);
+        var position = Array.IndexOf(Steps, step);
+        return position < reached ? "is-done" : position == reached ? "is-current" : null;
+    }
 
     /// <summary>The queue's status filter: finished orders are only listed for today.</summary>
     public static string StatusFilterLabel(string status) =>
@@ -61,12 +73,13 @@ public static class OrderFormatter
         _ => PaymentFormatter.StatusLabel(payment.Status)
     };
 
-    public static string PaymentBadge(PaymentDetails? payment) => payment?.Status switch
+    /// <summary>The pill for PaymentLabel: waiting at the counter needs attention, paying online is in progress.</summary>
+    public static string PaymentBadge(PaymentDetails? payment) => payment switch
     {
-        PaymentStatus.Paid => "text-bg-success",
-        PaymentStatus.Pending => "text-bg-warning",
-        PaymentStatus.Refunded => "text-bg-secondary",
-        _ => "text-bg-light border"
+        { IsAwaitingCounter: true } => "rr-status rr-status--attention",
+        { Status: PaymentStatus.Pending } => "rr-status rr-status--progress",
+        { Status: PaymentStatus.Paid } => "rr-status rr-status--good",
+        _ => "rr-status rr-status--off"
     };
 
     public static string Table(int tableId) => $"Table {tableId}";

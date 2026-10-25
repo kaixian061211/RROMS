@@ -13,4 +13,9 @@ public static class ReservationTimeSlots
     };
 
     public static bool IsValid(TimeOnly timeSlot) => All.Contains(timeSlot);
+
+    /// <summary>Seatings before 5 pm are lunch; the rest are dinner. The pages show them in these two groups.</summary>
+    public static IEnumerable<TimeOnly> Lunch => All.Where(slot => slot.Hour < 17);
+
+    public static IEnumerable<TimeOnly> Dinner => All.Where(slot => slot.Hour >= 17);
 }

@@ -3,32 +3,51 @@
 @{
     ViewData["Title"] = "Manage reservations";
     var dateValue = ReservationFormatter.InputDate(Model.SelectedDate);
+    var isToday = Model.SelectedDate == DateOnly.FromDateTime(DateTime.Today);
 }
 
-<h1 class="h3 mb-3">Manage reservations</h1>
-
-<form method="get" class="row g-2 align-items-end mb-4">
-    <div class="col-12 col-sm-auto">
-        <label for="date" class="form-label">Date</label>
-        <input id="date" name="date" type="date" class="form-control" value="@dateValue" />
-    </div>
-    <div class="col-12 col-sm-auto">
-        <label for="status" class="form-label">Status</label>
-        <select id="status" name="status" class="form-select">
-            <option value="">All statuses</option>
-            @foreach (var status in ReservationStatus.All)
+<header class="rr-page-header">
+    <div>
+        <h1>Manage reservations</h1>
+        <p class="rr-lede">
+            <strong class="text-body">@ReservationFormatter.LongDate(Model.SelectedDate)</strong>@(isToday ? " (today)" : "")
+            @if (Model.StatusFilter is null && Model.Rows.Count > 0)
             {
-                <option value="@status" selected="@(status == Model.StatusFilter)">@ReservationFormatter.StatusLabel(status)</option>
+                <span class="d-block">@ReservationFormatter.DaySummary(Model.Rows.Select(row => row.Reservation))</span>
             }
-        </select>
+        </p>
     </div>
-    <div class="col-12 col-sm-auto d-flex gap-2">
-        <button type="submit" class="btn btn-primary">Show</button>
-        <a asp-page="Index" class="btn btn-outline-secondary">Today</a>
-    </div>
-</form>
 
-<h2 class="h5 mb-3">@ReservationFormatter.LongDate(Model.SelectedDate)</h2>
+    @* The day: the arrows go one day back or forward, keeping the status filter. *@
+    <form method="get" class="d-flex flex-wrap align-items-center gap-2" aria-label="Choose a day">
+        <a asp-page="Index" asp-route-date="@ReservationFormatter.InputDate(Model.SelectedDate.AddDays(-1))" asp-route-status="@Model.StatusFilter"
+           class="btn btn-outline-secondary" aria-label="Previous day">&lsaquo;</a>
+        <label for="date" class="visually-hidden">Date</label>
+        <input id="date" name="date" type="date" class="form-control w-auto" value="@dateValue" />
+        <a asp-page="Index" asp-route-date="@ReservationFormatter.InputDate(Model.SelectedDate.AddDays(1))" asp-route-status="@Model.StatusFilter"
+           class="btn btn-outline-secondary" aria-label="Next day">&rsaquo;</a>
+        @if (Model.StatusFilter is not null)
+        {
+            <input type="hidden" name="status" value="@Model.StatusFilter" />
+        }
+        <button type="submit" class="btn btn-outline-secondary">Show</button>
+        @if (!isToday)
+        {
+            <a asp-page="Index" asp-route-status="@Model.StatusFilter" class="btn btn-link">Today</a>
+        }
+    </form>
+</header>
+
+@* Status filter: links, so one tap applies it and the choice is in the address. *@
+<nav class="nav nav-pills mb-4" aria-label="Status">
+    <a asp-page="Index" asp-route-date="@dateValue" class="nav-link @(Model.StatusFilter is null ? "active" : null)"
+       aria-current="@(Model.StatusFilter is null ? "page" : null)">All</a>
+    @foreach (var status in ReservationStatus.All)
+    {
+        <a asp-page="Index" asp-route-date="@dateValue" asp-route-status="@status" class="nav-link @(status == Model.StatusFilter ? "active" : null)"
+           aria-current="@(status == Model.StatusFilter ? "page" : null)">@ReservationFormatter.StatusLabel(status)</a>
+    }
+</nav>
 
 @if (Model.StatusMessage is not null)
 {
@@ -47,71 +66,61 @@
 
 @if (Model.Rows.Count == 0)
 {
-    <div class="text-center text-muted border rounded py-5">
-        @(Model.StatusFilter is null ? "No reservations for this date." : "No reservations with this status for this date.")
+    <div class="rr-empty">
+        <p class="rr-empty__title">@(Model.StatusFilter is null ? "No reservations for this date." : "No reservations with this status for this date.")</p>
+        <p class="mb-0">Bookings customers make for this day show up here.</p>
     </div>
 }
 else
 {
-    <div class="table-responsive">
-        <table class="table align-middle">
-            <thead>
-                <tr>
-                    <th>Time</th>
-                    @* On phones (below md) these columns are hidden, and the Time cell shows their details instead. *@
-                    <th class="d-none d-md-table-cell">Table</th>
-                    <th class="d-none d-md-table-cell">Party size</th>
-                    <th class="d-none d-md-table-cell">Customer</th>
-                    <th class="d-none d-md-table-cell">Special request</th>
-                    <th class="d-none d-md-table-cell">Status</th>
-                    <th><span class="visually-hidden">Actions</span></th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var row in Model.Rows)
+    @* One group per seating. The service already sorts by time, then table. *@
+    @foreach (var seating in Model.Rows.GroupBy(row => row.Reservation.TimeSlot))
+    {
+        var seatingId = $"seating-{seating.Key.Hour * 100 + seating.Key.Minute}";
+        <section class="mb-4" aria-labelledby="@seatingId">
+            <h2 class="rr-group-title" id="@seatingId">
+                @ReservationFormatter.Time(seating.Key)
+                <span class="rr-count">@seating.Count()</span>
+            </h2>
+            <ul class="rr-list">
+                @foreach (var row in seating)
                 {
                     var r = row.Reservation;
-                    <tr>
-                        <td>
-                            <span class="text-nowrap">@ReservationFormatter.Time(r.TimeSlot)</span>
-                            <div class="small text-muted">@ReservationFormatter.Reference(r.ReservationId)</div>
-                            <div class="small d-md-none">
-                                @ReservationFormatter.Table(r.TableId) · @ReservationFormatter.PartySize(r.PartySize) · @ReservationFormatter.Customer(r.CustomerUserId)
-                            </div>
+                    <li class="rr-list__item @(r.Status == ReservationStatus.Pending ? "is-attention" : null)">
+                        <div class="rr-tableno">
+                            <span class="rr-label">Table</span>
+                            <span class="rr-tableno__number">@r.TableId</span>
+                        </div>
+                        <div class="rr-list__main">
+                            <div class="fw-semibold">@ReservationFormatter.PartySize(r.PartySize) · @ReservationFormatter.Customer(r.CustomerUserId)</div>
+                            <span class="rr-ref">@ReservationFormatter.Reference(r.ReservationId)</span>
                             @if (r.SpecialRequest is not null)
                             {
-                                <div class="small fst-italic d-md-none">@r.SpecialRequest</div>
+                                <p class="small text-muted mt-1 mb-0">@r.SpecialRequest</p>
                             }
-                            <span class="badge d-md-none @ReservationFormatter.StatusBadge(r.Status)">@ReservationFormatter.StatusLabel(r.Status)</span>
-                        </td>
-                        <td class="text-nowrap d-none d-md-table-cell">@ReservationFormatter.Table(r.TableId)</td>
-                        <td class="text-nowrap d-none d-md-table-cell">@ReservationFormatter.PartySize(r.PartySize)</td>
-                        <td class="text-nowrap d-none d-md-table-cell">@ReservationFormatter.Customer(r.CustomerUserId)</td>
-                        <td class="d-none d-md-table-cell">@(r.SpecialRequest ?? "-")</td>
-                        <td class="d-none d-md-table-cell"><span class="badge @ReservationFormatter.StatusBadge(r.Status)">@ReservationFormatter.StatusLabel(r.Status)</span></td>
-                        <td>
-                            <div class="d-flex flex-wrap justify-content-end gap-1">
-                                @foreach (var next in row.NextStatuses)
-                                {
-                                    <form method="post" asp-page-handler="ChangeStatus" asp-route-date="@dateValue" asp-route-status="@Model.StatusFilter">
-                                        <input type="hidden" name="id" value="@r.ReservationId" />
-                                        <input type="hidden" name="newStatus" value="@next" />
-                                        <input type="hidden" name="rowVersion" value="@Convert.ToBase64String(r.RowVersion)" />
-                                        <button type="submit" class="btn btn-sm @ReservationFormatter.StatusActionButton(next)"
-                                                onclick="@(next == ReservationStatus.Cancelled ? "return confirm('Cancel this reservation?');" : null)">
-                                            @ReservationFormatter.StatusAction(next)
-                                        </button>
-                                    </form>
-                                }
-                                @if (row.CanEdit)
-                                {
-                                    <a asp-page="Edit" asp-route-id="@r.ReservationId" class="btn btn-sm btn-outline-secondary">Edit</a>
-                                }
-                            </div>
-                        </td>
-                    </tr>
+                        </div>
+                        <span class="@ReservationFormatter.StatusBadge(r.Status)">@ReservationFormatter.StatusLabel(r.Status)</span>
+                        <div class="rr-list__actions">
+                            @foreach (var next in row.NextStatuses)
+                            {
+                                <form method="post" asp-page-handler="ChangeStatus" asp-route-date="@dateValue" asp-route-status="@Model.StatusFilter">
+                                    <input type="hidden" name="id" value="@r.ReservationId" />
+                                    <input type="hidden" name="newStatus" value="@next" />
+                                    <input type="hidden" name="rowVersion" value="@Convert.ToBase64String(r.RowVersion)" />
+                                    <button type="submit" class="btn btn-sm @ReservationFormatter.StatusActionButton(next)"
+                                            onclick="@(next == ReservationStatus.Cancelled ? "return confirm('Cancel this reservation?');" : null)">
+                                        @ReservationFormatter.StatusAction(next)
+                                    </button>
+                                </form>
+                            }
+                            @if (row.CanEdit)
+                            {
+                                <a asp-page="Edit" asp-route-id="@r.ReservationId" class="btn btn-sm btn-outline-secondary">Edit</a>
+                            }
+                        </div>
+                    </li>
                 }
-            </tbody>
-        </table>
-    </div>
+            </ul>
+        </section>
+    }
 }

@@ -5,8 +5,7 @@ namespace RROMS.Web.Pages;
 
 public class IndexModel : PageModel
 {
-    public void OnGet()
-    {
-
-    }
+    /// <summary>Signed-in users go straight to their dashboard; visitors see the front page.</summary>
+    public IActionResult OnGet() =>
+        User.Identity?.IsAuthenticated == true ? RedirectToPage("/Dashboards/Index") : Page();
 }

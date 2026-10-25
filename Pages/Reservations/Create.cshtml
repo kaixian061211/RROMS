@@ -4,21 +4,27 @@
     ViewData["Title"] = "Book a table";
 }
 
-<h1 class="h3 mb-3">Book a table</h1>
+<div class="rr-narrow">
+    <header class="rr-page-header">
+        <div>
+            <h1>Book a table</h1>
+            <p class="rr-lede">Pick a day, a time and a table. Your booking is pending until the restaurant confirms it.</p>
+        </div>
+    </header>
 
-<div class="row">
-    <div class="col-lg-8">
-        <form method="post">
-            <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+    <form method="post">
+        <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+        <div class="rr-panel">
             <partial name="_ReservationFields" for="Input" />
-            <div class="d-flex flex-wrap gap-2 mt-4">
-                <button type="submit" class="btn btn-primary">Book table</button>
-                <a asp-page="Index" class="btn btn-outline-secondary">Back to my reservations</a>
-            </div>
-        </form>
-    </div>
+        </div>
+        <div class="rr-actionbar">
+            <button type="submit" class="btn btn-primary">Book table</button>
+            <a asp-page="Index" class="btn btn-outline-secondary">Back<span class="d-none d-sm-inline"> to my reservations</span></a>
+        </div>
+    </form>
 </div>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/stepper.js" asp-append-version="true"></script>
 }

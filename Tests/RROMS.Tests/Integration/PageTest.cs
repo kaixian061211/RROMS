@@ -89,14 +89,16 @@ public abstract class PageTest : IClassFixture<TestWebApp>, IAsyncLifetime
 
     /// <summary>
     /// Sends a form the way a browser would: every field on it, including the hidden anti-forgery token and
-    /// RowVersion, with the test's changes on top. A change can add a field the form doesn't have, as someone
-    /// tampering with the request could, and null leaves a field out.
+    /// RowVersion, with the test's changes on top. Radio buttons and checkboxes are only sent when chosen.
+    /// A change can add a field the form doesn't have, as someone tampering with the request could, and null
+    /// leaves a field out.
     /// </summary>
     protected async Task<HttpResponseMessage> SendFormAsync(IHtmlFormElement form, Dictionary<string, string?>? changes = null)
     {
         var fields = form.Elements
             .Where(e => e is IHtmlInputElement or IHtmlSelectElement or IHtmlTextAreaElement)
             .Where(e => !string.IsNullOrEmpty(e.GetAttribute("name")))
+            .Where(e => e is not IHtmlInputElement { Type: "radio" or "checkbox", IsChecked: false })
             .Select(e => KeyValuePair.Create(e.GetAttribute("name")!, ValueOf(e)))
             .ToList();
 
