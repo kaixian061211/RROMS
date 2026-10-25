@@ -21,11 +21,17 @@
 
 @if (Model.StatusMessage is not null)
 {
-    <div class="alert alert-success" role="status">@Model.StatusMessage</div>
+    <div class="alert alert-success alert-dismissible fade show" role="status">
+        @Model.StatusMessage
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
 }
 @if (Model.ErrorMessage is not null)
 {
-    <div class="alert alert-danger" role="alert">@Model.ErrorMessage</div>
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        @Model.ErrorMessage
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
 }
 
 @if (Model.Orders.Count == 0)

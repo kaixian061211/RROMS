@@ -11,7 +11,10 @@
 
 @if (Model.StatusMessage is not null)
 {
-    <div class="alert alert-success" role="status">@Model.StatusMessage</div>
+    <div class="alert alert-success alert-dismissible fade show" role="status">
+        @Model.StatusMessage
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
 }
 
 @if (Model.Reservations.Count == 0)
@@ -28,9 +31,10 @@ else
             <thead>
                 <tr>
                     <th>When</th>
-                    <th>Table</th>
-                    <th>Party size</th>
-                    <th>Status</th>
+                    @* On phones (below md) these columns are hidden, and the When cell shows their details instead. *@
+                    <th class="d-none d-md-table-cell">Table</th>
+                    <th class="d-none d-md-table-cell">Party size</th>
+                    <th class="d-none d-md-table-cell">Status</th>
                     <th><span class="visually-hidden">Actions</span></th>
                 </tr>
             </thead>
@@ -41,10 +45,12 @@ else
                         <td>
                             @ReservationFormatter.When(r.ReservationDate, r.TimeSlot)
                             <div class="small text-muted">@ReservationFormatter.Reference(r.ReservationId)</div>
+                            <div class="small d-md-none">@ReservationFormatter.Table(r.TableId) · @ReservationFormatter.PartySize(r.PartySize)</div>
+                            <span class="badge d-md-none @ReservationFormatter.StatusBadge(r.Status)">@ReservationFormatter.StatusLabel(r.Status)</span>
                         </td>
-                        <td>@ReservationFormatter.Table(r.TableId)</td>
-                        <td>@ReservationFormatter.PartySize(r.PartySize)</td>
-                        <td><span class="badge @ReservationFormatter.StatusBadge(r.Status)">@ReservationFormatter.StatusLabel(r.Status)</span></td>
+                        <td class="d-none d-md-table-cell">@ReservationFormatter.Table(r.TableId)</td>
+                        <td class="d-none d-md-table-cell">@ReservationFormatter.PartySize(r.PartySize)</td>
+                        <td class="d-none d-md-table-cell"><span class="badge @ReservationFormatter.StatusBadge(r.Status)">@ReservationFormatter.StatusLabel(r.Status)</span></td>
                         <td class="text-end text-nowrap">
                             <a asp-page="Edit" asp-route-id="@r.ReservationId" class="btn btn-sm btn-outline-primary">Edit</a>
                             <a asp-page="Cancel" asp-route-id="@r.ReservationId" class="btn btn-sm btn-outline-danger">Cancel</a>

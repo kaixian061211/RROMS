@@ -32,11 +32,17 @@
 
 @if (Model.StatusMessage is not null)
 {
-    <div class="alert alert-success" role="status">@Model.StatusMessage</div>
+    <div class="alert alert-success alert-dismissible fade show" role="status">
+        @Model.StatusMessage
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
 }
 @if (Model.ErrorMessage is not null)
 {
-    <div class="alert alert-danger" role="alert">@Model.ErrorMessage</div>
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        @Model.ErrorMessage
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
 }
 
 @if (Model.Rows.Count == 0)
@@ -52,11 +58,12 @@ else
             <thead>
                 <tr>
                     <th>Time</th>
-                    <th>Table</th>
-                    <th>Party size</th>
-                    <th>Customer</th>
-                    <th>Special request</th>
-                    <th>Status</th>
+                    @* On phones (below md) these columns are hidden, and the Time cell shows their details instead. *@
+                    <th class="d-none d-md-table-cell">Table</th>
+                    <th class="d-none d-md-table-cell">Party size</th>
+                    <th class="d-none d-md-table-cell">Customer</th>
+                    <th class="d-none d-md-table-cell">Special request</th>
+                    <th class="d-none d-md-table-cell">Status</th>
                     <th><span class="visually-hidden">Actions</span></th>
                 </tr>
             </thead>
@@ -65,15 +72,23 @@ else
                 {
                     var r = row.Reservation;
                     <tr>
-                        <td class="text-nowrap">
-                            @ReservationFormatter.Time(r.TimeSlot)
+                        <td>
+                            <span class="text-nowrap">@ReservationFormatter.Time(r.TimeSlot)</span>
                             <div class="small text-muted">@ReservationFormatter.Reference(r.ReservationId)</div>
+                            <div class="small d-md-none">
+                                @ReservationFormatter.Table(r.TableId) · @ReservationFormatter.PartySize(r.PartySize) · @ReservationFormatter.Customer(r.CustomerUserId)
+                            </div>
+                            @if (r.SpecialRequest is not null)
+                            {
+                                <div class="small fst-italic d-md-none">@r.SpecialRequest</div>
+                            }
+                            <span class="badge d-md-none @ReservationFormatter.StatusBadge(r.Status)">@ReservationFormatter.StatusLabel(r.Status)</span>
                         </td>
-                        <td class="text-nowrap">@ReservationFormatter.Table(r.TableId)</td>
-                        <td class="text-nowrap">@ReservationFormatter.PartySize(r.PartySize)</td>
-                        <td class="text-nowrap">@ReservationFormatter.Customer(r.CustomerUserId)</td>
-                        <td>@(r.SpecialRequest ?? "-")</td>
-                        <td><span class="badge @ReservationFormatter.StatusBadge(r.Status)">@ReservationFormatter.StatusLabel(r.Status)</span></td>
+                        <td class="text-nowrap d-none d-md-table-cell">@ReservationFormatter.Table(r.TableId)</td>
+                        <td class="text-nowrap d-none d-md-table-cell">@ReservationFormatter.PartySize(r.PartySize)</td>
+                        <td class="text-nowrap d-none d-md-table-cell">@ReservationFormatter.Customer(r.CustomerUserId)</td>
+                        <td class="d-none d-md-table-cell">@(r.SpecialRequest ?? "-")</td>
+                        <td class="d-none d-md-table-cell"><span class="badge @ReservationFormatter.StatusBadge(r.Status)">@ReservationFormatter.StatusLabel(r.Status)</span></td>
                         <td>
                             <div class="d-flex flex-wrap justify-content-end gap-1">
                                 @foreach (var next in row.NextStatuses)

@@ -23,10 +23,11 @@ else
             <thead>
                 <tr>
                     <th>Order</th>
-                    <th>Items</th>
-                    <th class="text-end">Total</th>
-                    <th>Table</th>
-                    <th>Status</th>
+                    @* On phones (below md) these columns are hidden, and the Order cell shows their details instead. *@
+                    <th class="d-none d-md-table-cell">Items</th>
+                    <th class="text-end d-none d-md-table-cell">Total</th>
+                    <th class="d-none d-md-table-cell">Table</th>
+                    <th class="d-none d-md-table-cell">Status</th>
                     <th><span class="visually-hidden">Actions</span></th>
                 </tr>
             </thead>
@@ -37,13 +38,21 @@ else
                         <td>
                             @OrderFormatter.Reference(o.OrderId)
                             <div class="small text-muted">@OrderFormatter.PlacedAt(o.CreatedAt)</div>
+                            <div class="small d-md-none">
+                                @OrderFormatter.Table(o.TableId) · @OrderFormatter.ItemCount(o) · <span class="text-nowrap">@OrderFormatter.Money(o.Total)</span>
+                            </div>
+                            <span class="badge d-md-none @OrderFormatter.StatusBadge(o.Status)">@OrderFormatter.StatusLabel(o.Status)</span>
                         </td>
-                        <td>@OrderFormatter.ItemCount(o)</td>
-                        <td class="text-end">@OrderFormatter.Money(o.Total)</td>
-                        <td>@OrderFormatter.Table(o.TableId)</td>
-                        <td><span class="badge @OrderFormatter.StatusBadge(o.Status)">@OrderFormatter.StatusLabel(o.Status)</span></td>
-                        <td class="text-end">
-                            <a asp-page="/Payments/CheckOut" asp-route-orderId="@o.OrderId" class="btn btn-sm btn-outline-success">Payment</a>
+                        <td class="text-nowrap d-none d-md-table-cell">@OrderFormatter.ItemCount(o)</td>
+                        <td class="text-end text-nowrap d-none d-md-table-cell">@OrderFormatter.Money(o.Total)</td>
+                        <td class="text-nowrap d-none d-md-table-cell">@OrderFormatter.Table(o.TableId)</td>
+                        <td class="d-none d-md-table-cell"><span class="badge @OrderFormatter.StatusBadge(o.Status)">@OrderFormatter.StatusLabel(o.Status)</span></td>
+                        <td class="text-end text-nowrap">
+                            @* A cancelled order has nothing to pay. TODO: also hide it once the order is paid (Session 10). *@
+                            @if (o.Status != OrderStatus.Cancelled)
+                            {
+                                <a asp-page="/Payments/CheckOut" asp-route-orderId="@o.OrderId" class="btn btn-sm btn-outline-success">Payment</a>
+                            }
                             <a asp-page="Details" asp-route-id="@o.OrderId" class="btn btn-sm btn-outline-primary">View</a>
                         </td>
                     </tr>
