@@ -25,7 +25,7 @@
     <a class="nav-link" href="#forms">Forms</a>
     <a class="nav-link" href="#dockets">Dockets</a>
     <a class="nav-link" href="#board">Order rail</a>
-    <a class="nav-link" href="#bookings">Bookings</a>
+    <a class="nav-link" href="#lists">Lists</a>
     <a class="nav-link" href="#pieces">Page pieces</a>
 </nav>
 
@@ -92,7 +92,7 @@
         <div class="col-md-6">
             <ul class="sg-rules">
                 <li>Errors say what went wrong and what to do next: "That table is already booked for this seating. Choose another time or table."</li>
-                <li>Formats: <span class="rr-money">RM 85.50</span> · Mon, 26 Oct 2026 · 7:30 PM · <span class="rr-ref">ORD-001257</span>. Use the formatter classes, never format inline.</li>
+                <li>Formats: <span class="rr-money">RM 85.50</span> · 26 Oct 2026, 7:30 PM · <span class="rr-ref">ORD-001257</span>. Use the formatter classes, never format inline.</li>
                 <li>Name things the way people know them: "My orders", "Order queue", not "Order entities".</li>
             </ul>
         </div>
@@ -181,7 +181,7 @@
 
                 <div class="mb-4">
                     <label class="form-label d-block" for="sg-party">Party size</label>
-                    <div class="rr-stepper" data-sg-stepper>
+                    <div class="rr-stepper" data-stepper>
                         <button type="button" class="rr-stepper__button" data-step="-1" aria-label="One person fewer">&minus;</button>
                         <input class="rr-stepper__input" id="sg-party" type="number" value="2" min="1" max="20" />
                         <button type="button" class="rr-stepper__button" data-step="1" aria-label="One person more">+</button>
@@ -198,9 +198,10 @@
         <div class="col-lg-5">
             <ul class="sg-rules">
                 <li><strong>Choice tiles</strong> (<code>rr-tiles</code> + <code>rr-tile</code>) replace dropdowns when there are a few options people compare: seatings, tables, payment methods. Each tile is a real radio button (<code>btn-check</code>), so the form sends it like any other field.</li>
-                <li><strong>Steppers</strong> (<code>rr-stepper</code>) are for small counts: party size, quantities. The number stays a real input people can type into.</li>
+                <li><strong>Steppers</strong> (<code>rr-stepper</code> with <code>data-stepper</code>) are for small counts: party size, quantities. The number stays a real input people can type into. Add <code>wwwroot/js/stepper.js</code> to the page's scripts.</li>
                 <li>Every field has a visible label. Optional fields say "(optional)"; required ones say nothing.</li>
-                <li>Validation messages sit under the field, in sambal, and say how to fix it.</li>
+                <li>Validation messages sit under the field, in sambal, and say how to fix it. Fields that fail ASP.NET validation turn red by themselves (<code>input-validation-error</code>), tiles and steppers included.</li>
+                <li>A form's buttons go in <code>rr-actionbar</code>, straight inside the form. On a phone it stays at the bottom of the screen.</li>
             </ul>
         </div>
     </div>
@@ -221,8 +222,8 @@
                     <span class="rr-status rr-status--attention">Pending</span>
                 </div>
                 <ol class="rr-docket__lines">
-                    <li class="rr-docket__line"><span class="rr-docket__qty">2 ×</span> <span>Nasi Lemak</span> <span class="rr-docket__amount">25.80</span></li>
-                    <li class="rr-docket__line"><span class="rr-docket__qty">3 ×</span> <span>Teh Tarik</span> <span class="rr-docket__amount">11.40</span></li>
+                    <li class="rr-docket__line"><span class="rr-docket__qty">2 ×</span> <span>Nasi Lemak</span> <span class="rr-docket__amount">RM 25.80</span></li>
+                    <li class="rr-docket__line"><span class="rr-docket__qty">3 ×</span> <span>Teh Tarik</span> <span class="rr-docket__amount">RM 11.40</span></li>
                 </ol>
                 <div class="rr-docket__total"><span>Total</span><span class="rr-money">RM 37.20</span></div>
                 <div class="rr-docket__meta"><span class="rr-status rr-status--off">Not paid</span><span>Placed 12 min ago</span></div>
@@ -249,8 +250,8 @@
                     <li>Served</li>
                 </ol>
                 <ol class="rr-docket__lines">
-                    <li class="rr-docket__line"><span class="rr-docket__qty">1 ×</span> <span>Char Kway Teow</span> <span class="rr-docket__amount">13.90</span></li>
-                    <li class="rr-docket__line"><span class="rr-docket__qty">2 ×</span> <span>Cendol</span> <span class="rr-docket__amount">13.00</span></li>
+                    <li class="rr-docket__line"><span class="rr-docket__qty">1 ×</span> <span>Char Kway Teow</span> <span class="rr-docket__amount">RM 13.90</span></li>
+                    <li class="rr-docket__line"><span class="rr-docket__qty">2 ×</span> <span>Cendol</span> <span class="rr-docket__amount">RM 13.00</span></li>
                 </ol>
                 <div class="rr-docket__total"><span>Total</span><span class="rr-money">RM 26.90</span></div>
                 <div class="rr-docket__actions">
@@ -262,6 +263,7 @@
             <ul class="sg-rules">
                 <li>Use a docket for a record a person hands over or receives: an order, a booking, a payment receipt.</li>
                 <li>Not for navigation or settings. Those are plain cards (<code>rr-feature</code>, <code>rr-panel</code>).</li>
+                <li>A docket on its own on a page gets <code>rr-docket--narrow</code>, so it keeps the width of a paper slip.</li>
                 <li>The steps line (<code>rr-steps</code>) shows where something is in a fixed journey. It doesn't update by itself.</li>
             </ul>
         </div>
@@ -321,42 +323,66 @@
     </div>
 </section>
 
-<section class="sg-section" id="bookings">
-    <h2>Bookings</h2>
-    <p class="text-muted">A booking in a list is a slip (<code>rr-slip</code>) with a date block (<code>rr-dateblock</code>), so people see the day before anything else.</p>
-    <div class="rr-narrow d-grid gap-3">
-        <div class="rr-slip">
-            <div class="rr-dateblock" aria-hidden="true"><span class="rr-dateblock__day">Mon</span><span class="rr-dateblock__date">26</span><span class="rr-dateblock__month">Oct</span></div>
-            <div class="d-flex flex-wrap justify-content-between gap-3">
-                <div>
-                    <div class="rr-slip__title">7:30 PM · Table 3 · 2 people</div>
-                    <span class="rr-ref">RES-001840</span>
-                    <p class="small text-muted mb-0 mt-1">Window seat please, it is our anniversary</p>
-                </div>
-                <div class="d-flex flex-column align-items-sm-end gap-2">
-                    <span class="rr-status rr-status--attention">Pending</span>
-                    <div class="d-flex gap-2">
-                        <a class="btn btn-outline-secondary btn-sm" href="#bookings">Change</a>
-                        <a class="btn btn-outline-danger btn-sm" href="#bookings">Cancel</a>
+<section class="sg-section" id="lists">
+    <h2>Lists</h2>
+    <p class="text-muted">A record in a customer's list is a slip (<code>rr-slip</code>): the details on the left, the status and actions on the right. A booking starts with a date block (<code>rr-dateblock</code>, a <code>&lt;time&gt;</code>), so people see the day before anything else. Buttons on a row carry the reference in a <code>visually-hidden</code> span, so a screen reader knows which one they're for.</p>
+    <div class="row g-4">
+        <div class="col-xl-6">
+            <ul class="list-unstyled d-grid gap-3 mb-0">
+                <li class="rr-slip">
+                    <time class="rr-dateblock" datetime="2026-10-26"><span class="rr-dateblock__day">Mon</span><span class="rr-dateblock__date">26</span><span class="rr-dateblock__month">Oct</span></time>
+                    <div class="rr-slip__body">
+                        <div>
+                            <div class="rr-slip__title">7:30 PM · Table 3 · 2 people</div>
+                            <span class="rr-ref">RES-001840</span>
+                            <p class="small text-muted mt-1 mb-0">Window seat please, it is our anniversary</p>
+                        </div>
+                        <div class="rr-slip__side">
+                            <span class="rr-status rr-status--attention">Pending</span>
+                            <div class="d-flex gap-2">
+                                <a class="btn btn-outline-secondary btn-sm" href="#lists">Change<span class="visually-hidden"> RES-001840</span></a>
+                                <a class="btn btn-outline-danger btn-sm" href="#lists">Cancel<span class="visually-hidden"> RES-001840</span></a>
+                            </div>
+                        </div>
                     </div>
-                </div>
-            </div>
+                </li>
+                <li class="rr-slip">
+                    <div class="rr-slip__body">
+                        <div>
+                            <div class="rr-slip__title">Table 4 · 5 items · <span class="rr-money">RM 37.20</span></div>
+                            <span class="rr-ref">ORD-001256</span> <span class="small text-muted">· 25 Oct 2026, 9:08 PM</span>
+                        </div>
+                        <div class="rr-slip__side">
+                            <span class="rr-status rr-status--progress">Preparing</span>
+                            <div class="d-flex gap-2">
+                                <a class="btn btn-outline-primary btn-sm" href="#lists">Payment<span class="visually-hidden"> for ORD-001256</span></a>
+                                <a class="btn btn-outline-secondary btn-sm" href="#lists">View<span class="visually-hidden"> ORD-001256</span></a>
+                            </div>
+                        </div>
+                    </div>
+                </li>
+            </ul>
         </div>
-        <div class="rr-slip">
-            <div class="rr-dateblock" aria-hidden="true"><span class="rr-dateblock__day">Tue</span><span class="rr-dateblock__date">27</span><span class="rr-dateblock__month">Oct</span></div>
-            <div class="d-flex flex-wrap justify-content-between gap-3">
-                <div>
-                    <div class="rr-slip__title">12:00 PM · Table 5 · 4 people</div>
-                    <span class="rr-ref">RES-001841</span>
-                </div>
-                <div class="d-flex flex-column align-items-sm-end gap-2">
-                    <span class="rr-status rr-status--good">Confirmed</span>
-                    <div class="d-flex gap-2">
-                        <a class="btn btn-outline-secondary btn-sm" href="#bookings">Change</a>
-                        <a class="btn btn-outline-danger btn-sm" href="#bookings">Cancel</a>
+        <div class="col-xl-6">
+            <ul class="rr-dishes">
+                <li class="rr-dish is-chosen">
+                    <label for="sg-dish-1"><span class="rr-dish__name">Nasi Lemak</span><span class="rr-dish__price">RM 12.90</span></label>
+                    <div class="rr-stepper" data-stepper>
+                        <button type="button" class="rr-stepper__button" data-step="-1" aria-label="One less Nasi Lemak">&minus;</button>
+                        <input class="rr-stepper__input" id="sg-dish-1" type="number" value="2" min="0" max="20" />
+                        <button type="button" class="rr-stepper__button" data-step="1" aria-label="One more Nasi Lemak">+</button>
                     </div>
-                </div>
-            </div>
+                </li>
+                <li class="rr-dish">
+                    <label for="sg-dish-2"><span class="rr-dish__name">Teh Tarik</span><span class="rr-dish__price">RM 3.80</span></label>
+                    <div class="rr-stepper" data-stepper>
+                        <button type="button" class="rr-stepper__button" data-step="-1" aria-label="One less Teh Tarik">&minus;</button>
+                        <input class="rr-stepper__input" id="sg-dish-2" type="number" value="0" min="0" max="20" />
+                        <button type="button" class="rr-stepper__button" data-step="1" aria-label="One more Teh Tarik">+</button>
+                    </div>
+                </li>
+            </ul>
+            <p class="text-muted mt-2 mb-0">Dish rows (<code>rr-dishes</code> + <code>rr-dish</code>) list what can be ordered. A chosen dish gets <code>is-chosen</code>, which the order page's script sets.</p>
         </div>
     </div>
 </section>
@@ -444,16 +470,5 @@
 </section>
 
 @section Scripts {
-    <script>
-        // Makes the example stepper work. The real pages use wwwroot/js/order-form.js.
-        document.querySelectorAll('[data-sg-stepper]').forEach(function (stepper) {
-            const input = stepper.querySelector('input');
-            stepper.querySelectorAll('[data-step]').forEach(function (button) {
-                button.addEventListener('click', function () {
-                    const value = (Number(input.value) || 0) + Number(button.dataset.step);
-                    input.value = Math.min(Math.max(value, Number(input.min)), Number(input.max));
-                });
-            });
-        });
-    </script>
+    <script src="~/js/stepper.js" asp-append-version="true"></script>
 }

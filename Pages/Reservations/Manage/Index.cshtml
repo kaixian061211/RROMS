@@ -82,13 +82,13 @@ else
                             {
                                 <div class="small fst-italic d-md-none">@r.SpecialRequest</div>
                             }
-                            <span class="badge d-md-none @ReservationFormatter.StatusBadge(r.Status)">@ReservationFormatter.StatusLabel(r.Status)</span>
+                            <span class="d-md-none @ReservationFormatter.StatusBadge(r.Status)">@ReservationFormatter.StatusLabel(r.Status)</span>
                         </td>
                         <td class="text-nowrap d-none d-md-table-cell">@ReservationFormatter.Table(r.TableId)</td>
                         <td class="text-nowrap d-none d-md-table-cell">@ReservationFormatter.PartySize(r.PartySize)</td>
                         <td class="text-nowrap d-none d-md-table-cell">@ReservationFormatter.Customer(r.CustomerUserId)</td>
                         <td class="d-none d-md-table-cell">@(r.SpecialRequest ?? "-")</td>
-                        <td class="d-none d-md-table-cell"><span class="badge @ReservationFormatter.StatusBadge(r.Status)">@ReservationFormatter.StatusLabel(r.Status)</span></td>
+                        <td class="d-none d-md-table-cell"><span class="@ReservationFormatter.StatusBadge(r.Status)">@ReservationFormatter.StatusLabel(r.Status)</span></td>
                         <td>
                             <div class="d-flex flex-wrap justify-content-end gap-1">
                                 @foreach (var next in row.NextStatuses)

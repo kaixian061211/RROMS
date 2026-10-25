@@ -1,10 +1,11 @@
-// The order page's + and − buttons and running total.
-// The total here is only for display. The form sends dish ids and quantities, and the server
-// takes the prices from the menu and works out the real total.
+// The order page's "Your order" docket and running total. The − and + buttons are stepper.js.
+// Both are only for display. The form sends dish ids and quantities, and the server takes the prices from the
+// menu and works out the real total.
 document.querySelectorAll('[data-order-form]').forEach(function (form) {
-    const totalElement = form.querySelector('[data-order-total]');
     const quantityInputs = form.querySelectorAll('input[data-price]');
-    if (!totalElement) {
+    const lines = form.querySelector('[data-order-lines]');
+    const nothingChosen = form.querySelector('[data-order-empty]');
+    if (!lines) {
         return;
     }
 
@@ -14,29 +15,56 @@ document.querySelectorAll('[data-order-form]').forEach(function (form) {
         return Math.min(Math.max(quantity, 0), Number(input.max));
     }
 
-    function updateTotal() {
-        // Add up in sen (cents), so 3 x 3.80 is exactly 11.40.
-        let totalSen = 0;
-        quantityInputs.forEach(function (input) {
-            totalSen += quantityOf(input) * Math.round(Number(input.dataset.price) * 100);
-        });
-        const total = totalSen / 100;
-        totalElement.textContent = 'RM ' + total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    // Amounts are added up in sen (cents), so 3 x 3.80 is exactly 11.40.
+    function money(sen) {
+        return 'RM ' + (sen / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
 
-    form.querySelectorAll('[data-step]').forEach(function (button) {
-        button.addEventListener('click', function () {
-            const input = button.parentElement.querySelector('input[data-price]');
-            const changed = quantityOf(input) + Number(button.dataset.step);
-            input.value = Math.min(Math.max(changed, 0), Number(input.max));
-            updateTotal();
+    // One docket line: "2 ×", the dish, its amount. textContent, so a dish name is never read as HTML.
+    function docketLine(quantity, name, sen) {
+        const line = document.createElement('li');
+        line.className = 'rr-docket__line';
+        [['rr-docket__qty', quantity + ' ×'], ['', name], ['rr-docket__amount', money(sen)]].forEach(function (part) {
+            const span = document.createElement('span');
+            span.className = part[0];
+            span.textContent = part[1];
+            line.append(span);
         });
-    });
+        return line;
+    }
+
+    function update() {
+        let totalSen = 0;
+        let count = 0;
+        lines.replaceChildren();
+
+        quantityInputs.forEach(function (input) {
+            const quantity = quantityOf(input);
+            const sen = quantity * Math.round(Number(input.dataset.price) * 100);
+            input.closest('[data-dish]').classList.toggle('is-chosen', quantity > 0);
+            if (quantity > 0) {
+                lines.append(docketLine(quantity, input.dataset.name, sen));
+                totalSen += sen;
+                count += quantity;
+            }
+        });
+
+        nothingChosen.hidden = count > 0;
+        form.querySelectorAll('[data-order-total]').forEach(function (element) {
+            element.textContent = money(totalSen);
+        });
+        form.querySelectorAll('[data-order-count]').forEach(function (element) {
+            element.textContent = count === 1 ? '1 item' : count + ' items';
+        });
+    }
 
     quantityInputs.forEach(function (input) {
-        input.addEventListener('input', updateTotal);
+        input.addEventListener('input', update);
     });
 
-    totalElement.parentElement.classList.remove('d-none');
-    updateTotal();
+    // The docket and totals only make sense with this script running, so they start hidden.
+    form.querySelectorAll('[data-needs-script]').forEach(function (element) {
+        element.hidden = false;
+    });
+    update();
 });

@@ -4,25 +4,30 @@
     ViewData["Title"] = "Booking received";
 }
 
-@if (Model.Reservation is null)
-{
-    <div class="alert alert-warning" role="alert">Reservation not found.</div>
-    <a asp-page="Index" class="btn btn-outline-secondary">Back to my reservations</a>
-}
-else
-{
-    <div class="row">
-        <div class="col-md-8 col-lg-6">
-            <h1 class="h3">Booking received</h1>
-            <p class="text-muted">
-                Your reference is <strong>@ReservationFormatter.Reference(Model.Reservation.ReservationId)</strong>.
-                The restaurant will confirm your booking soon.
-            </p>
-            <partial name="_ReservationSummary" model="Model.Reservation" />
-            <div class="d-flex flex-wrap gap-2 mt-3">
-                <a asp-page="Index" class="btn btn-primary">View my reservations</a>
-                <a asp-page="Create" class="btn btn-outline-secondary">Book another table</a>
+<div class="rr-narrow">
+    @if (Model.Reservation is null)
+    {
+        <header class="rr-page-header">
+            <div><h1>Booking received</h1></div>
+        </header>
+        <div class="alert alert-warning" role="alert">Reservation not found.</div>
+        <a asp-page="Index" class="btn btn-outline-secondary">Back to my reservations</a>
+    }
+    else
+    {
+        <header class="rr-page-header">
+            <div>
+                <h1>Booking received</h1>
+                <p class="rr-lede">
+                    Your reference is <strong class="rr-ref">@ReservationFormatter.Reference(Model.Reservation.ReservationId)</strong>.
+                    The restaurant will confirm your booking soon.
+                </p>
             </div>
+        </header>
+        <partial name="_ReservationSummary" model="Model.Reservation" />
+        <div class="d-flex flex-wrap gap-2 mt-4">
+            <a asp-page="Index" class="btn btn-primary">View my reservations</a>
+            <a asp-page="Create" class="btn btn-outline-secondary">Book another table</a>
         </div>
-    </div>
-}
+    }
+</div>

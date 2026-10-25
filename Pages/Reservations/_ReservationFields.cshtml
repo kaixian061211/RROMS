@@ -1,43 +1,67 @@
-@* The form fields shared by the Create and Edit pages. Used as <partial name="_ReservationFields" for="Input" />. *@
+@* The form fields shared by the Create and Edit pages. Used as <partial name="_ReservationFields" for="Input" />.
+   The time and table are choice tiles: radio buttons drawn as tiles (see /Dev/StyleGuide). The party size is a
+   stepper, so the page needs wwwroot/js/stepper.js. *@
 @using System.Globalization
 @model ReservationInput
 
-<div class="row g-3">
-    <div class="col-sm-6">
-        <label asp-for="ReservationDate" class="form-label"></label>
-        @* min stops the date picker offering past dates; data-msg-min is the browser check's message for one typed in. *@
-        <input asp-for="ReservationDate" type="date" asp-format="{0:yyyy-MM-dd}" class="form-control"
-               min="@ReservationFormatter.InputDate(DateOnly.FromDateTime(DateTime.Today))"
-               data-msg-min="Please choose a date and time in the future." />
-        <span asp-validation-for="ReservationDate" class="text-danger"></span>
+<div class="mb-4">
+    <label asp-for="ReservationDate" class="form-label"></label>
+    @* min stops the date picker offering past dates; data-msg-min is the browser check's message for one typed in. *@
+    <input asp-for="ReservationDate" type="date" asp-format="{0:yyyy-MM-dd}" class="form-control"
+           min="@ReservationFormatter.InputDate(DateOnly.FromDateTime(DateTime.Today))"
+           data-msg-min="Please choose a date and time in the future." />
+    <span asp-validation-for="ReservationDate" class="text-danger"></span>
+</div>
+
+@* required makes the browser check ask for a choice; the service checks it again (TableId 0 or an unknown time). *@
+<fieldset class="mb-4">
+    <legend class="form-label fs-6">@Html.DisplayNameFor(m => m.TimeSlot)</legend>
+    @foreach (var (meal, slots) in new[] { ("Lunch", ReservationTimeSlots.Lunch), ("Dinner", ReservationTimeSlots.Dinner) })
+    {
+        <div class="rr-tile-group">
+            <span class="rr-label mb-2">@meal</span>
+            <div class="rr-tiles rr-tiles--wide">
+                @foreach (var slot in slots)
+                {
+                    var tileId = $"{Html.IdFor(m => m.TimeSlot)}_{slot.ToString("HHmm", CultureInfo.InvariantCulture)}";
+                    <input type="radio" class="btn-check" id="@tileId" name="@Html.NameFor(m => m.TimeSlot)"
+                           value="@slot.ToString("HH:mm", CultureInfo.InvariantCulture)" checked="@(slot == Model.TimeSlot)"
+                           required data-msg-required="Please choose a time." />
+                    <label class="rr-tile" for="@tileId">@ReservationFormatter.Time(slot)</label>
+                }
+            </div>
+        </div>
+    }
+    <span asp-validation-for="TimeSlot" class="text-danger"></span>
+</fieldset>
+
+<fieldset class="mb-4">
+    <legend class="form-label fs-6">@Html.DisplayNameFor(m => m.TableId)</legend>
+    <div class="rr-tiles">
+        @foreach (var tableId in TemporaryTables.TableIds)
+        {
+            var tileId = $"{Html.IdFor(m => m.TableId)}_{tableId}";
+            <input type="radio" class="btn-check" id="@tileId" name="@Html.NameFor(m => m.TableId)" value="@tableId"
+                   checked="@(tableId == Model.TableId)" required data-msg-required="Please choose a table." />
+            <label class="rr-tile" for="@tileId">@tableId</label>
+        }
     </div>
-    <div class="col-sm-6">
-        <label asp-for="TimeSlot" class="form-label"></label>
-        <select id="@Html.IdFor(m => m.TimeSlot)" name="@Html.NameFor(m => m.TimeSlot)" class="form-select">
-            @foreach (var slot in ReservationTimeSlots.All)
-            {
-                <option value="@slot.ToString("HH:mm", CultureInfo.InvariantCulture)" selected="@(slot == Model.TimeSlot)">
-                    @ReservationFormatter.Time(slot)
-                </option>
-            }
-        </select>
-        <span asp-validation-for="TimeSlot" class="text-danger"></span>
+    <span asp-validation-for="TableId" class="text-danger"></span>
+</fieldset>
+
+<div class="mb-4">
+    <label asp-for="PartySize" class="form-label d-block"></label>
+    <div class="rr-stepper" data-stepper>
+        <button type="button" class="rr-stepper__button" data-step="-1" aria-label="One person fewer">&minus;</button>
+        <input asp-for="PartySize" class="rr-stepper__input" min="1" data-msg-min="Party size must be at least 1." />
+        <button type="button" class="rr-stepper__button" data-step="1" aria-label="One person more">+</button>
     </div>
-    <div class="col-sm-6">
-        <label asp-for="TableId" class="form-label"></label>
-        <select asp-for="TableId" class="form-select"
-                asp-items="@(TemporaryTables.TableIds.Select(id => new SelectListItem(ReservationFormatter.Table(id), id.ToString())))"></select>
-        <span asp-validation-for="TableId" class="text-danger"></span>
-    </div>
-    <div class="col-sm-6">
-        <label asp-for="PartySize" class="form-label"></label>
-        <input asp-for="PartySize" class="form-control" min="1" data-msg-min="Party size must be at least 1." />
-        <span asp-validation-for="PartySize" class="text-danger"></span>
-    </div>
-    <div class="col-12">
-        <label asp-for="SpecialRequest" class="form-label"></label>
-        <textarea asp-for="SpecialRequest" class="form-control" rows="3" maxlength="500"
-                  placeholder="For example: a high chair, or a table by the window"></textarea>
-        <span asp-validation-for="SpecialRequest" class="text-danger"></span>
-    </div>
+    <span asp-validation-for="PartySize" class="text-danger"></span>
+</div>
+
+<div>
+    <label asp-for="SpecialRequest" class="form-label"></label>
+    <textarea asp-for="SpecialRequest" class="form-control" rows="3" maxlength="500"
+              placeholder="For example: a high chair, or a table by the window"></textarea>
+    <span asp-validation-for="SpecialRequest" class="text-danger"></span>
 </div>

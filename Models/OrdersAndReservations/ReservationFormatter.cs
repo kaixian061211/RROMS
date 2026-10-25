@@ -17,14 +17,13 @@ public static class ReservationFormatter
         _ => status
     };
 
-    /// <summary>Bootstrap badge classes.</summary>
+    /// <summary>The status pill's classes (rr-status, see /Dev/StyleGuide): pending needs attention, confirmed is good.</summary>
     public static string StatusBadge(string status) => status switch
     {
-        ReservationStatus.Pending => "text-bg-warning",
-        ReservationStatus.Confirmed => "text-bg-success",
-        ReservationStatus.Cancelled => "text-bg-secondary",
-        ReservationStatus.Completed => "text-bg-primary",
-        _ => "text-bg-light"
+        ReservationStatus.Pending => "rr-status rr-status--attention",
+        ReservationStatus.Confirmed => "rr-status rr-status--good",
+        ReservationStatus.Completed => "rr-status rr-status--done",
+        _ => "rr-status rr-status--off"
     };
 
     /// <summary>The button text for moving a reservation to this status.</summary>
@@ -52,6 +51,12 @@ public static class ReservationFormatter
 
     /// <summary>The yyyy-MM-dd form that date inputs and links use.</summary>
     public static string InputDate(DateOnly date) => date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+
+    /// <summary>The three lines of a date block: "Tue", "27", "Oct".</summary>
+    public static (string Day, string Date, string Month) DateBlock(DateOnly date) => (
+        date.ToString("ddd", CultureInfo.InvariantCulture),
+        date.Day.ToString(CultureInfo.InvariantCulture),
+        date.ToString("MMM", CultureInfo.InvariantCulture));
 
     public static string Time(TimeOnly time) => time.ToString("h:mm tt", CultureInfo.InvariantCulture);
 

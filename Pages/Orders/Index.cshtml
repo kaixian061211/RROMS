@@ -4,60 +4,58 @@
     ViewData["Title"] = "My orders";
 }
 
-<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
-    <h1 class="h3 mb-0">My orders</h1>
-    <a asp-page="Create" class="btn btn-primary">Order food</a>
-</div>
+<div class="rr-narrow">
+    <header class="rr-page-header">
+        <div>
+            <h1>My orders</h1>
+            <p class="rr-lede">Everything you've ordered, newest first.</p>
+        </div>
+        @if (Model.Orders.Count > 0)
+        {
+            <div class="rr-page-actions">
+                <a asp-page="Create" class="btn btn-primary">Order food</a>
+            </div>
+        }
+    </header>
 
-@if (Model.Orders.Count == 0)
-{
-    <div class="text-center text-muted border rounded py-5">
-        <p class="mb-3">You haven't placed any orders yet.</p>
-        <a asp-page="Create" class="btn btn-outline-primary">Order food</a>
-    </div>
-}
-else
-{
-    <div class="table-responsive">
-        <table class="table align-middle">
-            <thead>
-                <tr>
-                    <th>Order</th>
-                    @* On phones (below md) these columns are hidden, and the Order cell shows their details instead. *@
-                    <th class="d-none d-md-table-cell">Items</th>
-                    <th class="text-end d-none d-md-table-cell">Total</th>
-                    <th class="d-none d-md-table-cell">Table</th>
-                    <th class="d-none d-md-table-cell">Status</th>
-                    <th><span class="visually-hidden">Actions</span></th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var o in Model.Orders)
-                {
-                    <tr>
-                        <td>
-                            @OrderFormatter.Reference(o.OrderId)
-                            <div class="small text-muted">@OrderFormatter.PlacedAt(o.CreatedAt)</div>
-                            <div class="small d-md-none">
-                                @OrderFormatter.Table(o.TableId) · @OrderFormatter.ItemCount(o) · <span class="text-nowrap">@OrderFormatter.Money(o.Total)</span>
+    @if (Model.Orders.Count == 0)
+    {
+        <div class="rr-empty">
+            <p class="rr-empty__title">You haven't placed any orders yet.</p>
+            <p class="mb-0">Order from your table and it will show up here.</p>
+            <a asp-page="Create" class="btn btn-primary">Order food</a>
+        </div>
+    }
+    else
+    {
+        <ul class="list-unstyled d-grid gap-3 mb-0">
+            @foreach (var o in Model.Orders)
+            {
+                var reference = OrderFormatter.Reference(o.OrderId);
+                <li class="rr-slip">
+                    <div class="rr-slip__body">
+                        <div>
+                            <div class="rr-slip__title">
+                                @OrderFormatter.Table(o.TableId) · @OrderFormatter.ItemCount(o) · <span class="rr-money">@OrderFormatter.Money(o.Total)</span>
                             </div>
-                            <span class="badge d-md-none @OrderFormatter.StatusBadge(o.Status)">@OrderFormatter.StatusLabel(o.Status)</span>
-                        </td>
-                        <td class="text-nowrap d-none d-md-table-cell">@OrderFormatter.ItemCount(o)</td>
-                        <td class="text-end text-nowrap d-none d-md-table-cell">@OrderFormatter.Money(o.Total)</td>
-                        <td class="text-nowrap d-none d-md-table-cell">@OrderFormatter.Table(o.TableId)</td>
-                        <td class="d-none d-md-table-cell"><span class="badge @OrderFormatter.StatusBadge(o.Status)">@OrderFormatter.StatusLabel(o.Status)</span></td>
-                        <td class="text-end text-nowrap">
-                            @* A cancelled order has nothing to pay. TODO: also hide it once the order is paid (Session 10). *@
-                            @if (o.Status != OrderStatus.Cancelled)
-                            {
-                                <a asp-page="/Payments/CheckOut" asp-route-orderId="@o.OrderId" class="btn btn-sm btn-outline-success">Payment</a>
-                            }
-                            <a asp-page="Details" asp-route-id="@o.OrderId" class="btn btn-sm btn-outline-primary">View</a>
-                        </td>
-                    </tr>
-                }
-            </tbody>
-        </table>
-    </div>
-}
+                            <span class="rr-ref">@reference</span>
+                            <span class="small text-muted">· @OrderFormatter.PlacedAt(o.CreatedAt)</span>
+                        </div>
+                        <div class="rr-slip__side">
+                            <span class="@OrderFormatter.StatusBadge(o.Status)">@OrderFormatter.StatusLabel(o.Status)</span>
+                            @* The hidden reference tells a screen reader which order each button is for. *@
+                            <div class="d-flex gap-2">
+                                @* A cancelled order has nothing to pay. TODO: also hide it once the order is paid (Session 10). *@
+                                @if (o.Status != OrderStatus.Cancelled)
+                                {
+                                    <a asp-page="/Payments/CheckOut" asp-route-orderId="@o.OrderId" class="btn btn-sm btn-outline-primary">Payment<span class="visually-hidden"> for @reference</span></a>
+                                }
+                                <a asp-page="Details" asp-route-id="@o.OrderId" class="btn btn-sm btn-outline-secondary">View<span class="visually-hidden"> @reference</span></a>
+                            </div>
+                        </div>
+                    </div>
+                </li>
+            }
+        </ul>
+    }
+</div>

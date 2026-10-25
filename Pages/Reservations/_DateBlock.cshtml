@@ -1,0 +1,10 @@
+@* A date as a tear-off calendar block (rr-dateblock): the day a booking is for. Used as <partial name="_DateBlock" model="date" />. *@
+@model DateOnly
+@{
+    var (day, date, month) = ReservationFormatter.DateBlock(Model);
+}
+<time class="rr-dateblock" datetime="@ReservationFormatter.InputDate(Model)">
+    <span class="rr-dateblock__day">@day</span>
+    <span class="rr-dateblock__date">@date</span>
+    <span class="rr-dateblock__month">@month</span>
+</time>

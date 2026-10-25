@@ -20,7 +20,7 @@ else
     {
         <p class="text-muted">
             @ReservationFormatter.Customer(Model.Reservation.CustomerUserId)
-            <span class="badge ms-2 @ReservationFormatter.StatusBadge(Model.Reservation.Status)">@ReservationFormatter.StatusLabel(Model.Reservation.Status)</span>
+            <span class="ms-2 @ReservationFormatter.StatusBadge(Model.Reservation.Status)">@ReservationFormatter.StatusLabel(Model.Reservation.Status)</span>
         </p>
     }
     <div class="row">

@@ -39,8 +39,11 @@ public class OrderPageTests : PageTest
         Assert.DoesNotContain("Chicken Satay", TextOf(page));
         Assert.All(form.Elements.Select(e => e.GetAttribute("name")).OfType<string>(), name =>
             Assert.Matches(@"^(__RequestVerificationToken|Input\.TableId|Input\.Items\[\d+\]\.(MenuItemId|Quantity))$", name));
-        var tables = page.QuerySelector<IHtmlSelectElement>("select[name='Input.TableId']")!.Options.Select(o => o.Value);
-        Assert.Equal(new[] { "", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10" }, tables);
+        // The tables are tiles: one radio button each, and none is chosen until the customer picks theirs.
+        var tables = page.QuerySelectorAll<IHtmlInputElement>("input[name='Input.TableId']").ToList();
+        Assert.All(tables, table => Assert.Equal("radio", table.Type));
+        Assert.Equal(new[] { "1", "2", "3", "4", "5", "6", "7", "8", "9", "10" }, tables.Select(table => table.Value));
+        Assert.DoesNotContain(tables, table => table.IsChecked);
     }
 
     [Fact(DisplayName = "TC-12-17 Place an order with a fake price of RM 0.01 added to the form: the menu prices are used, total RM 37.20")]
@@ -79,7 +82,7 @@ public class OrderPageTests : PageTest
 
         Assert.EndsWith("/Orders/Create", page.Url);
         Assert.Contains("Sorry, Chicken Satay (10 sticks) isn't available right now.", TextOf(page));
-        Assert.Equal("2", page.QuerySelector<IHtmlSelectElement>("select[name='Input.TableId']")!.Value);
+        Assert.Equal("2", page.QuerySelector<IHtmlInputElement>("input[name='Input.TableId']:checked")!.Value);
         Assert.Equal("1", page.QuerySelector<IHtmlInputElement>($"input[name='{QuantityField(page, NasiLemak)}']")!.Value);
         Assert.Empty(await SavedOrdersAsync());
     }

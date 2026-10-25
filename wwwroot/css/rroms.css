@@ -362,6 +362,35 @@ a {
     color: #8a8f88;
 }
 
+/* A date never needs the full width. */
+.form-control[type="date"] {
+    max-width: 14rem;
+}
+
+/* ASP.NET marks a field that failed validation with input-validation-error, which Bootstrap doesn't style.
+   Give it Bootstrap's red "invalid" look, and put the message under the field. */
+.form-control.input-validation-error,
+.form-select.input-validation-error {
+    border-color: var(--bs-form-invalid-border-color);
+}
+
+.form-control.input-validation-error:focus,
+.form-select.input-validation-error:focus {
+    box-shadow: 0 0 0 .2rem rgba(194, 56, 28, .2);
+}
+
+.field-validation-error {
+    display: block;
+    margin-top: .375rem;
+    font-size: .875rem;
+}
+
+.validation-summary-errors ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
 .form-text {
     color: var(--rr-muted);
 }
@@ -636,6 +665,7 @@ a {
     font-size: 1.5rem;
     font-weight: 700;
     line-height: 1.1;
+    text-wrap: balance;
 }
 
 .rr-docket__lines {
@@ -648,7 +678,7 @@ a {
 
 .rr-docket__line {
     display: grid;
-    grid-template-columns: 2.25rem 1fr auto;
+    grid-template-columns: 2.75rem 1fr auto;
     gap: .5rem;
     align-items: baseline;
 }
@@ -688,6 +718,11 @@ a {
     margin-top: .5rem;
     font-size: .875rem;
     color: var(--rr-muted);
+}
+
+/* A docket shown on its own on a page keeps the width of a paper slip. */
+.rr-docket--narrow {
+    max-width: 30rem;
 }
 
 /* The next step takes the width; a Cancel beside it stays small. */
@@ -809,21 +844,43 @@ a {
     color: var(--rr-muted);
 }
 
-/* Slip: one booking in a list, with its date block. */
+/* Slip: one record in a list (a booking, an order). A booking starts with its date block.
+   Markup: .rr-slip > [.rr-dateblock] + .rr-slip__body > (details) + .rr-slip__side (status, actions) */
 .rr-slip {
-    display: grid;
-    grid-template-columns: auto 1fr;
+    display: flex;
     gap: 1rem;
-    align-items: start;
+    align-items: flex-start;
     padding: 1rem;
     background: var(--rr-enamel);
     border: 1px solid var(--rr-line);
     border-radius: var(--rr-radius-card);
 }
 
+.rr-slip__body {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: .75rem 1rem;
+}
+
 .rr-slip__title {
     font-weight: 700;
     font-size: 1.0625rem;
+}
+
+.rr-slip__side {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: .5rem;
+}
+
+@media (min-width: 576px) {
+    .rr-slip__side {
+        align-items: flex-end;
+    }
 }
 
 /* Choice tiles: radio buttons drawn as tiles (seatings, tables, payment methods).
@@ -886,11 +943,17 @@ a {
     cursor: not-allowed;
 }
 
+/* Nothing chosen when the form was sent (the validation script marks the radio buttons). */
+.rr-tiles:has(.input-validation-error) .rr-tile {
+    border-color: var(--rr-sambal);
+}
+
 .rr-tile-group + .rr-tile-group {
     margin-top: .75rem;
 }
 
-/* Stepper: − quantity +. The input stays a real number field the form sends. */
+/* Stepper: − quantity +. The input stays a real number field the form sends; wwwroot/js/stepper.js
+   makes the buttons work. Markup: <div class="rr-stepper" data-stepper> button, input, button </div> */
 .rr-stepper {
     display: inline-flex;
     align-items: stretch;
@@ -898,6 +961,20 @@ a {
     border-radius: var(--rr-radius-control);
     background: var(--rr-enamel);
     overflow: hidden;
+}
+
+.rr-stepper:focus-within {
+    border-color: var(--rr-pandan);
+    box-shadow: 0 0 0 .2rem rgba(11, 107, 79, .2);
+}
+
+.rr-stepper:has(.input-validation-error) {
+    border-color: var(--rr-sambal);
+}
+
+/* Drawn inside the button, because the stepper's rounded corners clip anything outside it. */
+.rr-stepper__button:focus-visible {
+    outline-offset: -3px;
 }
 
 .rr-stepper__button {
@@ -936,6 +1013,48 @@ a {
 .rr-stepper__input:focus {
     outline: none;
     background: var(--rr-pandan-tint);
+}
+
+/* Dish rows: what can be ordered, each with its price and a stepper. A chosen dish gets a pandan edge. */
+.rr-dishes {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    background: var(--rr-enamel);
+    border: 1px solid var(--rr-line);
+    border-radius: var(--rr-radius-card);
+    overflow: hidden;
+}
+
+.rr-dish {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 1rem;
+    padding: .75rem 1rem;
+    transition: background-color .12s, box-shadow .12s;
+}
+
+.rr-dish + .rr-dish {
+    border-top: 1px solid var(--rr-line);
+}
+
+.rr-dish.is-chosen {
+    background: #f6faf8;
+    box-shadow: inset 4px 0 0 var(--rr-pandan);
+}
+
+.rr-dish__name {
+    display: block;
+    font-weight: 700;
+}
+
+.rr-dish__price {
+    display: block;
+    font-family: var(--rr-font-mono);
+    font-size: .875rem;
+    font-variant-numeric: tabular-nums;
+    color: var(--rr-muted);
 }
 
 /* Steps: where something is in its journey (an order: pending, preparing, ready, served). */
@@ -1083,17 +1202,32 @@ a {
     border-radius: var(--rr-radius-card);
 }
 
-/* Action bar: the page's main action. On a phone it stays at the bottom of the screen. */
+/* Action bar: a form's buttons. On a phone it stays at the bottom of the screen, edge to edge, and the
+   main button takes the width. Put it straight inside the form, not inside a .row: it reaches out by
+   the page margin (half of --bs-gutter-x, which a .row changes). */
+.rr-actionbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: .5rem;
+    margin-top: 1.5rem;
+}
+
 @media (max-width: 767.98px) {
     .rr-actionbar {
         position: sticky;
         bottom: 0;
         z-index: 10;
-        margin: 1.5rem calc(-1 * var(--bs-gutter-x, .75rem)) 0;
-        padding: .75rem var(--bs-gutter-x, .75rem) calc(.75rem + env(safe-area-inset-bottom, 0px));
+        margin-left: calc(-.5 * var(--bs-gutter-x));
+        margin-right: calc(-.5 * var(--bs-gutter-x));
+        padding: .75rem calc(.5 * var(--bs-gutter-x)) calc(.75rem + env(safe-area-inset-bottom, 0px));
         background: var(--rr-enamel);
         border-top: 1px solid var(--rr-line);
         box-shadow: 0 -8px 16px -12px rgba(29, 26, 23, .3);
+    }
+
+    .rr-actionbar > .btn-primary {
+        flex: 1 1 auto;
     }
 }
 

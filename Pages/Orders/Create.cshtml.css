@@ -1,0 +1,14 @@
+/* The order page: the table and dishes on the left, and the "Your order" docket beside them on a wide screen,
+   where it stays in view while the customer scrolls the dishes. */
+
+/* Wide enough for ten table tiles in one row beside the docket. */
+.order-page {
+    max-width: 68rem;
+}
+
+@media (min-width: 992px) {
+    .order-summary {
+        position: sticky;
+        top: 1.5rem;
+    }
+}

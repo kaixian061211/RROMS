@@ -4,24 +4,34 @@
     ViewData["Title"] = "Cancel reservation";
 }
 
-<h1 class="h3 mb-3">Cancel reservation</h1>
-
-@if (Model.ErrorMessage is not null)
-{
-    <div class="alert alert-warning" role="alert">@Model.ErrorMessage</div>
-    <a asp-page="Index" class="btn btn-outline-secondary">Back to my reservations</a>
-}
-else if (Model.Reservation is not null)
-{
-    <div class="row">
-        <div class="col-md-8 col-lg-6">
-            <p>Are you sure you want to cancel this reservation?</p>
-            <partial name="_ReservationSummary" model="Model.Reservation" />
-            <form method="post" class="d-flex flex-wrap gap-2 mt-3">
-                <input type="hidden" asp-for="RowVersion" />
-                <button type="submit" class="btn btn-danger">Yes, cancel it</button>
-                <a asp-page="Index" class="btn btn-outline-secondary">No, keep it</a>
-            </form>
+<div class="rr-narrow">
+    <header class="rr-page-header">
+        <div>
+            <span class="rr-ref d-block mb-1">@ReservationFormatter.Reference(Model.Id)</span>
+            @if (Model.Reservation is not null && Model.ErrorMessage is null)
+            {
+                <h1>Cancel this reservation?</h1>
+                <p class="rr-lede">The table is freed for that time. You can't undo this.</p>
+            }
+            else
+            {
+                <h1>Cancel reservation</h1>
+            }
         </div>
-    </div>
-}
+    </header>
+
+    @if (Model.ErrorMessage is not null)
+    {
+        <div class="alert alert-warning" role="alert">@Model.ErrorMessage</div>
+        <a asp-page="Index" class="btn btn-outline-secondary">Back to my reservations</a>
+    }
+    else if (Model.Reservation is not null)
+    {
+        <partial name="_ReservationSummary" model="Model.Reservation" />
+        <form method="post" class="d-flex flex-wrap gap-2 mt-4">
+            <input type="hidden" asp-for="RowVersion" />
+            <button type="submit" class="btn btn-danger">Yes, cancel it</button>
+            <a asp-page="Index" class="btn btn-outline-secondary">No, keep it</a>
+        </form>
+    }
+</div>

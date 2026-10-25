@@ -5,63 +5,100 @@
     ViewData["Title"] = "Order food";
 }
 
-<h1 class="h3 mb-3">Order food</h1>
+<div class="order-page">
+    <header class="rr-page-header">
+        <div>
+            <h1>Order food</h1>
+            <p class="rr-lede">Choose your table and your dishes. You pay after ordering, at the counter or online.</p>
+        </div>
+    </header>
 
-<div class="row">
-    <div class="col-lg-8">
-        <form method="post" data-order-form>
-            <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+    <form method="post" data-order-form>
+        <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
 
-            @if (Model.Menu.Count == 0)
-            {
-                <div class="alert alert-info" role="status">Sorry, nothing can be ordered right now.</div>
-            }
-            else
-            {
-                <div class="mb-4" style="max-width: 20rem">
-                    <label asp-for="Input.TableId" class="form-label"></label>
-                    <select asp-for="Input.TableId" asp-items="Model.TableOptions" class="form-select" required>
-                        <option value="">Choose your table</option>
-                    </select>
+        @if (Model.Menu.Count == 0)
+        {
+            <div class="alert alert-info" role="status">Sorry, nothing can be ordered right now.</div>
+            <a asp-page="Index" class="btn btn-outline-secondary">Back to my orders</a>
+        }
+        else
+        {
+            <div class="row g-4 align-items-start">
+                <div class="col-lg-8 col-xl-7">
+                    @* Choice tiles: radio buttons drawn as tiles (see /Dev/StyleGuide). *@
+                    <fieldset class="mb-4">
+                        <legend class="form-label fs-6">@Html.DisplayNameFor(m => m.Input.TableId)</legend>
+                        <div class="rr-tiles">
+                            @foreach (var tableId in TemporaryTables.TableIds)
+                            {
+                                <input type="radio" class="btn-check" id="table-@tableId" name="Input.TableId" value="@tableId"
+                                       checked="@(tableId == Model.Input.TableId)" required />
+                                <label class="rr-tile" for="table-@tableId">@tableId</label>
+                            }
+                        </div>
+                    </fieldset>
+
+                    <fieldset>
+                        <legend class="form-label fs-6">Dishes</legend>
+                        <ul class="rr-dishes">
+                            @for (var i = 0; i < Model.Menu.Count; i++)
+                            {
+                                var dish = Model.Menu[i];
+                                var quantityId = $"quantity-{dish.MenuItemId}";
+                                <li class="rr-dish" data-dish>
+                                    <label for="@quantityId">
+                                        <span class="rr-dish__name">@dish.Name</span>
+                                        <span class="rr-dish__price">@OrderFormatter.Money(dish.Price)</span>
+                                    </label>
+                                    @* Only the dish id and quantity are form fields. data-price and data-name are for the docket on screen. *@
+                                    <input type="hidden" name="Input.Items[@i].MenuItemId" value="@dish.MenuItemId" />
+                                    <div class="rr-stepper" data-stepper>
+                                        <button type="button" class="rr-stepper__button" data-step="-1" aria-label="One less @dish.Name">&minus;</button>
+                                        <input type="number" class="rr-stepper__input" id="@quantityId" name="Input.Items[@i].Quantity"
+                                               value="@Model.Input.Items[i].Quantity" min="0" max="@OrderLineInput.MaxQuantity" step="1"
+                                               data-price="@dish.Price.ToString(CultureInfo.InvariantCulture)" data-name="@dish.Name" />
+                                        <button type="button" class="rr-stepper__button" data-step="1" aria-label="One more @dish.Name">+</button>
+                                    </div>
+                                </li>
+                            }
+                        </ul>
+                    </fieldset>
                 </div>
 
-                <ul class="list-group mb-3">
-                    @for (var i = 0; i < Model.Menu.Count; i++)
-                    {
-                        var dish = Model.Menu[i];
-                        var quantityId = $"quantity-{dish.MenuItemId}";
-                        <li class="list-group-item d-flex flex-wrap align-items-center gap-2">
-                            <label for="@quantityId" class="flex-grow-1">
-                                <span class="fw-semibold">@dish.Name</span>
-                                <span class="d-block small text-muted">@OrderFormatter.Money(dish.Price)</span>
-                            </label>
-                            @* Only the dish id and quantity are form fields. data-price is for the running total on screen. *@
-                            <input type="hidden" name="Input.Items[@i].MenuItemId" value="@dish.MenuItemId" />
-                            <div class="input-group input-group-sm w-auto">
-                                <button type="button" class="btn btn-outline-secondary" data-step="-1" aria-label="One less @dish.Name">&minus;</button>
-                                <input type="number" id="@quantityId" name="Input.Items[@i].Quantity" value="@Model.Input.Items[i].Quantity"
-                                       min="0" max="@OrderLineInput.MaxQuantity" step="1" class="form-control text-center" style="width: 4rem"
-                                       data-price="@dish.Price.ToString(CultureInfo.InvariantCulture)" />
-                                <button type="button" class="btn btn-outline-secondary" data-step="1" aria-label="One more @dish.Name">+</button>
+                <div class="col-lg-4 col-xl-5">
+                    <aside class="rr-docket order-summary" aria-labelledby="your-order">
+                        <div class="rr-docket__head">
+                            <h2 class="rr-docket__title mb-0" id="your-order">Your order</h2>
+                        </div>
+                        @* Filled in by order-form.js as dishes are chosen. The real total is worked out on the server when the order is placed. *@
+                        <div data-needs-script hidden>
+                            <p class="text-muted mb-0" data-order-empty>Nothing chosen yet.</p>
+                            <ol class="rr-docket__lines" data-order-lines></ol>
+                            <div class="rr-docket__total">
+                                <span>Total</span>
+                                <span class="rr-money" data-order-total></span>
                             </div>
-                        </li>
-                    }
-                </ul>
-                @* Shown by order-form.js. The real total is worked out on the server when the order is placed. *@
-                <p class="text-end fs-5 d-none">Total: <strong data-order-total></strong></p>
-            }
-
-            <div class="d-flex flex-wrap gap-2 mt-4">
-                @if (Model.Menu.Count > 0)
-                {
-                    <button type="submit" class="btn btn-primary">Place order</button>
-                }
-                <a asp-page="Index" class="btn btn-outline-secondary">Back to my orders</a>
+                        </div>
+                        <div class="rr-docket__actions d-none d-lg-flex">
+                            <button type="submit" class="btn btn-primary">Place order</button>
+                        </div>
+                        <p class="small mt-3 mb-0"><a asp-page="Index">Back to my orders</a></p>
+                    </aside>
+                </div>
             </div>
-        </form>
-    </div>
+
+            @* Below 992px the Place order button is here instead, and on a phone it stays at the bottom of the screen. *@
+            <div class="rr-actionbar d-lg-none">
+                <span class="me-auto" data-needs-script hidden>
+                    <span data-order-count></span> · <strong class="rr-money" data-order-total></strong>
+                </span>
+                <button type="submit" class="btn btn-primary">Place order</button>
+            </div>
+        }
+    </form>
 </div>
 
 @section Scripts {
+    <script src="~/js/stepper.js" asp-append-version="true"></script>
     <script src="~/js/order-form.js" asp-append-version="true"></script>
 }
