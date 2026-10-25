@@ -53,16 +53,20 @@ public class ReservationService : IReservationService
         if (error is not null)
             return ReservationResult.Failure(error);
 
-        if (!await IsSlotFreeAsync(input.TableId, input.ReservationDate, input.TimeSlot))
+        // Validate has checked that the date and party size are filled in.
+        var date = input.ReservationDate!.Value;
+        var partySize = input.PartySize!.Value;
+
+        if (!await IsSlotFreeAsync(input.TableId, date, input.TimeSlot))
             return ReservationResult.Failure(SlotTakenMessage);
 
         var reservation = new Reservation
         {
             CustomerUserId = customerUserId,
             TableId = input.TableId,
-            ReservationDate = input.ReservationDate,
+            ReservationDate = date,
             TimeSlot = input.TimeSlot,
-            PartySize = input.PartySize,
+            PartySize = partySize,
             SpecialRequest = TrimToNull(input.SpecialRequest)
         };
         Reservations.Add(reservation);
@@ -162,7 +166,11 @@ public class ReservationService : IReservationService
         if (error is not null)
             return ReservationResult.Failure(error);
 
-        if (!await IsSlotFreeAsync(input.TableId, input.ReservationDate, input.TimeSlot, reservation.ReservationId))
+        // Validate has checked that the date and party size are filled in.
+        var date = input.ReservationDate!.Value;
+        var partySize = input.PartySize!.Value;
+
+        if (!await IsSlotFreeAsync(input.TableId, date, input.TimeSlot, reservation.ReservationId))
             return ReservationResult.Failure(SlotTakenMessage);
 
         // A customer who moves a confirmed booking needs the restaurant to confirm it again.
@@ -170,9 +178,9 @@ public class ReservationService : IReservationService
             reservation.Status = ReservationStatus.Pending;
 
         reservation.TableId = input.TableId;
-        reservation.ReservationDate = input.ReservationDate;
+        reservation.ReservationDate = date;
         reservation.TimeSlot = input.TimeSlot;
-        reservation.PartySize = input.PartySize;
+        reservation.PartySize = partySize;
         reservation.SpecialRequest = TrimToNull(input.SpecialRequest);
         UseLoadedRowVersion(reservation, rowVersion);
 
@@ -223,12 +231,16 @@ public class ReservationService : IReservationService
     {
         if (!TemporaryTables.Exists(input.TableId))
             return "Please choose a table.";
+        if (input.ReservationDate is null)
+            return "Please choose a date.";
+        if (input.PartySize is null)
+            return "Please enter the party size.";
         if (input.PartySize <= 0)
             return "Party size must be at least 1.";
         // TODO: check PartySize against the table's capacity once the RestaurantTable table exists.
         if (!ReservationTimeSlots.IsValid(input.TimeSlot))
             return "Please choose one of the available time slots.";
-        if (IsInPast(input.ReservationDate, input.TimeSlot))
+        if (IsInPast(input.ReservationDate.Value, input.TimeSlot))
             return "Please choose a date and time in the future.";
         if (input.SpecialRequest?.Length > MaxSpecialRequestLength)
             return $"Special requests can be at most {MaxSpecialRequestLength} characters.";

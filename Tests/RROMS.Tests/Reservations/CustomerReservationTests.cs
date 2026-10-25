@@ -309,4 +309,22 @@ public class CustomerReservationTests : DatabaseTest
 
         Assert.Equal(new[] { lunch.ReservationId, dinner.ReservationId }, upcoming.Select(r => r.ReservationId));
     }
+
+    [Theory(DisplayName = "TC-05-31 No date or no party size reaches the service: rejected with its own message, nothing saved")]
+    [Trait("Technique", "Equivalence partitioning")]
+    [InlineData("date", "Please choose a date.")]
+    [InlineData("party size", "Please enter the party size.")]
+    public async Task MissingDateOrPartySize(string missing, string expectedMessage)
+    {
+        var booking = Booking(3, Tomorrow, Dinner);
+        if (missing == "date")
+            booking.ReservationDate = null;
+        else
+            booking.PartySize = null;
+
+        var result = await NewReservationService().CreateAsync(Alice, booking);
+
+        Assert.Equal(expectedMessage, result.ErrorMessage);
+        Assert.Equal(0, await CountBookingsAsync(3, Tomorrow, Dinner));
+    }
 }
