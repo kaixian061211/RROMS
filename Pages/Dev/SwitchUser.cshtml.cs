@@ -27,8 +27,7 @@ public class SwitchUserModel : PageModel
             return NotFound();
 
         await HttpContext.SignInAsync(user.ToPrincipal());
-        // TODO: go to the user's dashboard once it exists.
-        return RedirectToPage("/Index");
+        return RedirectToPage("/Dashboards/Index");
     }
 
     public async Task<IActionResult> OnPostSignOutAsync()

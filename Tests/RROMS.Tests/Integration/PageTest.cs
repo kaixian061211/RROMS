@@ -50,11 +50,12 @@ public abstract class PageTest : IClassFixture<TestWebApp>, IAsyncLifetime
     /// <summary>
     /// Signs in through the Development test login, the way a tester does: opens /Dev/SwitchUser and presses
     /// that user's button. The client keeps the sign-in cookie, so every request after this is that user.
+    /// Returns the page the user lands on: their dashboard.
     /// </summary>
-    protected async Task SignInAsAsync(TestUser user)
+    protected async Task<IHtmlDocument> SignInAsAsync(TestUser user)
     {
         var switchPage = await GetPageAsync("/Dev/SwitchUser");
-        await SubmitAsync(switchPage.Forms.Single(f =>
+        return await SubmitAsync(switchPage.Forms.Single(f =>
             f.QuerySelector<IHtmlInputElement>("input[name=id]")?.Value == user.Id.ToString()));
     }
 
