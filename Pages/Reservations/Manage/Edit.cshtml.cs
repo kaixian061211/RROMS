@@ -1,21 +1,20 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using RROMS.Web.Models.OrdersAndReservations;
+using RROMS.Web.Models.Payments;
 using RROMS.Web.Services.OrdersAndReservations;
 
 namespace RROMS.Web.Pages.Reservations.Manage;
 
-// TODO: uncomment when the login module exists (see Manage/Index).
-// [Authorize(Roles = PaymentRoles.AdminOrStaff)]
+[Authorize(Roles = PaymentRoles.AdminOrStaff)]
 public class EditModel : PageModel
 {
     private readonly IReservationService _reservations;
-    private readonly IWebHostEnvironment _environment;
 
-    public EditModel(IReservationService reservations, IWebHostEnvironment environment)
+    public EditModel(IReservationService reservations)
     {
         _reservations = reservations;
-        _environment = environment;
     }
 
     [BindProperty(SupportsGet = true)]
@@ -36,9 +35,6 @@ public class EditModel : PageModel
 
     public async Task<IActionResult> OnGetAsync()
     {
-        if (!User.IsStaff(_environment))
-            return Unauthorized();
-
         var result = await _reservations.GetForStaffChangeAsync(Id);
         if (!result.Succeeded)
         {
@@ -54,8 +50,6 @@ public class EditModel : PageModel
 
     public async Task<IActionResult> OnPostAsync()
     {
-        if (!User.IsStaff(_environment))
-            return Unauthorized();
         if (!ModelState.IsValid)
             return Page();
 

@@ -1,29 +1,28 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using RROMS.Web.Models.OrdersAndReservations;
+using RROMS.Web.Models.Payments;
 using RROMS.Web.Services.OrdersAndReservations;
+using RROMS.Web.Services.Payments;
 
 namespace RROMS.Web.Pages.Orders;
 
+[Authorize(Roles = PaymentRoles.Customer)]
 public class IndexModel : PageModel
 {
     private readonly IOrderService _orders;
-    private readonly IWebHostEnvironment _environment;
 
-    public IndexModel(IOrderService orders, IWebHostEnvironment environment)
+    public IndexModel(IOrderService orders)
     {
         _orders = orders;
-        _environment = environment;
     }
 
     public List<Order> Orders { get; private set; } = new();
 
     public async Task<IActionResult> OnGetAsync()
     {
-        if (!User.TryGetCustomerId(_environment, out var customerId))
-            return Unauthorized();
-
-        Orders = await _orders.GetForCustomerAsync(customerId);
+        Orders = await _orders.GetForCustomerAsync(User.GetPaymentUserId());
         return Page();
     }
 }

@@ -1,22 +1,20 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using RROMS.Web.Models.OrdersAndReservations;
+using RROMS.Web.Models.Payments;
 using RROMS.Web.Services.OrdersAndReservations;
 
 namespace RROMS.Web.Pages.Orders;
 
-// TODO: uncomment when the login module exists. [Authorize] fails until authentication has a sign-in
-// scheme, so until then User.IsStaff keeps this page to Development.
-// [Authorize(Roles = PaymentRoles.AdminOrStaff)]
+[Authorize(Roles = PaymentRoles.AdminOrStaff)]
 public class QueueModel : PageModel
 {
     private readonly IOrderService _orders;
-    private readonly IWebHostEnvironment _environment;
 
-    public QueueModel(IOrderService orders, IWebHostEnvironment environment)
+    public QueueModel(IOrderService orders)
     {
         _orders = orders;
-        _environment = environment;
     }
 
     /// <summary>Empty means every order still to deal with.</summary>
@@ -33,9 +31,6 @@ public class QueueModel : PageModel
 
     public async Task<IActionResult> OnGetAsync()
     {
-        if (!User.IsStaff(_environment))
-            return Unauthorized();
-
         Orders = await _orders.GetQueueAsync(StatusFilter);
         return Page();
     }
@@ -43,9 +38,6 @@ public class QueueModel : PageModel
     /// <summary>One of the status buttons. rowVersion is the order's version when the queue was loaded.</summary>
     public async Task<IActionResult> OnPostChangeStatusAsync(int id, string newStatus, byte[] rowVersion)
     {
-        if (!User.IsStaff(_environment))
-            return Unauthorized();
-
         if (!ModelState.IsValid)
         {
             ErrorMessage = "Something went wrong. Please try again.";

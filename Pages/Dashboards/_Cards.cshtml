@@ -1,0 +1,53 @@
+@model RROMS.Web.Pages.Dashboards.DashboardModel
+@* The cards of one role's dashboard. A built feature is a card you can click; one not built yet is greyed out. *@
+
+@if (Model.IsDevelopment)
+{
+    <p class="small text-muted">Development only: greyed-out cards are features that aren't built yet, with their story and owner. Outside Development they're hidden.</p>
+}
+
+@if (Model.Cards.Count == 0)
+{
+    <div class="text-center text-muted border rounded py-5">
+        <p class="mb-0">Nothing here yet. These features are still being built.</p>
+    </div>
+}
+else
+{
+    <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-3">
+        @foreach (var card in Model.Cards)
+        {
+            <div class="col">
+                @if (card.IsBuilt)
+                {
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <h2 class="h5 card-title">
+                                @* stretched-link makes the whole card clickable. *@
+                                <a href="@card.PagePath" class="stretched-link text-decoration-none">@card.Title</a>
+                            </h2>
+                            <p class="card-text text-muted mb-0">@card.Description</p>
+                        </div>
+                        @if (Model.IsDevelopment)
+                        {
+                            <div class="card-footer small text-muted">Story @card.Story · @card.Owner</div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div class="card h-100 bg-body-tertiary text-body-secondary" aria-disabled="true">
+                        <div class="card-body">
+                            <h2 class="h5 card-title">
+                                @card.Title
+                                <span class="badge text-bg-secondary fw-normal align-middle ms-1">Not built yet</span>
+                            </h2>
+                            <p class="card-text mb-0">@card.Description</p>
+                        </div>
+                        <div class="card-footer small">Story @card.Story · @card.Owner</div>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+}

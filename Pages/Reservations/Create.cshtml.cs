@@ -1,19 +1,21 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using RROMS.Web.Models.OrdersAndReservations;
+using RROMS.Web.Models.Payments;
 using RROMS.Web.Services.OrdersAndReservations;
+using RROMS.Web.Services.Payments;
 
 namespace RROMS.Web.Pages.Reservations;
 
+[Authorize(Roles = PaymentRoles.Customer)]
 public class CreateModel : PageModel
 {
     private readonly IReservationService _reservations;
-    private readonly IWebHostEnvironment _environment;
 
-    public CreateModel(IReservationService reservations, IWebHostEnvironment environment)
+    public CreateModel(IReservationService reservations)
     {
         _reservations = reservations;
-        _environment = environment;
     }
 
     [BindProperty]
@@ -21,21 +23,16 @@ public class CreateModel : PageModel
 
     public IActionResult OnGet()
     {
-        if (!User.TryGetCustomerId(_environment, out _))
-            return Unauthorized();
-
         Input.ReservationDate = DateOnly.FromDateTime(DateTime.Today.AddDays(1));
         return Page();
     }
 
     public async Task<IActionResult> OnPostAsync()
     {
-        if (!User.TryGetCustomerId(_environment, out var customerId))
-            return Unauthorized();
         if (!ModelState.IsValid)
             return Page();
 
-        var result = await _reservations.CreateAsync(customerId, Input);
+        var result = await _reservations.CreateAsync(User.GetPaymentUserId(), Input);
         if (!result.Succeeded)
         {
             ModelState.AddModelError(string.Empty, result.ErrorMessage!);

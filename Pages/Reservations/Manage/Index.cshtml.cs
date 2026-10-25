@@ -1,22 +1,20 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using RROMS.Web.Models.OrdersAndReservations;
+using RROMS.Web.Models.Payments;
 using RROMS.Web.Services.OrdersAndReservations;
 
 namespace RROMS.Web.Pages.Reservations.Manage;
 
-// TODO: uncomment when the login module exists. [Authorize] fails with a 500 until authentication is
-// configured, so until then User.IsStaff keeps these pages to Development.
-// [Authorize(Roles = PaymentRoles.AdminOrStaff)]
+[Authorize(Roles = PaymentRoles.AdminOrStaff)]
 public class IndexModel : PageModel
 {
     private readonly IReservationService _reservations;
-    private readonly IWebHostEnvironment _environment;
 
-    public IndexModel(IReservationService reservations, IWebHostEnvironment environment)
+    public IndexModel(IReservationService reservations)
     {
         _reservations = reservations;
-        _environment = environment;
     }
 
     [BindProperty(SupportsGet = true, Name = "date")]
@@ -41,9 +39,6 @@ public class IndexModel : PageModel
 
     public async Task<IActionResult> OnGetAsync()
     {
-        if (!User.IsStaff(_environment))
-            return Unauthorized();
-
         var reservations = await _reservations.GetForDateAsync(SelectedDate, StatusFilter);
         Rows = reservations
             .Select(r => new Row(r, _reservations.GetAllowedStatusChanges(r), _reservations.CanChangeDetails(r)))
@@ -53,9 +48,6 @@ public class IndexModel : PageModel
 
     public async Task<IActionResult> OnPostChangeStatusAsync(int id, string newStatus, byte[] rowVersion)
     {
-        if (!User.IsStaff(_environment))
-            return Unauthorized();
-
         if (!ModelState.IsValid)
         {
             ErrorMessage = "Something went wrong. Please try again.";

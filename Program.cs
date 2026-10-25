@@ -1,7 +1,6 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using QuestPDF.Infrastructure;
-using System.Security.Claims;
-using RROMS.Web.Models.Payments;
 using RROMS.Web.Data;
 using RROMS.Web.Services.Payments;
 using RROMS.Web.Services.Payments.Gateways;
@@ -15,8 +14,39 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
     ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 
 builder.Services.AddDbContext<AppDbContext>(o => o.UseSqlServer(connectionString));
-builder.Services.AddRazorPages();
-builder.Services.AddAuthentication();
+builder.Services.AddRazorPages(options =>
+{
+    // The test login (/Dev/SwitchUser) only has an address in Development. Anywhere else the page doesn't exist.
+    if (!builder.Environment.IsDevelopment())
+        options.Conventions.AddFolderRouteModelConvention("/Dev", page => page.Selectors.Clear());
+});
+
+// Sign-in cookie, carrying the claims the login module will issue: a numeric NameIdentifier and a Role.
+// TODO: the login module replaces this. Until then only the Development test login signs anyone in.
+builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+    .AddCookie(options =>
+    {
+        if (builder.Environment.IsDevelopment())
+        {
+            // Not signed in, or signed in without the right role: choose a test user.
+            options.LoginPath = "/Dev/SwitchUser";
+            options.AccessDeniedPath = "/Dev/SwitchUser";
+        }
+        else
+        {
+            // There is no login page yet, so refuse with 401 / 403 instead of redirecting to one.
+            options.Events.OnRedirectToLogin = context =>
+            {
+                context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                return Task.CompletedTask;
+            };
+            options.Events.OnRedirectToAccessDenied = context =>
+            {
+                context.Response.StatusCode = StatusCodes.Status403Forbidden;
+                return Task.CompletedTask;
+            };
+        }
+    });
 
 builder.Services.AddScoped<IReservationService, ReservationService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
@@ -50,25 +80,6 @@ if (!app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseRouting();
 app.UseAuthentication();
-if (app.Environment.IsDevelopment())
-{
-    app.Use(async (context, next) =>
-    {
-        // Match the order/reservation demo: customer 1 and local staff access.
-        // Real signed-in users retain their own identity; no demo cookie is stored.
-        if (context.User.Identity?.IsAuthenticated != true)
-        {
-            context.User = new ClaimsPrincipal(new ClaimsIdentity(new[]
-            {
-                new Claim(ClaimTypes.NameIdentifier, "1"),
-                new Claim(ClaimTypes.Name, "Development user"),
-                new Claim(ClaimTypes.Role, PaymentRoles.Customer),
-                new Claim(ClaimTypes.Role, PaymentRoles.Staff)
-            }, "DevelopmentFallback"));
-        }
-        await next();
-    });
-}
 app.UseAuthorization();
 
 app.MapStaticAssets();

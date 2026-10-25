@@ -1,20 +1,22 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using RROMS.Web.Models.OrdersAndReservations;
+using RROMS.Web.Models.Payments;
 using RROMS.Web.Services.OrdersAndReservations;
+using RROMS.Web.Services.Payments;
 
 namespace RROMS.Web.Pages.Orders;
 
+[Authorize(Roles = PaymentRoles.Customer)]
 public class CreateModel : PageModel
 {
     private readonly IOrderService _orders;
-    private readonly IWebHostEnvironment _environment;
 
-    public CreateModel(IOrderService orders, IWebHostEnvironment environment)
+    public CreateModel(IOrderService orders)
     {
         _orders = orders;
-        _environment = environment;
     }
 
     /// <summary>Only the table, dish ids and quantities are posted. Prices never come from the browser.</summary>
@@ -29,18 +31,12 @@ public class CreateModel : PageModel
 
     public async Task<IActionResult> OnGetAsync()
     {
-        if (!User.TryGetCustomerId(_environment, out _))
-            return Unauthorized();
-
         await LoadMenuAsync();
         return Page();
     }
 
     public async Task<IActionResult> OnPostAsync()
     {
-        if (!User.TryGetCustomerId(_environment, out var customerId))
-            return Unauthorized();
-
         if (!ModelState.IsValid)
         {
             // Only a quantity that isn't a whole number from 0 to 20 gets here, so one message covers it.
@@ -50,7 +46,7 @@ public class CreateModel : PageModel
             return Page();
         }
 
-        var result = await _orders.CreateAsync(customerId, Input);
+        var result = await _orders.CreateAsync(User.GetPaymentUserId(), Input);
         if (!result.Succeeded)
         {
             ModelState.AddModelError(string.Empty, result.ErrorMessage!);

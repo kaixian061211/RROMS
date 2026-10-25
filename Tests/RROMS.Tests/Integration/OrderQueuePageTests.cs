@@ -2,6 +2,7 @@ using System.Net;
 using AngleSharp.Dom;
 using AngleSharp.Html.Dom;
 using Microsoft.EntityFrameworkCore;
+using RROMS.Web.Models.Dev;
 using RROMS.Web.Models.OrdersAndReservations;
 using RROMS.Web.Models.Payments;
 
@@ -13,6 +14,8 @@ namespace RROMS.Tests.Integration;
 public class OrderQueuePageTests : PageTest
 {
     public OrderQueuePageTests(TestWebApp app) : base(app) { }
+
+    protected override TestUser? SignedInAs => TestUsers.Staff;
 
     /// <summary>An order saved straight to the database: one Teh Tarik at table 4.</summary>
     private async Task<Order> AddOrderAsync()
@@ -39,6 +42,7 @@ public class OrderQueuePageTests : PageTest
     [Trait("Technique", "State transition")]
     public async Task NewOrderThroughToPreparing()
     {
+        await SignInAsAsync(TestUsers.CustomerA);
         var orderPage = await GetPageAsync("/Orders/Create");
         await SubmitAsync(MainForm(orderPage), new()
         {
@@ -48,6 +52,7 @@ public class OrderQueuePageTests : PageTest
         });
         var orderId = await WithDatabaseAsync(db => db.Set<Order>().Select(o => o.OrderId).SingleAsync());
 
+        await SignInAsAsync(TestUsers.Staff);
         var queue = await GetPageAsync("/Orders/Queue");
         var card = TextOf(CardFor(queue, orderId));
         Assert.Contains("Table 6", card);
@@ -63,6 +68,7 @@ public class OrderQueuePageTests : PageTest
         Assert.Contains($"{OrderFormatter.Reference(orderId)} is now preparing.", TextOf(afterPress));
         Assert.Equal(new[] { "Mark ready" }, ButtonsOn(CardFor(afterPress, orderId)));
         Assert.Equal(OrderStatus.Preparing, await SavedStatusAsync(orderId));
+        await SignInAsAsync(TestUsers.CustomerA);
         Assert.Contains("Preparing", TextOf(await GetPageAsync($"/Orders/Details/{orderId}")));
     }
 
