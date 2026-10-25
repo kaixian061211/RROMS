@@ -1,6 +1,8 @@
 namespace RROMS.Tests;
 
 /// <summary>The safety guard: the tests must never touch the real database.</summary>
+[Trait("Type", "Unit")]
+[Trait("Technique", "Security")]
 public class TestSetupTests
 {
     [Theory(DisplayName = "TC-00-01 The test setup refuses any database except RROMS_Tests")]
