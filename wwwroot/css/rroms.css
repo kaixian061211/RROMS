@@ -737,6 +737,10 @@ a {
     flex: 1 1 auto;
 }
 
+.rr-docket__actions > form:first-child > .btn {
+    width: 100%;
+}
+
 /* Board: columns of dockets hanging from a rail, like the ticket rail above a kitchen pass. */
 .rr-board {
     display: grid;
@@ -773,14 +777,20 @@ a {
     text-transform: uppercase;
 }
 
-.rr-board__count {
+/* Count chip beside a heading: how many are in this column or group. */
+.rr-count {
+    display: inline-block;
     min-width: 1.75rem;
     padding: .125rem .5rem;
     border-radius: 999px;
     background: var(--rr-enamel);
     text-align: center;
     font-family: var(--rr-font-mono);
+    font-size: .8125rem;
+    font-weight: 700;
+    line-height: 1.4;
     letter-spacing: 0;
+    color: var(--rr-kopi);
 }
 
 /* The rail itself: a steel bar the dockets hang from. */
@@ -801,6 +811,83 @@ a {
     margin: 1rem .375rem 0;
     font-size: .875rem;
     color: var(--rr-muted);
+}
+
+/* One status on its own (a filtered board): one rail, with the dockets side by side under it. */
+.rr-board--single {
+    --rr-board-columns: 1;
+}
+
+.rr-board--single .rr-board__dockets {
+    grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
+}
+
+/* Group heading: a time or a day, with how many are in it (the day's bookings by seating). */
+.rr-group-title {
+    display: flex;
+    align-items: center;
+    gap: .625rem;
+    margin: 0 0 .75rem;
+    font-size: 1.375rem;
+}
+
+/* Staff list: records one under another, with an action group on each row (the day's bookings).
+   A row that needs attention, such as a booking to confirm, gets a kaya edge (is-attention). */
+.rr-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    background: var(--rr-enamel);
+    border: 1px solid var(--rr-line);
+    border-radius: var(--rr-radius-card);
+    overflow: hidden;
+}
+
+.rr-list__item {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: .75rem 1.25rem;
+    padding: .875rem 1.125rem;
+}
+
+.rr-list__item + .rr-list__item {
+    border-top: 1px solid var(--rr-line);
+}
+
+.rr-list__item.is-attention {
+    box-shadow: inset 4px 0 0 var(--rr-kaya);
+}
+
+.rr-list__main {
+    flex: 1 1 14rem;
+    min-width: 0;
+}
+
+.rr-list__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .375rem;
+    margin-left: auto;
+}
+
+/* A table number set large, the way it's painted on the table. */
+.rr-tableno {
+    display: grid;
+    justify-items: center;
+    min-width: 3.5rem;
+    line-height: 1;
+}
+
+.rr-tableno .rr-label {
+    font-size: .625rem;
+}
+
+.rr-tableno__number {
+    font-family: var(--rr-font-display);
+    font-variant-numeric: lining-nums;
+    font-size: 1.875rem;
+    font-weight: 700;
 }
 
 /* Date block: the day a booking is for, like a tear-off calendar. */
@@ -1192,6 +1279,23 @@ a {
 
 .rr-feature--soon .rr-feature__title {
     color: var(--rr-muted);
+}
+
+/* A feature card that is a button, such as a test user to sign in as. */
+button.rr-feature {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: flex-start;
+    width: 100%;
+    color: inherit;
+    font: inherit;
+    text-align: start;
+}
+
+.rr-feature.is-current {
+    border-color: var(--rr-pandan);
+    box-shadow: inset 0 0 0 1px var(--rr-pandan);
 }
 
 /* Panel: a plain white surface for a form or a group of details. */

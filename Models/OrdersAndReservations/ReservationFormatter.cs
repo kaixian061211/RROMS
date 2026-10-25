@@ -67,6 +67,15 @@ public static class ReservationFormatter
 
     public static string PartySize(int partySize) => partySize == 1 ? "1 person" : $"{partySize} people";
 
+    /// <summary>The staff day list's summary: "4 bookings · 2 pending · 14 people". Cancelled bookings don't count.</summary>
+    public static string DaySummary(IEnumerable<Reservation> reservations)
+    {
+        var booked = reservations.Where(r => r.Status != ReservationStatus.Cancelled).ToList();
+        var bookings = booked.Count == 1 ? "1 booking" : $"{booked.Count} bookings";
+        var pending = booked.Count(r => r.Status == ReservationStatus.Pending);
+        return $"{bookings} · {pending} pending · {PartySize(booked.Sum(r => r.PartySize))}";
+    }
+
     // TODO: show the customer's name once the user table exists.
     public static string Customer(int customerUserId) => $"Customer #{customerUserId}";
 }

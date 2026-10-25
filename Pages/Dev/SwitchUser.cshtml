@@ -7,8 +7,13 @@
     var currentId = User.TryGetPaymentUserId(out var id) ? id : (int?)null;
 }
 
-<h1 class="h3">Switch test user</h1>
-<p class="text-muted">Development only. Sign in as a test user to try the pages as that role. The real login replaces this page.</p>
+<header class="rr-page-header">
+    <div>
+        <span class="rr-label">Development only</span>
+        <h1>Switch test user</h1>
+        <p class="rr-lede">Sign in as a test user to try the pages as that role. The real login replaces this page.</p>
+    </div>
+</header>
 
 @if (Model.ReturnUrl is not null)
 {
@@ -31,12 +36,12 @@
         <div class="col">
             <form method="post" asp-page-handler="SignIn" class="h-100">
                 <input type="hidden" name="id" value="@user.Id" />
-                <button type="submit" class="btn @(current ? "btn-primary" : "btn-outline-primary") w-100 h-100 py-3 d-flex flex-column align-items-start text-start">
-                    <span class="d-block fw-semibold">@user.Name</span>
-                    <span class="d-block small">@user.Role · user #@user.Id</span>
+                <button type="submit" class="rr-feature @(current ? "is-current" : null)">
+                    <span class="rr-feature__title d-block">@user.Name</span>
+                    <span class="d-block text-muted">@user.Role · user #@user.Id</span>
                     @if (current)
                     {
-                        <span class="badge text-bg-light mt-2">Signed in</span>
+                        <span class="rr-status rr-status--good mt-2">Signed in</span>
                     }
                 </button>
             </form>

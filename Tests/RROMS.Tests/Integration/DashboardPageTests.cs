@@ -21,7 +21,7 @@ public class DashboardPageTests : PageTest
     public async Task EachRolesDashboard(string name, string expectedDashboard, string expectedLinks, int expectedNotBuilt)
     {
         var dashboard = await SignInAsAsync(TestUsers.All.Single(user => user.Name == name));
-        var cards = dashboard.QuerySelectorAll("main .card").ToList();
+        var cards = dashboard.QuerySelectorAll("main .rr-feature").ToList();
         var links = cards.SelectMany(card => card.QuerySelectorAll("a")).Select(a => a.GetAttribute("href")!).ToList();
 
         Assert.Equal(expectedDashboard, new Uri(dashboard.Url).AbsolutePath);

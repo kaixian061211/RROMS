@@ -275,7 +275,7 @@
     <p class="text-muted">For staff boards: <code>rr-board</code> holds columns (<code>rr-board__column</code>), each with a title and count, a steel rail, and dockets hanging from it. Four columns on a wide screen, two on a tablet, one on a phone.</p>
     <div class="rr-board">
         <section class="rr-board__column" aria-label="Pending">
-            <h3 class="rr-board__title">Pending <span class="rr-board__count">1</span></h3>
+            <h3 class="rr-board__title">Pending <span class="rr-count">1</span></h3>
             <div class="rr-board__rail"></div>
             <div class="rr-board__dockets">
                 <article class="rr-docket">
@@ -289,7 +289,7 @@
             </div>
         </section>
         <section class="rr-board__column" aria-label="Preparing">
-            <h3 class="rr-board__title">Preparing <span class="rr-board__count">1</span></h3>
+            <h3 class="rr-board__title">Preparing <span class="rr-count">1</span></h3>
             <div class="rr-board__rail"></div>
             <div class="rr-board__dockets">
                 <article class="rr-docket">
@@ -303,7 +303,7 @@
             </div>
         </section>
         <section class="rr-board__column" aria-label="Ready">
-            <h3 class="rr-board__title">Ready <span class="rr-board__count">1</span></h3>
+            <h3 class="rr-board__title">Ready <span class="rr-count">1</span></h3>
             <div class="rr-board__rail"></div>
             <div class="rr-board__dockets">
                 <article class="rr-docket">
@@ -316,7 +316,7 @@
             </div>
         </section>
         <section class="rr-board__column" aria-label="Served">
-            <h3 class="rr-board__title">Served <span class="rr-board__count">0</span></h3>
+            <h3 class="rr-board__title">Served <span class="rr-count">0</span></h3>
             <div class="rr-board__rail"></div>
             <p class="rr-board__empty">Nothing served yet.</p>
         </section>
@@ -446,6 +446,40 @@
             </div>
         </div>
     </div>
+
+    <h3 class="h4 mt-4">Staff list</h3>
+    <section aria-labelledby="sg-seating">
+        <h4 class="rr-group-title" id="sg-seating">7:30 PM <span class="rr-count">2</span></h4>
+        <ul class="rr-list">
+            <li class="rr-list__item is-attention">
+                <div class="rr-tableno"><span class="rr-label">Table</span> <span class="rr-tableno__number">3</span></div>
+                <div class="rr-list__main">
+                    <div class="fw-semibold">2 people · Customer #1</div>
+                    <span class="rr-ref">RES-001840</span>
+                    <p class="small text-muted mt-1 mb-0">Window seat please, it is our anniversary</p>
+                </div>
+                <span class="rr-status rr-status--attention">Pending</span>
+                <div class="rr-list__actions">
+                    <button type="button" class="btn btn-sm btn-success">Confirm</button>
+                    <button type="button" class="btn btn-sm btn-outline-danger">Cancel</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary">Edit</button>
+                </div>
+            </li>
+            <li class="rr-list__item">
+                <div class="rr-tableno"><span class="rr-label">Table</span> <span class="rr-tableno__number">7</span></div>
+                <div class="rr-list__main">
+                    <div class="fw-semibold">4 people · Customer #2</div>
+                    <span class="rr-ref">RES-001843</span>
+                </div>
+                <span class="rr-status rr-status--good">Confirmed</span>
+                <div class="rr-list__actions">
+                    <button type="button" class="btn btn-sm btn-outline-danger">Cancel</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary">Edit</button>
+                </div>
+            </li>
+        </ul>
+    </section>
+    <p class="text-muted mt-2">For staff lists that people work through: <code>rr-list</code> rows, grouped under an <code>rr-group-title</code> with an <code>rr-count</code>. A row waiting for someone gets <code>is-attention</code> (the kaya edge).</p>
 
     <h3 class="h4 mt-4">Staff table</h3>
     <div class="table-responsive">
