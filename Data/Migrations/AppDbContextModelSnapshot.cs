@@ -22,6 +22,69 @@ namespace RROMS.Web.Data.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("RROMS.Web.Models.Notifications.Notification", b =>
+                {
+                    b.Property<int>("NotificationId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("NotificationId"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("SYSDATETIME()");
+
+                    b.Property<bool>("IsRead")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<int?>("OrderId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("PaymentId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("ReservationId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("NotificationId");
+
+                    b.HasIndex("OrderId");
+
+                    b.HasIndex("PaymentId");
+
+                    b.HasIndex("ReservationId");
+
+                    b.HasIndex("UserId", "NotificationId");
+
+                    b.ToTable("Notification", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_Notification_RelatedRecord", "([Type] = 'order' AND [OrderId] IS NOT NULL AND [ReservationId] IS NULL AND [PaymentId] IS NULL) OR ([Type] = 'reservation' AND [ReservationId] IS NOT NULL AND [OrderId] IS NULL AND [PaymentId] IS NULL) OR ([Type] = 'payment' AND [PaymentId] IS NOT NULL AND [OrderId] IS NULL AND [ReservationId] IS NULL) OR ([Type] IN ('promotion','announcement') AND [OrderId] IS NULL AND [ReservationId] IS NULL AND [PaymentId] IS NULL)");
+
+                            t.HasCheckConstraint("CK_Notification_Type", "[Type] IN ('reservation','order','payment','promotion','announcement')");
+                        });
+                });
+
             modelBuilder.Entity("RROMS.Web.Models.OrdersAndReservations.Order", b =>
                 {
                     b.Property<int>("OrderId")
@@ -308,6 +371,24 @@ namespace RROMS.Web.Data.Migrations
                         {
                             t.HasCheckConstraint("CK_MenuItem_Price", "[Price] > 0");
                         });
+                });
+
+            modelBuilder.Entity("RROMS.Web.Models.Notifications.Notification", b =>
+                {
+                    b.HasOne("RROMS.Web.Models.OrdersAndReservations.Order", null)
+                        .WithMany()
+                        .HasForeignKey("OrderId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("RROMS.Web.Models.Payments.Payment", null)
+                        .WithMany()
+                        .HasForeignKey("PaymentId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("RROMS.Web.Models.OrdersAndReservations.Reservation", null)
+                        .WithMany()
+                        .HasForeignKey("ReservationId")
+                        .OnDelete(DeleteBehavior.Restrict);
                 });
 
             modelBuilder.Entity("RROMS.Web.Models.OrdersAndReservations.OrderItem", b =>
