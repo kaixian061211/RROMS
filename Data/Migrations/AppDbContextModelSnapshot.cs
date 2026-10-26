@@ -335,6 +335,97 @@ namespace RROMS.Web.Data.Migrations
                         });
                 });
 
+            modelBuilder.Entity("RROMS.Web.Models.Restaurant.OperatingHour", b =>
+                {
+                    b.Property<int>("OperatingHourId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("OperatingHourId"));
+
+                    b.Property<TimeOnly?>("CloseTime")
+                        .HasColumnType("time");
+
+                    b.Property<int>("DayOfWeek")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsClosed")
+                        .HasColumnType("bit");
+
+                    b.Property<TimeOnly?>("OpenTime")
+                        .HasColumnType("time");
+
+                    b.HasKey("OperatingHourId");
+
+                    b.HasIndex("DayOfWeek")
+                        .IsUnique();
+
+                    b.ToTable("OperatingHour", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_OperatingHour_Times", "[IsClosed] = 1 OR ([OpenTime] IS NOT NULL AND [CloseTime] IS NOT NULL AND [CloseTime] > [OpenTime])");
+                        });
+                });
+
+            modelBuilder.Entity("RROMS.Web.Models.Restaurant.RestaurantInfo", b =>
+                {
+                    b.Property<int>("RestaurantInfoId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("RestaurantInfoId"));
+
+                    b.Property<string>("Address")
+                        .IsRequired()
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<bool>("IsAcceptingOrders")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsAcceptingReservations")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("LogoPath")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Phone")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<decimal>("ServiceChargePercent")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("decimal(5,2)");
+
+                    b.Property<decimal>("TaxPercent")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("decimal(5,2)");
+
+                    b.HasKey("RestaurantInfoId");
+
+                    b.ToTable("RestaurantInfo", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_RestaurantInfo_ServiceCharge", "[ServiceChargePercent] BETWEEN 0 AND 100");
+
+                            t.HasCheckConstraint("CK_RestaurantInfo_Tax", "[TaxPercent] BETWEEN 0 AND 100");
+                        });
+                });
+
             modelBuilder.Entity("RROMS.Web.Models.Restaurant.RestaurantTable", b =>
                 {
                     b.Property<int>("RestaurantTableId")
