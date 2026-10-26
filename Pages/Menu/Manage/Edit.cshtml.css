@@ -1,0 +1,7 @@
+.thumb {
+    width: 8rem;
+    height: 6rem;
+    object-fit: cover;
+    border: 1px solid var(--rr-line);
+    border-radius: 0.375rem;
+}

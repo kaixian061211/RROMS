@@ -12,6 +12,7 @@
     var isStaff = User.IsInRole(PaymentRoles.Staff) || User.IsInRole(PaymentRoles.Admin);
     var onMyReservations = Under("/Reservations") && !Under("/Reservations/Manage");
     var onMyOrders = Under("/Orders") && currentPage != "/Orders/Queue";
+    var isAdmin = User.IsInRole(PaymentRoles.Admin);
 }
 <!DOCTYPE html>
 <html lang="en">
@@ -56,6 +57,12 @@
                             </li>
                             <li class="nav-item">
                                 <a class="nav-link @Active(onMyOrders)" aria-current="@Current(onMyOrders)" asp-area="" asp-page="/Orders/Index">My orders</a>
+                            </li>
+                        }
+                        @if (isAdmin)
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link @Active(Under("/Menu/Manage"))" aria-current="@Current(Under("/Menu/Manage"))" asp-page="/Menu/Manage/Index">Manage menu</a>
                             </li>
                         }
                         @if (isStaff)

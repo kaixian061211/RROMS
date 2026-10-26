@@ -1,0 +1,96 @@
+@page
+@model RROMS.Web.Pages.Menu.Manage.CategoriesModel
+@{
+    ViewData["Title"] = "Menu categories";
+    var editing = Model.Input.MenuCategoryId != 0;
+}
+
+<header class="rr-page-header">
+    <div>
+        <h1>Menu categories</h1>
+        <p class="rr-lede">Group the menu, for example Mains, Snacks and Drinks. Lower positions come first.</p>
+    </div>
+    <div class="rr-page-actions">
+        <a asp-page="/Menu/Manage/Index" class="btn btn-outline-secondary">Back to menu</a>
+    </div>
+</header>
+
+@if (TempData["Message"] is string message)
+{
+    <div class="alert alert-success" role="status">@message</div>
+}
+
+<div class="row g-4">
+    <div class="col-lg-5">
+        <form method="post" asp-page-handler="Save">
+            <div class="rr-panel">
+                <h2 class="h3 mb-4">@(editing ? "Edit category" : "New category")</h2>
+
+                <input type="hidden" asp-for="Input.MenuCategoryId" />
+
+                <div class="mb-4">
+                    <label asp-for="Input.Name" class="form-label">Name</label>
+                    <input asp-for="Input.Name" class="form-control" />
+                    <span asp-validation-for="Input.Name" class="text-danger"></span>
+                </div>
+
+                <div class="mb-4">
+                    <label asp-for="Input.Description" class="form-label">Description (optional)</label>
+                    <input asp-for="Input.Description" class="form-control" />
+                    <span asp-validation-for="Input.Description" class="text-danger"></span>
+                </div>
+
+                <div>
+                    <label asp-for="Input.DisplayOrder" class="form-label">Position on the menu</label>
+                    <input asp-for="Input.DisplayOrder" type="number" min="0" max="999" class="form-control" />
+                    <div class="form-text">Lower numbers come first.</div>
+                    <span asp-validation-for="Input.DisplayOrder" class="text-danger"></span>
+                </div>
+            </div>
+
+            <div class="rr-actionbar">
+                <button type="submit" class="btn btn-primary">@(editing ? "Save changes" : "Add category")</button>
+                @if (editing)
+                {
+                    <a asp-page="/Menu/Manage/Categories" class="btn btn-outline-secondary">Cancel</a>
+                }
+            </div>
+        </form>
+    </div>
+
+    <div class="col-lg-7">
+        @if (Model.Categories.Any())
+        {
+            <h2 class="rr-group-title">All categories <span class="rr-count">@Model.Categories.Count</span></h2>
+            <ul class="rr-list">
+                @foreach (var category in Model.Categories)
+                {
+                    <li class="rr-list__item">
+                        <div class="rr-list__main">
+                            <div class="fw-semibold">@category.Name</div>
+                            @if (!string.IsNullOrEmpty(category.Description))
+                            {
+                                <p class="small text-muted mt-1 mb-0">@category.Description</p>
+                            }
+                            <span class="small text-muted">Position @category.DisplayOrder · @category.ItemCount @(category.ItemCount == 1 ? "dish" : "dishes")</span>
+                        </div>
+                        <div class="rr-list__actions">
+                            <a asp-page="/Menu/Manage/Categories" asp-route-id="@category.MenuCategoryId" class="btn btn-sm btn-outline-secondary">Edit<span class="visually-hidden"> @category.Name</span></a>
+                            <form method="post" asp-page-handler="Delete" asp-route-id="@category.MenuCategoryId" class="d-inline"
+                                  onsubmit="return confirm('Delete this category? Its dishes stay on the menu.');">
+                                <button type="submit" class="btn btn-sm btn-outline-danger">Delete<span class="visually-hidden"> @category.Name</span></button>
+                            </form>
+                        </div>
+                    </li>
+                }
+            </ul>
+        }
+        else
+        {
+            <div class="rr-empty">
+                <p class="rr-empty__title">No categories yet</p>
+                <p class="mb-0">Add your first category, such as Mains. Then choose it when you add a dish.</p>
+            </div>
+        }
+    </div>
+</div>
