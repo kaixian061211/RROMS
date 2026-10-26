@@ -7,6 +7,7 @@ using RROMS.Web.Services.Payments.Gateways;
 using RROMS.Web.Services.Payments.Notifications;
 using RROMS.Web.Services.OrdersAndReservations;
 using RROMS.Web.Services.Payments.Receipts;
+using RROMS.Web.Services.Notifications;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -70,6 +71,8 @@ builder.Services.AddSingleton<IReceiptService, ReceiptService>();
 builder.Services.AddScoped<StripeWebhookHandler>();
 
 var app = builder.Build();
+
+builder.Services.AddScoped<INotificationService, NotificationService>();
 
 if (!app.Environment.IsDevelopment())
 {
