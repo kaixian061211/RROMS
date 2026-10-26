@@ -1,0 +1,63 @@
+@page
+@model RROMS.Web.Pages.Restaurant.Manage.HoursModel
+@{
+    ViewData["Title"] = "Opening hours";
+}
+
+<header class="rr-page-header">
+    <div>
+        <h1>Opening hours</h1>
+        <p class="rr-lede">Set the opening and closing time for each day, or tick Closed.</p>
+    </div>
+    <div class="rr-page-actions">
+        <a asp-page="/Restaurant/Manage/Details" class="btn btn-outline-secondary">Restaurant details</a>
+    </div>
+</header>
+
+@if (TempData["Message"] is string message)
+{
+    <div class="alert alert-success" role="status">@message</div>
+}
+
+<form method="post">
+    <div class="rr-panel">
+        <div class="table-responsive">
+            <table class="table align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th>Day</th>
+                        <th>Closed</th>
+                        <th>Opens</th>
+                        <th>Closes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @for (var i = 0; i < Model.Hours.Count; i++)
+                    {
+                        <tr>
+                            <td>
+                                <input type="hidden" asp-for="Hours[i].Day" />
+                                <span class="fw-semibold">@Model.Hours[i].Day</span>
+                            </td>
+                            <td>
+                                <input asp-for="Hours[i].IsClosed" class="form-check-input" aria-label="@Model.Hours[i].Day closed" />
+                            </td>
+                            <td>
+                                <input asp-for="Hours[i].OpenTime" type="time" class="form-control" aria-label="@Model.Hours[i].Day opens" />
+                                <span asp-validation-for="Hours[i].OpenTime" class="text-danger"></span>
+                            </td>
+                            <td>
+                                <input asp-for="Hours[i].CloseTime" type="time" class="form-control" aria-label="@Model.Hours[i].Day closes" />
+                                <span asp-validation-for="Hours[i].CloseTime" class="text-danger"></span>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="rr-actionbar">
+        <button type="submit" class="btn btn-primary">Save hours</button>
+    </div>
+</form>
