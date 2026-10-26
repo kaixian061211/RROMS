@@ -1,4 +1,5 @@
 using RROMS.Web.Models.OrdersAndReservations;
+using RROMS.Web.Models.Restaurant;
 
 namespace RROMS.Web.Services.OrdersAndReservations;
 

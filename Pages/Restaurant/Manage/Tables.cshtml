@@ -1,0 +1,121 @@
+@page
+@model RROMS.Web.Pages.Restaurant.Manage.TablesModel
+@using RROMS.Web.Models.Restaurant
+@{
+    ViewData["Title"] = "Tables";
+    var editing = Model.Input.RestaurantTableId != 0;
+}
+
+<header class="rr-page-header">
+    <div>
+        <h1>Tables</h1>
+        <p class="rr-lede">Customers book these. Retire a table instead of deleting it, so past bookings keep their table.</p>
+    </div>
+    <div class="rr-page-actions">
+        <a asp-page="/Restaurant/Manage/DiningAreas" class="btn btn-outline-secondary">Dining areas</a>
+    </div>
+</header>
+
+@if (TempData["Message"] is string message)
+{
+    <div class="alert alert-success" role="status">@message</div>
+}
+
+@if (!Model.HasAreas)
+{
+    <div class="rr-empty">
+        <p class="rr-empty__title">Add a dining area first</p>
+        <p class="mb-0">Every table is placed in a dining area, such as Indoor or Outdoor.</p>
+        <a asp-page="/Restaurant/Manage/DiningAreas" class="btn btn-primary">Add a dining area</a>
+    </div>
+}
+else
+{
+    <div class="row g-4">
+        <div class="col-lg-5">
+            <form method="post" asp-page-handler="Save">
+                <div class="rr-panel">
+                    <h2 class="h3 mb-4">@(editing ? "Edit table" : "New table")</h2>
+
+                    <input type="hidden" asp-for="Input.RestaurantTableId" />
+
+                    <div class="mb-4">
+                        <label asp-for="Input.TableNumber" class="form-label">Table number</label>
+                        <input asp-for="Input.TableNumber" class="form-control" />
+                        <span asp-validation-for="Input.TableNumber" class="text-danger"></span>
+                    </div>
+
+                    <div class="mb-4">
+                        <label asp-for="Input.DiningAreaId" class="form-label">Dining area</label>
+                        <select asp-for="Input.DiningAreaId" asp-items="Model.AreaOptions" class="form-select">
+                            <option value="">Choose a dining area</option>
+                        </select>
+                        <span asp-validation-for="Input.DiningAreaId" class="text-danger"></span>
+                    </div>
+
+                    <div class="mb-4">
+                        <label asp-for="Input.Capacity" class="form-label d-block">Seats</label>
+                        <div class="rr-stepper" data-stepper>
+                            <button type="button" class="rr-stepper__button" data-step="-1" aria-label="One seat fewer">&minus;</button>
+                            <input asp-for="Input.Capacity" class="rr-stepper__input" type="number" min="1" max="20" />
+                            <button type="button" class="rr-stepper__button" data-step="1" aria-label="One seat more">+</button>
+                        </div>
+                        <span asp-validation-for="Input.Capacity" class="text-danger d-block"></span>
+                    </div>
+
+                    <div class="form-check">
+                        <input asp-for="Input.IsActive" class="form-check-input" />
+                        <label asp-for="Input.IsActive" class="form-check-label">In use (untick to retire this table)</label>
+                    </div>
+                </div>
+
+                <div class="rr-actionbar">
+                    <button type="submit" class="btn btn-primary">@(editing ? "Save changes" : "Add table")</button>
+                    @if (editing)
+                    {
+                        <a asp-page="/Restaurant/Manage/Tables" class="btn btn-outline-secondary">Cancel</a>
+                    }
+                </div>
+            </form>
+        </div>
+
+        <div class="col-lg-7">
+            @if (Model.Tables.Any())
+            {
+                @foreach (var group in Model.Tables.GroupBy(t => t.DiningArea.Name))
+                {
+                    <section class="mb-4" aria-label="@group.Key">
+                        <h2 class="rr-group-title">@group.Key <span class="rr-count">@group.Count()</span></h2>
+                        <ul class="rr-list">
+                            @foreach (var table in group)
+                            {
+                                var status = RestaurantFormatter.TableStatus(table.IsActive);
+                                <li class="rr-list__item">
+                                    <div class="rr-tableno"><span class="rr-label">Table</span> <span class="rr-tableno__number">@table.TableNumber</span></div>
+                                    <div class="rr-list__main">
+                                        <div class="fw-semibold">@table.Capacity @(table.Capacity == 1 ? "seat" : "seats")</div>
+                                    </div>
+                                    <span class="rr-status @status.Css">@status.Label</span>
+                                    <div class="rr-list__actions">
+                                        <a asp-page="/Restaurant/Manage/Tables" asp-route-id="@table.RestaurantTableId" class="btn btn-sm btn-outline-secondary">Edit<span class="visually-hidden"> table @table.TableNumber</span></a>
+                                    </div>
+                                </li>
+                            }
+                        </ul>
+                    </section>
+                }
+            }
+            else
+            {
+                <div class="rr-empty">
+                    <p class="rr-empty__title">No tables yet</p>
+                    <p class="mb-0">Add your first table. It will show up here, grouped by dining area.</p>
+                </div>
+            }
+        </div>
+    </div>
+}
+
+@section Scripts {
+    <script src="~/js/stepper.js" asp-append-version="true"></script>
+}
