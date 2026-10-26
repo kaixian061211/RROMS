@@ -7,6 +7,7 @@ using RROMS.Web.Services.Payments.Gateways;
 using RROMS.Web.Services.Payments.Notifications;
 using RROMS.Web.Services.OrdersAndReservations;
 using RROMS.Web.Services.Payments.Receipts;
+using RROMS.Web.Services.CustomerSupportAndFeedback;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -68,6 +69,10 @@ builder.Services.AddScoped<IPaymentService, PaymentService>();
 QuestPDF.Settings.License = LicenseType.Community;
 builder.Services.AddSingleton<IReceiptService, ReceiptService>();
 builder.Services.AddScoped<StripeWebhookHandler>();
+
+// ---- Customer support and feedback module ----
+builder.Services.AddScoped<IFeedbackService, FeedbackService>();
+builder.Services.AddScoped<ICustomerRequestService, CustomerRequestService>();
 
 var app = builder.Build();
 
