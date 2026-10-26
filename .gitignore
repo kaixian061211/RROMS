@@ -480,3 +480,9 @@ $RECYCLE.BIN/
 
 # Vim temporary swap files
 *.swp
+
+
+#images
+wwwroot/images/menu/
+wwwroot/images/promotions
+wwwroot/images/restaurant

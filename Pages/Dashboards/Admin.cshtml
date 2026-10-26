@@ -10,4 +10,18 @@
         <h1>Dashboard</h1>
     </div>
 </header>
+
 <partial name="_Cards" model="Model" />
+
+<!-- Menu Management Links -->
+<div class="mt-4">
+    <h2 class="h4 mb-3">Menu Management</h2>
+    <div class="d-flex gap-2">
+        <a asp-page="/Menu/Manage/Index" class="btn btn-primary">
+            Manage Menu Items
+        </a>
+        <a asp-page="/Menu/Manage/Categories" class="btn btn-outline-primary">
+            Manage Categories
+        </a>
+    </div>
+</div>

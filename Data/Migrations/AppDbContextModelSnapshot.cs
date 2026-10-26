@@ -17,7 +17,7 @@ namespace RROMS.Web.Data.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.13")
+                .HasAnnotation("ProductVersion", "10.0.14")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
@@ -237,6 +237,79 @@ namespace RROMS.Web.Data.Migrations
                         });
                 });
 
+            modelBuilder.Entity("RROMS.Web.Models.Restaurant.MenuCategory", b =>
+                {
+                    b.Property<int>("MenuCategoryId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("MenuCategoryId"));
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<int>("DisplayOrder")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.HasKey("MenuCategoryId");
+
+                    b.HasIndex("Name")
+                        .IsUnique();
+
+                    b.ToTable("MenuCategory", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_MenuCategory_DisplayOrder", "[DisplayOrder] >= 0");
+                        });
+                });
+
+            modelBuilder.Entity("RROMS.Web.Models.Restaurant.MenuItem", b =>
+                {
+                    b.Property<int>("MenuItemId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("MenuItemId"));
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("ImagePath")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<bool>("IsAvailable")
+                        .HasColumnType("bit");
+
+                    b.Property<int?>("MenuCategoryId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<decimal>("Price")
+                        .HasPrecision(10, 2)
+                        .HasColumnType("decimal(10,2)");
+
+                    b.HasKey("MenuItemId");
+
+                    b.HasIndex("MenuCategoryId");
+
+                    b.ToTable("MenuItem", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_MenuItem_Price", "[Price] > 0");
+                        });
+                });
+
             modelBuilder.Entity("RROMS.Web.Models.OrdersAndReservations.OrderItem", b =>
                 {
                     b.HasOne("RROMS.Web.Models.OrdersAndReservations.Order", "Order")
@@ -248,9 +321,24 @@ namespace RROMS.Web.Data.Migrations
                     b.Navigation("Order");
                 });
 
+            modelBuilder.Entity("RROMS.Web.Models.Restaurant.MenuItem", b =>
+                {
+                    b.HasOne("RROMS.Web.Models.Restaurant.MenuCategory", "MenuCategory")
+                        .WithMany("MenuItems")
+                        .HasForeignKey("MenuCategoryId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("MenuCategory");
+                });
+
             modelBuilder.Entity("RROMS.Web.Models.OrdersAndReservations.Order", b =>
                 {
                     b.Navigation("Items");
+                });
+
+            modelBuilder.Entity("RROMS.Web.Models.Restaurant.MenuCategory", b =>
+                {
+                    b.Navigation("MenuItems");
                 });
 #pragma warning restore 612, 618
         }

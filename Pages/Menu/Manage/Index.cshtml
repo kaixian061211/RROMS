@@ -1,0 +1,75 @@
+@page
+@model RROMS.Web.Pages.Menu.Manage.IndexModel
+@using RROMS.Web.Models.Payments
+@using RROMS.Web.Models.Restaurant
+@{
+    ViewData["Title"] = "Manage menu";
+}
+
+<header class="rr-page-header">
+    <div>
+        <h1>Manage menu</h1>
+        <p class="rr-lede">Dishes, prices and what is sold out today.</p>
+    </div>
+    <div class="rr-page-actions">
+        <a asp-page="/Menu/Manage/Categories" class="btn btn-outline-secondary">Categories</a>
+        <a asp-page="/Menu/Manage/Edit" class="btn btn-primary">Add menu item</a>
+    </div>
+</header>
+
+@if (TempData["Message"] is string message)
+{
+    <div class="alert alert-success" role="status">@message</div>
+}
+
+<nav class="nav nav-pills mb-4" aria-label="Category">
+    <a class="nav-link @(Model.CategoryId is null ? "active" : null)" aria-current="@(Model.CategoryId is null ? "page" : null)"
+       asp-page="/Menu/Manage/Index">All</a>
+    @foreach (var category in Model.Categories)
+    {
+        var current = Model.CategoryId == category.MenuCategoryId;
+        <a class="nav-link @(current ? "active" : null)" aria-current="@(current ? "page" : null)"
+           asp-page="/Menu/Manage/Index" asp-route-categoryId="@category.MenuCategoryId">@category.Name</a>
+    }
+</nav>
+
+@if (Model.Items.Any())
+{
+    <ul class="rr-list">
+        @foreach (var item in Model.Items)
+        {
+            var availability = RestaurantFormatter.Availability(item.IsAvailable);
+            <li class="rr-list__item">
+                @if (!string.IsNullOrEmpty(item.ImagePath))
+                {
+                    <img class="thumb" src="@item.ImagePath" alt="" />
+                }
+                <div class="rr-list__main">
+                    <div class="fw-semibold">@item.Name</div>
+                    <span class="small text-muted">@(item.MenuCategory?.Name ?? "No category")</span>
+                    <p class="small text-muted mt-1 mb-0">@item.Description</p>
+                </div>
+                <span class="rr-money">@PaymentFormatter.Money(item.Price)</span>
+                <span class="rr-status @availability.Css">@availability.Label</span>
+                <div class="rr-list__actions">
+                    <a asp-page="/Menu/Manage/Edit" asp-route-id="@item.MenuItemId" class="btn btn-sm btn-outline-secondary">Edit<span class="visually-hidden"> @item.Name</span></a>
+                    <form method="post" asp-page-handler="Toggle" asp-route-id="@item.MenuItemId" asp-route-categoryId="@Model.CategoryId" class="d-inline">
+                        <button type="submit" class="btn btn-sm btn-outline-secondary">@(item.IsAvailable ? "Mark sold out" : "Mark available")<span class="visually-hidden"> @item.Name</span></button>
+                    </form>
+                    <form method="post" asp-page-handler="Delete" asp-route-id="@item.MenuItemId" asp-route-categoryId="@Model.CategoryId" class="d-inline"
+                          onsubmit="return confirm('Delete this menu item? Past orders keep their price but lose the dish name.');">
+                        <button type="submit" class="btn btn-sm btn-outline-danger">Delete<span class="visually-hidden"> @item.Name</span></button>
+                    </form>
+                </div>
+            </li>
+        }
+    </ul>
+}
+else
+{
+    <div class="rr-empty">
+        <p class="rr-empty__title">No menu items yet</p>
+        <p class="mb-0">Add your first dish. Customers see it on the menu as soon as it is saved.</p>
+        <a asp-page="/Menu/Manage/Edit" class="btn btn-primary">Add menu item</a>
+    </div>
+}
