@@ -82,6 +82,9 @@
                         {
                             <li class="nav-item"><a class="nav-link @Active(currentPage == "/Payments/MyOrders")" asp-page="/Payments/MyOrders">Orders for payment</a></li>
                             <li class="nav-item"><a class="nav-link @Active(currentPage == "/Payments/History")" asp-page="/Payments/History">My payments</a></li>
+                            <li class="nav-item">
+                                <a class="nav-link @Active(Under("/Notifications"))" aria-current="@Current(Under("/Notifications"))" asp-area="" asp-page="/Notifications/Index">Notifications</a>
+                            </li>
                         }
                         @if (isStaff)
                         {
