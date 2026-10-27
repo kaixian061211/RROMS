@@ -1,0 +1,43 @@
+@{
+    var page = ViewContext.RouteData.Values["page"] as string;
+    var refreshPage = page is "/Notifications/Index" or "/Tracking/Index";
+
+    var signalRClient =
+        "https://cdn.jsdelivr.net/npm/@microsoft/signalr@10.0.11/dist/browser/signalr.min.js";
+}
+
+<div id="notification-live"
+     data-hub-url="@Url.Content("~/hubs/notifications")"
+     data-refresh-page="@refreshPage.ToString().ToLowerInvariant()">
+
+    <div class="toast-container position-fixed bottom-0 end-0 p-3">
+        <div id="notification-toast"
+             class="toast"
+             role="status"
+             aria-live="polite"
+             aria-atomic="true">
+
+            <div class="toast-header">
+                <strong id="notification-toast-title" class="me-auto">
+                    New notification
+                </strong>
+
+                <button type="button"
+                        class="btn-close"
+                        data-bs-dismiss="toast"
+                        aria-label="Close"></button>
+            </div>
+
+            <div class="toast-body">
+                <p id="notification-toast-message" class="mb-2"></p>
+
+                <a asp-page="/Notifications/Index">
+                    View notifications
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="@signalRClient"></script>
+<script src="~/js/notifications-live.js" asp-append-version="true"></script>

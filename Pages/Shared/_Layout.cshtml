@@ -34,6 +34,7 @@
     {
         <partial name="/Pages/Dev/_TestUserBar.cshtml" />
     }
+
     <header class="rr-header">
         <nav class="navbar navbar-expand-xl" aria-label="Main">
             <div class="container-xxl">
@@ -83,7 +84,16 @@
                             <li class="nav-item"><a class="nav-link @Active(currentPage == "/Payments/MyOrders")" asp-page="/Payments/MyOrders">Orders for payment</a></li>
                             <li class="nav-item"><a class="nav-link @Active(currentPage == "/Payments/History")" asp-page="/Payments/History">My payments</a></li>
                             <li class="nav-item">
-                                <a class="nav-link @Active(Under("/Notifications"))" aria-current="@Current(Under("/Notifications"))" asp-area="" asp-page="/Notifications/Index">Notifications</a>
+                                <a class="nav-link @Active(Under("/Notifications"))"
+                                   aria-current="@Current(Under("/Notifications"))"
+                                   asp-area=""
+                                   asp-page="/Notifications/Index">
+                                    Notifications
+                                    <span id="notification-unread-count"
+                                          class="badge text-bg-primary"
+                                          aria-live="polite"
+                                          hidden></span>
+                                </a>
                             </li>
                         }
                         @if (isStaff)
@@ -113,6 +123,11 @@
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
+
+    @if (isCustomer)
+    {
+        <partial name="/Pages/Shared/_NotificationLive.cshtml" />
+    }
 
     @await RenderSectionAsync("Scripts", required: false)
 </body>

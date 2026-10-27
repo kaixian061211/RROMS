@@ -9,6 +9,7 @@ using RROMS.Web.Services.OrdersAndReservations;
 using RROMS.Web.Services.Payments.Receipts;
 using RROMS.Web.Services.Notifications;
 
+
 var builder = WebApplication.CreateBuilder(args);
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
@@ -21,6 +22,9 @@ builder.Services.AddRazorPages(options =>
     if (!builder.Environment.IsDevelopment())
         options.Conventions.AddFolderRouteModelConvention("/Dev", page => page.Selectors.Clear());
 });
+
+builder.Services.AddSignalR();
+builder.Services.AddScoped<INotificationRealtime, NotificationRealtime>();
 
 // Sign-in cookie, carrying the claims the login module will issue: a numeric NameIdentifier and a Role.
 // TODO: the login module replaces this. Until then only the Development test login signs anyone in.
@@ -88,7 +92,8 @@ app.UseAuthorization();
 
 app.MapStaticAssets();
 app.MapRazorPages().WithStaticAssets();
-app.MapStripeWebhook();   // POST /webhooks/stripe
+app.MapStripeWebhook();
+app.MapHub<NotificationHub>("/hubs/notifications");
 
 // Dev only: create the database on startup
 if (app.Environment.IsDevelopment())
