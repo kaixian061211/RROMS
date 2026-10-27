@@ -53,7 +53,8 @@
                            checked="@(table.TableId == Model.TableId)" required data-msg-required="Please choose a table." />
                     <label class="rr-tile" for="@tileId">
                         @table.TableNumber
-                        <span class="d-block small text-muted">@ReservationFormatter.Seats(table.Capacity)</span>
+                        @* The tile's own colour, faded, so it still shows on a chosen (green) tile. *@
+                        <span class="d-block small text-nowrap opacity-75">@ReservationFormatter.Seats(table.Capacity)</span>
                     </label>
                 }
             </div>
