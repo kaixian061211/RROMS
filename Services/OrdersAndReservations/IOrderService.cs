@@ -8,6 +8,9 @@ public interface IOrderService
     /// <summary>The dishes that can be ordered right now, in menu order.</summary>
     Task<IReadOnlyList<MenuItemInfo>> GetMenuAsync();
 
+    /// <summary>Every restaurant table by id, retired ones too, for showing table numbers. Forms offer only the active ones.</summary>
+    Task<IReadOnlyDictionary<int, TableInfo>> GetTablesAsync();
+
     /// <summary>
     /// Places an order for the customer's table. Only the table, menu item ids and quantities come from
     /// the customer: each item's price is copied from the menu now, and the total is always calculated from the items.

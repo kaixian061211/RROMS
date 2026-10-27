@@ -29,7 +29,7 @@
         <article class="rr-docket rr-docket--narrow" aria-label="Order @OrderFormatter.Reference(order.OrderId)">
             <div class="rr-docket__head">
                 <div>
-                    <span class="rr-docket__title">@OrderFormatter.Table(order.TableId)</span>
+                    <span class="rr-docket__title">@OrderFormatter.Table(order.TableId, Model.Tables)</span>
                     <span class="rr-ref d-block">@OrderFormatter.Reference(order.OrderId)</span>
                     <span class="small text-muted">Placed @OrderFormatter.PlacedAt(order.CreatedAt)</span>
                 </div>

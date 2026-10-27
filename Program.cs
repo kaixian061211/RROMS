@@ -49,9 +49,9 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
         }
     });
 
+builder.Services.AddScoped<IRestaurantLookup, RestaurantLookup>();
 builder.Services.AddScoped<IReservationService, ReservationService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
-// TODO: use a lookup that reads the real MenuItem table once it's on main.
 builder.Services.AddScoped<IMenuItemLookup, MenuItemLookup>();
 builder.Services.AddScoped<IPaymentOrderProvider, PaymentOrderProvider>();
 builder.Services.AddHttpContextAccessor();

@@ -2,18 +2,20 @@
    <partial name="_StaffReservationRow" model="row" view-data="..." />. ViewData:
    "ShowTime" (bool): show the time in the row, when the group heading is a date instead of a seating;
    "RouteValues" (Dictionary<string, string>): the list's address values, so a button brings staff back to the same view;
-   "EditFrom" (string?): passed to the edit page as "from", so saving there comes back to this list. *@
+   "EditFrom" (string?): passed to the edit page as "from", so saving there comes back to this list;
+   "Tables" (the page's tables, by id): for the table number. *@
 @model IndexModel.Row
 @{
     var r = Model.Reservation;
     var showTime = ViewData["ShowTime"] as bool? ?? false;
     var routeValues = ViewData["RouteValues"] as Dictionary<string, string> ?? new();
     var editFrom = ViewData["EditFrom"] as string;
+    var tables = ViewData["Tables"] as IReadOnlyDictionary<int, TableInfo> ?? new Dictionary<int, TableInfo>();
 }
 <li class="rr-list__item @(r.Status == ReservationStatus.Pending ? "is-attention" : null)">
     <div class="rr-tableno">
         <span class="rr-label">Table</span>
-        <span class="rr-tableno__number">@r.TableId</span>
+        <span class="rr-tableno__number">@ReservationFormatter.TableNumber(r.TableId, tables)</span>
     </div>
     <div class="rr-list__main">
         <div class="fw-semibold">

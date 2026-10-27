@@ -44,13 +44,41 @@ public static class TestDatabase
     /// <summary>Runs PrepareAsync the first time any test asks, and only once per test run.</summary>
     public static Task PrepareOnceAsync() => Prepared.Value;
 
-    /// <summary>Brings RROMS_Tests up to the latest migration (creating it the first time), then empties it.</summary>
+    /// <summary>
+    /// Brings RROMS_Tests up to the latest migration (creating it the first time), empties it, makes sure the
+    /// tables exist, and clears any opening hours or settings, so the restaurant counts as open.
+    /// </summary>
     private static async Task PrepareAsync()
     {
         var options = new DbContextOptionsBuilder<AppDbContext>().UseSqlServer(ConnectionString).Options;
         await using var db = new AppDbContext(options);
         await db.Database.MigrateAsync();
         await EmptyAsync(db);
+        await db.Set<OperatingHour>().ExecuteDeleteAsync();
+        await db.Set<RestaurantInfo>().ExecuteDeleteAsync();
+        await AddTablesOnceAsync(db);
+    }
+
+    /// <summary>
+    /// Tables 1 to 10 in one dining area, "Main hall". Tables 1 to 9 seat 8 and table 10 seats 2. They're saved
+    /// the first time and never deleted, so their ids stay 1 to 10, the same as their numbers, as the tests use them.
+    /// </summary>
+    private static async Task AddTablesOnceAsync(AppDbContext db)
+    {
+        if (!await db.Set<RestaurantTable>().AnyAsync())
+        {
+            var area = new DiningArea { Name = "Main hall" };
+            for (var number = 1; number <= 10; number++)
+            {
+                db.Add(new RestaurantTable { TableNumber = number.ToString(), DiningArea = area, Capacity = number == 10 ? 2 : 8 });
+                await db.SaveChangesAsync();   // one at a time, so the ids come out in order
+            }
+        }
+
+        var tables = await db.Set<RestaurantTable>().AsNoTracking().ToListAsync();
+        if (tables.Count != 10 || tables.Any(t => t.TableNumber != t.RestaurantTableId.ToString() || !t.IsActive))
+            throw new InvalidOperationException(
+                $"{Name} should have exactly tables 1 to 10, with ids 1 to 10. Drop the {Name} database and run the tests again to recreate it.");
     }
 
     /// <summary>Deletes every order, payment, reservation and menu item. Checks the database first, every time.</summary>

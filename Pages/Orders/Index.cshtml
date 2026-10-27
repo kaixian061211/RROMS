@@ -37,7 +37,7 @@
                     <div class="rr-slip__body">
                         <div>
                             <div class="rr-slip__title">
-                                @OrderFormatter.Table(o.TableId) · @OrderFormatter.ItemCount(o) · <span class="rr-money">@OrderFormatter.Money(o.Total)</span>
+                                @OrderFormatter.Table(o.TableId, Model.Tables) · @OrderFormatter.ItemCount(o) · <span class="rr-money">@OrderFormatter.Money(o.Total)</span>
                             </div>
                             <span class="rr-ref">@reference</span>
                             <span class="small text-muted">· @OrderFormatter.PlacedAt(o.CreatedAt)</span>

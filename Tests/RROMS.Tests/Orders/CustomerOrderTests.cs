@@ -245,4 +245,18 @@ public class CustomerOrderTests : DatabaseTest
         Assert.Equal(paymentStatus, details.Payment?.Status);
         Assert.Equal(paymentStatus, inMyOrders.Payment?.Status);
     }
+
+    [Fact(DisplayName = "TC-12-31 Orders switched off, or a retired table: the order is refused and nothing is saved")]
+    [Trait("Technique", "Equivalence partitioning")]
+    public async Task OrdersSwitchedOffOrRetiredTable()
+    {
+        await RetireTableAsync(5);
+        var atRetiredTable = await NewOrderService().CreateAsync(Alice, OrderAt(5, (TehTarik, 1)));
+        await SetAcceptingAsync(reservations: true, orders: false);
+        var switchedOff = await NewOrderService().CreateAsync(Alice, OrderAt(4, (TehTarik, 1)));
+
+        Assert.Equal("Please choose your table.", atRetiredTable.ErrorMessage);
+        Assert.Equal("Sorry, we're not taking orders right now. Please ask a member of staff.", switchedOff.ErrorMessage);
+        Assert.Equal(0, await CountOrdersAsync());
+    }
 }

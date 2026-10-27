@@ -10,6 +10,9 @@ public interface IReservationService
     /// </summary>
     Task<bool> IsSlotFreeAsync(int tableId, DateOnly date, TimeOnly timeSlot, int? ignoreReservationId = null);
 
+    /// <summary>Every restaurant table by id, retired ones too, for showing table numbers. Forms offer only the active ones.</summary>
+    Task<IReadOnlyDictionary<int, TableInfo>> GetTablesAsync();
+
     // Customer actions
 
     Task<ReservationResult> CreateAsync(int customerUserId, ReservationInput input);

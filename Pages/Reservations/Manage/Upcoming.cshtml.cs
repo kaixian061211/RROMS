@@ -46,8 +46,12 @@ public class UpcomingModel : PageModel
     [TempData]
     public string? ErrorMessage { get; set; }
 
+    /// <summary>Every restaurant table by id, for table numbers (and on forms, the tables to choose from).</summary>
+    public IReadOnlyDictionary<int, TableInfo> Tables { get; private set; } = new Dictionary<int, TableInfo>();
+
     public async Task<IActionResult> OnGetAsync()
     {
+        Tables = await _reservations.GetTablesAsync();
         var page = await _reservations.GetUpcomingForStaffAsync(StatusFilter, PageNumber);
         PageNumber = page.Page;
         TotalPages = page.TotalPages;

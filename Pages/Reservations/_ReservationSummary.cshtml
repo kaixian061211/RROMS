@@ -1,11 +1,14 @@
 @* A reservation as a docket, shown on the Confirmation and Cancel pages. *@
 @model Reservation
+@{
+    var tables = ViewData["Tables"] as IReadOnlyDictionary<int, TableInfo> ?? new Dictionary<int, TableInfo>();
+}
 
 <article class="rr-docket rr-docket--narrow" aria-label="Booking @ReservationFormatter.Reference(Model.ReservationId)">
     <div class="rr-docket__head">
         <div>
             <span class="rr-docket__title">@ReservationFormatter.When(Model.ReservationDate, Model.TimeSlot)</span>
-            <span class="d-block fw-semibold mt-1">@ReservationFormatter.Table(Model.TableId) · @ReservationFormatter.PartySize(Model.PartySize)</span>
+            <span class="d-block fw-semibold mt-1">@ReservationFormatter.Table(Model.TableId, tables) · @ReservationFormatter.PartySize(Model.PartySize)</span>
         </div>
         <span class="@ReservationFormatter.StatusBadge(Model.Status)">@ReservationFormatter.StatusLabel(Model.Status)</span>
     </div>

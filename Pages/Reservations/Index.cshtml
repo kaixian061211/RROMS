@@ -45,7 +45,7 @@
                     <div class="rr-slip__body">
                         <div>
                             <div class="rr-slip__title">
-                                @ReservationFormatter.Time(r.TimeSlot) · @ReservationFormatter.Table(r.TableId) · @ReservationFormatter.PartySize(r.PartySize)
+                                @ReservationFormatter.Time(r.TimeSlot) · @ReservationFormatter.Table(r.TableId, Model.Tables) · @ReservationFormatter.PartySize(r.PartySize)
                             </div>
                             <span class="rr-ref">@reference</span>
                             @if (r.SpecialRequest is not null)

@@ -39,8 +39,12 @@ public class EditModel : PageModel
     /// <summary>Set when the reservation can't be changed. The page shows it instead of the form.</summary>
     public string? BlockedMessage { get; private set; }
 
+    /// <summary>Every restaurant table by id, for table numbers (and on forms, the tables to choose from).</summary>
+    public IReadOnlyDictionary<int, TableInfo> Tables { get; private set; } = new Dictionary<int, TableInfo>();
+
     public async Task<IActionResult> OnGetAsync()
     {
+        Tables = await _reservations.GetTablesAsync();
         var result = await _reservations.GetForStaffChangeAsync(Id);
         if (!result.Succeeded)
         {
@@ -56,6 +60,7 @@ public class EditModel : PageModel
 
     public async Task<IActionResult> OnPostAsync()
     {
+        Tables = await _reservations.GetTablesAsync();
         if (!ModelState.IsValid)
             return Page();
 

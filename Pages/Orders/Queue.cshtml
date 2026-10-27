@@ -59,10 +59,10 @@
                     @foreach (var item in orders)
                     {
                         var order = item.Order;
-                        <article class="rr-docket" aria-label="@OrderFormatter.Table(order.TableId), @OrderFormatter.Reference(order.OrderId)">
+                        <article class="rr-docket" aria-label="@OrderFormatter.Table(order.TableId, Model.Tables), @OrderFormatter.Reference(order.OrderId)">
                             <div class="rr-docket__head">
                                 <div>
-                                    <span class="rr-docket__title">@OrderFormatter.Table(order.TableId)</span>
+                                    <span class="rr-docket__title">@OrderFormatter.Table(order.TableId, Model.Tables)</span>
                                     <span class="rr-ref d-block">@OrderFormatter.Reference(order.OrderId)</span>
                                     <span class="small text-muted">@OrderFormatter.Time(order.CreatedAt) · @OrderFormatter.Waiting(order.CreatedAt)</span>
                                 </div>

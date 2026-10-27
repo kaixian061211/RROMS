@@ -24,10 +24,12 @@ public class ReservationService : IReservationService
     };
 
     private readonly AppDbContext _db;
+    private readonly IRestaurantLookup _restaurant;
 
-    public ReservationService(AppDbContext db)
+    public ReservationService(AppDbContext db, IRestaurantLookup restaurant)
     {
         _db = db;
+        _restaurant = restaurant;
     }
 
     // AppDbContext picks up Reservation through ReservationConfiguration, so it needs no DbSet for it.
@@ -45,11 +47,17 @@ public class ReservationService : IReservationService
         return !taken;
     }
 
+    public Task<IReadOnlyDictionary<int, TableInfo>> GetTablesAsync() => _restaurant.GetTablesAsync();
+
     // Customer actions
 
     public async Task<ReservationResult> CreateAsync(int customerUserId, ReservationInput input)
     {
-        var error = Validate(input);
+        // Switching reservations off stops new bookings. Existing ones can still be changed or cancelled.
+        if (!await _restaurant.IsAcceptingReservationsAsync())
+            return ReservationResult.Failure("Sorry, we're not taking new reservations right now. Please try again later.");
+
+        var error = Validate(input) ?? await CheckTableAndHoursAsync(input);
         if (error is not null)
             return ReservationResult.Failure(error);
 
@@ -186,7 +194,7 @@ public class ReservationService : IReservationService
         if (reservation is null)
             return ReservationResult.Failure(NotFoundMessage);
 
-        var error = CheckCanChange(reservation) ?? Validate(input);
+        var error = CheckCanChange(reservation) ?? Validate(input) ?? await CheckTableAndHoursAsync(input);
         if (error is not null)
             return ReservationResult.Failure(error);
 
@@ -251,9 +259,10 @@ public class ReservationService : IReservationService
         return null;
     }
 
+    /// <summary>The checks that need nothing but the form. The table itself is checked by CheckTableAndHoursAsync.</summary>
     private static string? Validate(ReservationInput input)
     {
-        if (!TemporaryTables.Exists(input.TableId))
+        if (input.TableId <= 0)
             return "Please choose a table.";
         if (input.ReservationDate is null)
             return "Please choose a date.";
@@ -261,13 +270,33 @@ public class ReservationService : IReservationService
             return "Please enter the party size.";
         if (input.PartySize <= 0)
             return "Party size must be at least 1.";
-        // TODO: check PartySize against the table's capacity once the RestaurantTable table exists.
         if (!ReservationTimeSlots.IsValid(input.TimeSlot))
             return "Please choose one of the available time slots.";
         if (IsInPast(input.ReservationDate.Value, input.TimeSlot))
             return "Please choose a date and time in the future.";
         if (input.SpecialRequest?.Length > MaxSpecialRequestLength)
             return $"Special requests can be at most {MaxSpecialRequestLength} characters.";
+        return null;
+    }
+
+    /// <summary>
+    /// The checks against the restaurant's own data: the table must exist, still be in use and seat the party,
+    /// and the restaurant must be open at that seating. Runs after Validate, so the date and party size are filled in.
+    /// </summary>
+    private async Task<string?> CheckTableAndHoursAsync(ReservationInput input)
+    {
+        var tables = await _restaurant.GetTablesAsync();
+        if (!tables.TryGetValue(input.TableId, out var table) || !table.IsActive)
+            return "Please choose a table.";
+        if (input.PartySize > table.Capacity)
+            return $"Table {table.TableNumber} seats {ReservationFormatter.PartySize(table.Capacity)}. Please choose a bigger table.";
+
+        var day = input.ReservationDate!.Value.DayOfWeek;
+        var hours = await _restaurant.GetOpeningHoursAsync(day);
+        if (hours is { IsClosed: true })
+            return $"We're closed on {day}s. Please choose another day.";
+        if (hours is { Opens: { } opens, Closes: { } closes } && (input.TimeSlot < opens || input.TimeSlot >= closes))
+            return $"On {day}s we're open from {ReservationFormatter.Time(opens)} to {ReservationFormatter.Time(closes)}. Please choose another time.";
         return null;
     }
 

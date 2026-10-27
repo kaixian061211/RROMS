@@ -28,12 +28,14 @@ public class OrderService : IOrderService
     private readonly AppDbContext _db;
     private readonly IMenuItemLookup _menu;
     private readonly IPaymentQueries _payments;
+    private readonly IRestaurantLookup _restaurant;
 
-    public OrderService(AppDbContext db, IMenuItemLookup menu, IPaymentQueries payments)
+    public OrderService(AppDbContext db, IMenuItemLookup menu, IPaymentQueries payments, IRestaurantLookup restaurant)
     {
         _db = db;
         _menu = menu;
         _payments = payments;
+        _restaurant = restaurant;
     }
 
     // AppDbContext picks up Order through OrderConfiguration, so it needs no DbSet for it.
@@ -44,10 +46,15 @@ public class OrderService : IOrderService
     public async Task<IReadOnlyList<MenuItemInfo>> GetMenuAsync() =>
         (await _menu.GetAllAsync()).Where(menuItem => menuItem.IsAvailable).ToList();
 
+    public Task<IReadOnlyDictionary<int, TableInfo>> GetTablesAsync() => _restaurant.GetTablesAsync();
+
     public async Task<OrderResult> CreateAsync(int customerUserId, OrderInput input)
     {
-        // TODO: check against the real tables once the RestaurantTable table exists.
-        if (input.TableId is not int tableId || !TemporaryTables.Exists(tableId))
+        if (!await _restaurant.IsAcceptingOrdersAsync())
+            return OrderResult.Failure("Sorry, we're not taking orders right now. Please ask a member of staff.");
+        // A retired table can't take new orders.
+        var tables = await _restaurant.GetTablesAsync();
+        if (input.TableId is not int tableId || !tables.TryGetValue(tableId, out var table) || !table.IsActive)
             return OrderResult.Failure("Please choose your table.");
         if (input.Items.Any(line => line.Quantity < 0))
             return OrderResult.Failure("Quantities can't be negative.");
