@@ -27,6 +27,7 @@ builder.Services.AddSignalR();
 builder.Services.AddScoped<INotificationRealtime, NotificationRealtime>();
 builder.Services.AddScoped<INotificationEmailSender, NotificationEmailSender>();
 builder.Services.AddScoped<INotificationDelivery, NotificationDelivery>();
+builder.Services.AddScoped<INotificationService, NotificationService>();
 
 // Sign-in cookie, carrying the claims the login module will issue: a numeric NameIdentifier and a Role.
 // TODO: the login module replaces this. Until then only the Development test login signs anyone in.
@@ -77,8 +78,6 @@ builder.Services.AddSingleton<IReceiptService, ReceiptService>();
 builder.Services.AddScoped<StripeWebhookHandler>();
 
 var app = builder.Build();
-
-builder.Services.AddScoped<INotificationService, NotificationService>();
 
 if (!app.Environment.IsDevelopment())
 {
