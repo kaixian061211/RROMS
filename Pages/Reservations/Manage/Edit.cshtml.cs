@@ -20,6 +20,12 @@ public class EditModel : PageModel
     [BindProperty(SupportsGet = true)]
     public int Id { get; set; }
 
+    /// <summary>"upcoming" when staff came from the Upcoming list, so Save and Back go back there.</summary>
+    [BindProperty(SupportsGet = true, Name = "from")]
+    public string? From { get; set; }
+
+    public bool FromUpcoming => From == UpcomingModel.From;
+
     [BindProperty]
     public ReservationInput Input { get; set; } = new();
 
@@ -61,6 +67,8 @@ public class EditModel : PageModel
         }
 
         TempData["StatusMessage"] = $"{ReservationFormatter.Reference(Id)} has been updated.";
+        if (FromUpcoming)
+            return RedirectToPage("Upcoming");
         return RedirectToPage("Index", new { date = ReservationFormatter.InputDate(result.Reservation!.ReservationDate) });
     }
 }

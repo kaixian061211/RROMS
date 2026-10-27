@@ -28,6 +28,9 @@ public class IndexModel : PageModel
 
     public List<Row> Rows { get; private set; } = new();
 
+    /// <summary>Pending bookings from today onwards, for the Upcoming tab.</summary>
+    public int PendingCount { get; private set; }
+
     [TempData]
     public string? StatusMessage { get; set; }
 
@@ -43,6 +46,7 @@ public class IndexModel : PageModel
         Rows = reservations
             .Select(r => new Row(r, _reservations.GetAllowedStatusChanges(r), _reservations.CanChangeDetails(r)))
             .ToList();
+        PendingCount = await _reservations.CountPendingAsync(DateOnly.FromDateTime(DateTime.Today));
         return Page();
     }
 

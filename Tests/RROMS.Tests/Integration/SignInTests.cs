@@ -69,7 +69,7 @@ public class SignInTests : PageTest
         if (user is not null)
             await SignInAsAsync(UserNamed(user));
 
-        foreach (var url in new[] { "/Reservations/Manage", "/Orders/Queue" })
+        foreach (var url in new[] { "/Reservations/Manage", "/Reservations/Manage/Upcoming", "/Orders/Queue" })
             Assert.Equal((url, expected), (url, await TryToOpenAsync(url)));
     }
 

@@ -1,0 +1,96 @@
+@page
+@model UpcomingModel
+@{
+    ViewData["Title"] = "Upcoming reservations";
+
+    // The row's status buttons come back to this filter and page.
+    var routeValues = new Dictionary<string, string> { ["pageNumber"] = Model.PageNumber.ToString() };
+    if (Model.Status is not null)
+        routeValues["status"] = Model.Status;
+    var rowViewData = new ViewDataDictionary(ViewData)
+    {
+        ["ShowTime"] = true,
+        ["RouteValues"] = routeValues,
+        ["EditFrom"] = UpcomingModel.From
+    };
+}
+
+<header class="rr-page-header">
+    <div>
+        <h1>Manage reservations</h1>
+        <p class="rr-lede">Bookings from today onwards, soonest first.</p>
+    </div>
+</header>
+
+<partial name="_ManageTabs" model="Model.PendingCount" />
+
+@* Status filter: Pending is the default, so "All" needs its own value in the address. *@
+<nav class="nav nav-pills mb-4" aria-label="Status">
+    <a asp-page="Upcoming" asp-route-status="@UpcomingModel.AllStatuses" class="nav-link @(Model.StatusFilter is null ? "active" : null)"
+       aria-current="@(Model.StatusFilter is null ? "page" : null)">All</a>
+    @foreach (var status in ReservationStatus.All)
+    {
+        <a asp-page="Upcoming" asp-route-status="@status" class="nav-link @(status == Model.StatusFilter ? "active" : null)"
+           aria-current="@(status == Model.StatusFilter ? "page" : null)">@ReservationFormatter.StatusLabel(status)</a>
+    }
+</nav>
+
+@if (Model.StatusMessage is not null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="status">
+        @Model.StatusMessage
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+@if (Model.ErrorMessage is not null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        @Model.ErrorMessage
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+@if (Model.Rows.Count == 0)
+{
+    <div class="rr-empty">
+        <p class="rr-empty__title">
+            @(Model.StatusFilter == ReservationStatus.Pending ? "Nothing waiting to be confirmed." : "No upcoming reservations with this status.")
+        </p>
+        <p class="mb-0">New bookings from customers show up here as pending.</p>
+    </div>
+}
+else
+{
+    @* One group per day. The service already sorts by date, time, then table. *@
+    @foreach (var day in Model.Rows.GroupBy(row => row.Reservation.ReservationDate))
+    {
+        var dayId = $"day-{ReservationFormatter.InputDate(day.Key)}";
+        <section class="mb-4" aria-labelledby="@dayId">
+            <h2 class="rr-group-title" id="@dayId">
+                <a asp-page="Index" asp-route-date="@ReservationFormatter.InputDate(day.Key)" class="link-body-emphasis text-decoration-none">@ReservationFormatter.LongDate(day.Key)</a>
+                <span class="rr-count">@day.Count()</span>
+            </h2>
+            <ul class="rr-list">
+                @foreach (var row in day)
+                {
+                    <partial name="_StaffReservationRow" model="row" view-data="rowViewData" />
+                }
+            </ul>
+        </section>
+    }
+
+    @if (Model.TotalPages > 1)
+    {
+        <nav class="d-flex flex-wrap align-items-center gap-3" aria-label="Pages">
+            @if (Model.PageNumber > 1)
+            {
+                <a asp-page="Upcoming" asp-route-status="@Model.Status" asp-route-pageNumber="@(Model.PageNumber - 1)" class="btn btn-outline-secondary">Previous</a>
+            }
+            <span class="text-muted">Page @Model.PageNumber of @Model.TotalPages</span>
+            @if (Model.PageNumber < Model.TotalPages)
+            {
+                <a asp-page="Upcoming" asp-route-status="@Model.Status" asp-route-pageNumber="@(Model.PageNumber + 1)" class="btn btn-outline-secondary">Next</a>
+            }
+        </nav>
+    }
+}

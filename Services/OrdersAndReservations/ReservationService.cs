@@ -127,6 +127,30 @@ public class ReservationService : IReservationService
         return query.OrderBy(r => r.TimeSlot).ThenBy(r => r.TableId).ToListAsync();
     }
 
+    public async Task<ReservationPage> GetUpcomingForStaffAsync(string? status, int page)
+    {
+        var today = DateOnly.FromDateTime(DateTime.Today);
+        var query = Reservations.AsNoTracking().Where(r => r.ReservationDate >= today);
+        if (!string.IsNullOrEmpty(status))
+            query = query.Where(r => r.Status == status);
+
+        var count = await query.CountAsync();
+        var totalPages = Math.Max(1, (count + ReservationPage.PageSize - 1) / ReservationPage.PageSize);
+        page = Math.Clamp(page, 1, totalPages);
+
+        // Cancelled bookings can share a table, date and time, so the id keeps the order the same on every page.
+        var items = await query
+            .OrderBy(r => r.ReservationDate).ThenBy(r => r.TimeSlot).ThenBy(r => r.TableId).ThenBy(r => r.ReservationId)
+            .Skip((page - 1) * ReservationPage.PageSize)
+            .Take(ReservationPage.PageSize)
+            .ToListAsync();
+
+        return new ReservationPage(items, page, totalPages);
+    }
+
+    public Task<int> CountPendingAsync(DateOnly from) =>
+        Reservations.AsNoTracking().CountAsync(r => r.ReservationDate >= from && r.Status == ReservationStatus.Pending);
+
     public async Task<ReservationResult> GetForStaffChangeAsync(int reservationId) =>
         ForChange(await Reservations.AsNoTracking().FirstOrDefaultAsync(r => r.ReservationId == reservationId));
 

@@ -149,4 +149,57 @@ public class StaffReservationTests : DatabaseTest
 
         Assert.All(new[] { editPage, edit, status }, result => Assert.Equal("Reservation not found.", result.ErrorMessage));
     }
+
+    [Fact(DisplayName = "TC-11-15 Upcoming: bookings from today onwards by date, time then table, without yesterday's; the status filter works")]
+    [Trait("Technique", "Equivalence partitioning")]
+    public async Task UpcomingList()
+    {
+        await AddReservationAsync(Alice, 1, Yesterday, Dinner);   // already passed
+        var nextWeek = await AddReservationAsync(Bob, 2, Tomorrow.AddDays(6), Lunch);
+        var tomorrowDinner = await AddReservationAsync(Alice, 1, Tomorrow, Dinner, ReservationStatus.Confirmed);
+        var tomorrowLunchTable4 = await AddReservationAsync(Bob, 4, Tomorrow, Lunch);
+        var tomorrowLunchTable3 = await AddReservationAsync(Alice, 3, Tomorrow, Lunch);
+        var today = await AddReservationAsync(Alice, 5, Today, Lunch);
+
+        var all = await NewReservationService().GetUpcomingForStaffAsync(null, 1);
+        var confirmed = await NewReservationService().GetUpcomingForStaffAsync(ReservationStatus.Confirmed, 1);
+
+        Assert.Equal(
+            new[] { today, tomorrowLunchTable3, tomorrowLunchTable4, tomorrowDinner, nextWeek }.Select(r => r.ReservationId),
+            all.Items.Select(r => r.ReservationId));
+        Assert.Equal((1, 1), (all.Page, all.TotalPages));
+        Assert.Equal(new[] { tomorrowDinner.ReservationId }, confirmed.Items.Select(r => r.ReservationId));
+    }
+
+    [Theory(DisplayName = "TC-11-16 Upcoming in pages of 25: 26 bookings make 2 pages, and a page number outside the list gives the first or last page")]
+    [Trait("Technique", "Boundary value analysis")]
+    [InlineData(0, 1, 1, 1, 0)]
+    [InlineData(25, 1, 1, 1, 25)]
+    [InlineData(26, 1, 1, 2, 25)]
+    [InlineData(26, 2, 2, 2, 1)]
+    [InlineData(26, 0, 1, 2, 25)]
+    [InlineData(26, 3, 2, 2, 1)]
+    public async Task UpcomingInPages(int bookings, int pageAskedFor, int pageShown, int totalPages, int onThePage)
+    {
+        // Tables 1 to 10 at each seating tomorrow, so no two bookings share a slot.
+        for (var i = 0; i < bookings; i++)
+            await AddReservationAsync(Alice, i % 10 + 1, Tomorrow, ReservationTimeSlots.All[i / 10]);
+
+        var page = await NewReservationService().GetUpcomingForStaffAsync(null, pageAskedFor);
+
+        Assert.Equal((pageShown, totalPages, onThePage), (page.Page, page.TotalPages, page.Items.Count));
+    }
+
+    [Fact(DisplayName = "TC-11-17 The pending count: only pending bookings from today onwards")]
+    [Trait("Technique", "Equivalence partitioning")]
+    public async Task PendingCount()
+    {
+        await AddReservationAsync(Alice, 1, Yesterday, Dinner);                                  // passed
+        await AddReservationAsync(Alice, 2, Today, Dinner);                                      // counted
+        await AddReservationAsync(Bob, 3, Tomorrow.AddDays(6), Lunch);                           // counted
+        await AddReservationAsync(Bob, 4, Tomorrow, Lunch, ReservationStatus.Confirmed);         // already confirmed
+        await AddReservationAsync(Alice, 5, Tomorrow, Lunch, ReservationStatus.Cancelled);       // cancelled
+
+        Assert.Equal(2, await NewReservationService().CountPendingAsync(Today));
+    }
 }

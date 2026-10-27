@@ -1,0 +1,51 @@
+@* One booking on the staff lists, with its status buttons and Edit. Used by the day view and Upcoming:
+   <partial name="_StaffReservationRow" model="row" view-data="..." />. ViewData:
+   "ShowTime" (bool): show the time in the row, when the group heading is a date instead of a seating;
+   "RouteValues" (Dictionary<string, string>): the list's address values, so a button brings staff back to the same view;
+   "EditFrom" (string?): passed to the edit page as "from", so saving there comes back to this list. *@
+@model IndexModel.Row
+@{
+    var r = Model.Reservation;
+    var showTime = ViewData["ShowTime"] as bool? ?? false;
+    var routeValues = ViewData["RouteValues"] as Dictionary<string, string> ?? new();
+    var editFrom = ViewData["EditFrom"] as string;
+}
+<li class="rr-list__item @(r.Status == ReservationStatus.Pending ? "is-attention" : null)">
+    <div class="rr-tableno">
+        <span class="rr-label">Table</span>
+        <span class="rr-tableno__number">@r.TableId</span>
+    </div>
+    <div class="rr-list__main">
+        <div class="fw-semibold">
+            @if (showTime)
+            {
+                @(ReservationFormatter.Time(r.TimeSlot) + " · ")
+            }
+            @ReservationFormatter.PartySize(r.PartySize) · @ReservationFormatter.Customer(r.CustomerUserId)
+        </div>
+        <span class="rr-ref">@ReservationFormatter.Reference(r.ReservationId)</span>
+        @if (r.SpecialRequest is not null)
+        {
+            <p class="small text-muted mt-1 mb-0">@r.SpecialRequest</p>
+        }
+    </div>
+    <span class="@ReservationFormatter.StatusBadge(r.Status)">@ReservationFormatter.StatusLabel(r.Status)</span>
+    <div class="rr-list__actions">
+        @foreach (var next in Model.NextStatuses)
+        {
+            <form method="post" asp-page-handler="ChangeStatus" asp-all-route-data="routeValues">
+                <input type="hidden" name="id" value="@r.ReservationId" />
+                <input type="hidden" name="newStatus" value="@next" />
+                <input type="hidden" name="rowVersion" value="@Convert.ToBase64String(r.RowVersion)" />
+                <button type="submit" class="btn btn-sm @ReservationFormatter.StatusActionButton(next)"
+                        onclick="@(next == ReservationStatus.Cancelled ? "return confirm('Cancel this reservation?');" : null)">
+                    @ReservationFormatter.StatusAction(next)
+                </button>
+            </form>
+        }
+        @if (Model.CanEdit)
+        {
+            <a asp-page="Edit" asp-route-id="@r.ReservationId" asp-route-from="@editFrom" class="btn btn-sm btn-outline-secondary">Edit</a>
+        }
+    </div>
+</li>
