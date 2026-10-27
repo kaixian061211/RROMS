@@ -45,6 +45,34 @@ else
                         @Model.TypeLabel(notification.Type)
                     </span>
 
+                    @if (notification.OrderId is int orderId)
+                {
+                    <div class="mt-2">
+                        <a asp-page="/Tracking/Index"
+                           asp-route-orderId="@orderId">
+                            Track order
+                        </a>
+                    </div>
+                }
+                else if (notification.ReservationId is int reservationId)
+                {
+                    <div class="mt-2">
+                        <a asp-page="/Tracking/Index"
+                           asp-route-reservationId="@reservationId">
+                            Track reservation
+                        </a>
+                    </div>
+                }
+                else if (notification.PaymentId is int paymentId)
+                {
+                    <div class="mt-2">
+                        <a asp-page="/Tracking/Index"
+                           asp-route-paymentId="@paymentId">
+                            Track payment
+                        </a>
+                    </div>
+                }
+
                     @if (!notification.IsRead)
                     {
                         <span class="badge text-bg-primary">Unread</span>

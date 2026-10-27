@@ -1,0 +1,115 @@
+@page
+@model RROMS.Web.Pages.Tracking.IndexModel
+@using RROMS.Web.Models.OrdersAndReservations
+@using RROMS.Web.Models.Payments
+
+@{
+    ViewData["Title"] = "Track status";
+}
+
+<h1 class="h3 mb-3">Track status</h1>
+
+@if (Model.TrackedOrder is { } order)
+{
+    <section class="card mb-3">
+        <div class="card-body">
+            <h2 class="h5">
+                Order @OrderFormatter.Reference(order.OrderId)
+            </h2>
+
+            <p>
+                Status:
+                <span class="badge @OrderFormatter.StatusBadge(order.Status)">
+                    @OrderFormatter.StatusLabel(order.Status)
+                </span>
+            </p>
+
+            <p>@OrderFormatter.Table(order.TableId)</p>
+
+            <a class="btn btn-sm btn-outline-primary"
+               asp-page="/Orders/Details"
+               asp-route-id="@order.OrderId">
+                View order
+            </a>
+        </div>
+    </section>
+
+    <section class="card mb-3">
+        <div class="card-body">
+            <h2 class="h5">Payment</h2>
+
+            @if (Model.TrackedPayment is { } payment)
+            {
+                <p>
+                    Status:
+                    <span class="badge @PaymentFormatter.StatusBadge(payment.PaymentStatus)">
+                        @PaymentFormatter.StatusLabel(payment.PaymentStatus)
+                    </span>
+                </p>
+
+                <p class="mb-1">
+                    Amount: @PaymentFormatter.Money(payment.Amount)
+                </p>
+
+                <p>
+                    Method: @PaymentFormatter.MethodLabel(payment.PaymentMethod)
+                </p>
+
+                @if (payment.PaymentStatus is PaymentStatus.Paid or PaymentStatus.Refunded)
+                {
+                    <a class="btn btn-sm btn-outline-primary"
+                       asp-page="/Payments/Receipt"
+                       asp-route-id="@payment.PaymentId">
+                        Download receipt
+                    </a>
+                }
+            }
+            else
+            {
+                <p class="mb-0">
+                    No payment has been started for this order.
+                </p>
+            }
+        </div>
+    </section>
+}
+
+@if (Model.TrackedReservation is { } reservation)
+{
+    <section class="card mb-3">
+        <div class="card-body">
+            <h2 class="h5">
+                Reservation @ReservationFormatter.Reference(reservation.ReservationId)
+            </h2>
+
+            <p>
+                Status:
+                <span class="badge @ReservationFormatter.StatusBadge(reservation.Status)">
+                    @ReservationFormatter.StatusLabel(reservation.Status)
+                </span>
+            </p>
+
+            <p class="mb-1">
+                @ReservationFormatter.When(reservation.ReservationDate, reservation.TimeSlot)
+            </p>
+
+            <p class="mb-1">
+                @ReservationFormatter.Table(reservation.TableId)
+            </p>
+
+            <p>
+                @ReservationFormatter.PartySize(reservation.PartySize)
+            </p>
+
+            <a class="btn btn-sm btn-outline-primary"
+               asp-page="/Reservations/Confirmation"
+               asp-route-id="@reservation.ReservationId">
+                View reservation
+            </a>
+        </div>
+    </section>
+}
+
+<a class="btn btn-outline-secondary" asp-page="/Notifications/Index">
+    Back to notifications
+</a>
