@@ -33,7 +33,8 @@ public interface IOrderService
 
     /// <summary>
     /// Moves an order on. Only pending → preparing → ready → served → completed and pending → cancelled
-    /// are allowed, and a paid order can't be cancelled. rowVersion is what the staff member's page loaded.
+    /// are allowed. An order can't be cancelled while its payment is paid or pending, and can only be completed once
+    /// it's paid (or was paid and refunded). rowVersion is what the staff member's page loaded.
     /// </summary>
     Task<OrderResult> ChangeStatusAsync(int orderId, string newStatus, byte[] rowVersion);
 }
