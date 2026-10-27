@@ -150,7 +150,7 @@ public class StaffReservationTests : DatabaseTest
         Assert.All(new[] { editPage, edit, status }, result => Assert.Equal("Reservation not found.", result.ErrorMessage));
     }
 
-    [Fact(DisplayName = "TC-11-15 Upcoming: bookings from today onwards by date, time then table, without yesterday's; the status filter works")]
+    [Fact(DisplayName = "TC-11-24 Upcoming: bookings from today onwards by date, time then table, without yesterday's; the status filter works")]
     [Trait("Technique", "Equivalence partitioning")]
     public async Task UpcomingList()
     {
@@ -171,7 +171,7 @@ public class StaffReservationTests : DatabaseTest
         Assert.Equal(new[] { tomorrowDinner.ReservationId }, confirmed.Items.Select(r => r.ReservationId));
     }
 
-    [Theory(DisplayName = "TC-11-16 Upcoming in pages of 25: 26 bookings make 2 pages, and a page number outside the list gives the first or last page")]
+    [Theory(DisplayName = "TC-11-25 Upcoming in pages of 25: 26 bookings make 2 pages, and a page number outside the list gives the first or last page")]
     [Trait("Technique", "Boundary value analysis")]
     [InlineData(0, 1, 1, 1, 0)]
     [InlineData(25, 1, 1, 1, 25)]
@@ -190,7 +190,7 @@ public class StaffReservationTests : DatabaseTest
         Assert.Equal((pageShown, totalPages, onThePage), (page.Page, page.TotalPages, page.Items.Count));
     }
 
-    [Fact(DisplayName = "TC-11-17 The pending count: only pending bookings from today onwards")]
+    [Fact(DisplayName = "TC-11-26 The pending count: only pending bookings from today onwards")]
     [Trait("Technique", "Equivalence partitioning")]
     public async Task PendingCount()
     {

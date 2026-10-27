@@ -98,7 +98,7 @@ public class StaffReservationPageTests : PageTest
 
     private const string Upcoming = "/Reservations/Manage/Upcoming";
 
-    [Fact(DisplayName = "TC-11-18 Staff confirm next week's booking from Upcoming: the tab counts it, and after Confirm it leaves the Pending list")]
+    [Fact(DisplayName = "TC-11-27 Staff confirm next week's booking from Upcoming: the tab counts it, and after Confirm it leaves the Pending list")]
     [Trait("Technique", "Use case")]
     public async Task ConfirmFromUpcoming()
     {
@@ -119,7 +119,7 @@ public class StaffReservationPageTests : PageTest
         Assert.Equal(ReservationStatus.Confirmed, await SavedStatusAsync(id));
     }
 
-    [Fact(DisplayName = "TC-11-19 Staff edit a booking from Upcoming: Back and Save both return to Upcoming")]
+    [Fact(DisplayName = "TC-11-28 Staff edit a booking from Upcoming: Back and Save both return to Upcoming")]
     [Trait("Technique", "Use case")]
     public async Task EditFromUpcoming()
     {
