@@ -28,12 +28,14 @@ public class OrderService : IOrderService
     private readonly AppDbContext _db;
     private readonly IMenuItemLookup _menu;
     private readonly IPaymentQueries _payments;
+    private readonly IRestaurantLookup _restaurant;
 
-    public OrderService(AppDbContext db, IMenuItemLookup menu, IPaymentQueries payments)
+    public OrderService(AppDbContext db, IMenuItemLookup menu, IPaymentQueries payments, IRestaurantLookup restaurant)
     {
         _db = db;
         _menu = menu;
         _payments = payments;
+        _restaurant = restaurant;
     }
 
     // AppDbContext picks up Order through OrderConfiguration, so it needs no DbSet for it.
@@ -44,10 +46,15 @@ public class OrderService : IOrderService
     public async Task<IReadOnlyList<MenuItemInfo>> GetMenuAsync() =>
         (await _menu.GetAllAsync()).Where(menuItem => menuItem.IsAvailable).ToList();
 
+    public Task<IReadOnlyDictionary<int, TableInfo>> GetTablesAsync() => _restaurant.GetTablesAsync();
+
     public async Task<OrderResult> CreateAsync(int customerUserId, OrderInput input)
     {
-        // TODO: check against the real tables once the RestaurantTable table exists.
-        if (input.TableId is not int tableId || !TemporaryTables.Exists(tableId))
+        if (!await _restaurant.IsAcceptingOrdersAsync())
+            return OrderResult.Failure("Sorry, we're not taking orders right now. Please ask a member of staff.");
+        // A retired table can't take new orders.
+        var tables = await _restaurant.GetTablesAsync();
+        if (input.TableId is not int tableId || !tables.TryGetValue(tableId, out var table) || !table.IsActive)
             return OrderResult.Failure("Please choose your table.");
         if (input.Items.Any(line => line.Quantity < 0))
             return OrderResult.Failure("Quantities can't be negative.");
@@ -96,16 +103,35 @@ public class OrderService : IOrderService
             return null;
 
         var menuItems = await _menu.GetByIdsAsync(order.Items.Select(item => item.MenuItemId));
-        return new OrderDetails(order, ToLines(order, menuItems));
+        var payment = await _payments.GetByOrderAsync(order.OrderId);
+        return new OrderDetails(order, ToLines(order, menuItems), payment, CanPay(order, payment));
     }
 
-    public Task<List<Order>> GetForCustomerAsync(int customerUserId) =>
-        Orders.AsNoTracking()
+    public async Task<List<OrderDetails>> GetForCustomerAsync(int customerUserId)
+    {
+        var orders = await Orders.AsNoTracking()
             .Include(o => o.Items)
             .Where(o => o.CustomerUserId == customerUserId)
             .OrderByDescending(o => o.CreatedAt)
             .ThenByDescending(o => o.OrderId)
             .ToListAsync();
+        var menuItems = await _menu.GetByIdsAsync(orders.SelectMany(o => o.Items).Select(item => item.MenuItemId));
+        var payments = await _payments.GetByOrdersAsync(orders.Select(o => o.OrderId));
+
+        return orders.Select(order =>
+        {
+            payments.TryGetValue(order.OrderId, out var payment);
+            return new OrderDetails(order, ToLines(order, menuItems), payment, CanPay(order, payment));
+        }).ToList();
+    }
+
+    /// <summary>
+    /// A customer can go to payment unless the order is cancelled or its payment is already paid or refunded.
+    /// A pending payment can be continued and a failed one tried again.
+    /// </summary>
+    private static bool CanPay(Order order, PaymentDetails? payment) =>
+        order.Status != OrderStatus.Cancelled
+        && payment?.Status is not (PaymentStatus.Paid or PaymentStatus.Refunded);
 
     // Staff actions
 
@@ -186,7 +212,9 @@ public class OrderService : IOrderService
             return payment.IsAwaitingCounter
                 ? "This order is waiting to be paid at the counter. Cancel that payment under Counter payments first, then cancel the order."
                 : "The customer is paying for this order online. Wait until the payment finishes or runs out, then try again.";
-        // TODO: agree with the payment module whether an order must be paid before it can be marked completed.
+        // An order is only finished once it's been paid. A refunded payment was paid too, so its order can still be closed.
+        if (newStatus == OrderStatus.Completed && payment?.Status is not (PaymentStatus.Paid or PaymentStatus.Refunded))
+            return "This order hasn't been paid yet. Take the payment before marking it as completed.";
         return null;
     }
 

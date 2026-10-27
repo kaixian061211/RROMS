@@ -28,14 +28,20 @@
                     @* Choice tiles: radio buttons drawn as tiles (see /Dev/StyleGuide). *@
                     <fieldset class="mb-4">
                         <legend class="form-label fs-6">@Html.DisplayNameFor(m => m.Input.TableId)</legend>
-                        <div class="rr-tiles">
-                            @foreach (var tableId in TemporaryTables.TableIds)
-                            {
-                                <input type="radio" class="btn-check" id="table-@tableId" name="Input.TableId" value="@tableId"
-                                       checked="@(tableId == Model.Input.TableId)" required />
-                                <label class="rr-tile" for="table-@tableId">@tableId</label>
-                            }
-                        </div>
+                        @foreach (var area in ReservationFormatter.TablesByArea(Model.Tables))
+                        {
+                            <div class="rr-tile-group">
+                                <span class="rr-label mb-2">@area.Key</span>
+                                <div class="rr-tiles">
+                                    @foreach (var table in area)
+                                    {
+                                        <input type="radio" class="btn-check" id="table-@table.TableId" name="Input.TableId" value="@table.TableId"
+                                               checked="@(table.TableId == Model.Input.TableId)" required />
+                                        <label class="rr-tile" for="table-@table.TableId">@table.TableNumber</label>
+                                    }
+                                </div>
+                            </div>
+                        }
                     </fieldset>
                         @{
                             var groupedMenu = Model.Menu

@@ -1,0 +1,12 @@
+@* Switches between the day's list and Upcoming. The model is how many pending bookings from today
+   onwards are still waiting to be confirmed. *@
+@model int
+@{
+    var onUpcoming = ViewContext.RouteData.Values["page"] as string == "/Reservations/Manage/Upcoming";
+}
+<nav class="nav nav-underline mb-3" aria-label="View">
+    <a asp-page="Index" class="nav-link @(onUpcoming ? null : "active")" aria-current="@(onUpcoming ? null : "page")">Day</a>
+    <a asp-page="Upcoming" class="nav-link @(onUpcoming ? "active" : null)" aria-current="@(onUpcoming ? "page" : null)">
+        Upcoming <span class="rr-count">@Model pending</span>
+    </a>
+</nav>
