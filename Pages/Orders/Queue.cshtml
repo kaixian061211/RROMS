@@ -97,6 +97,11 @@
                                     }
                                 </div>
                             }
+                            else if (order.Status == OrderStatus.Served)
+                            {
+                                @* Completed needs the payment first (OrderService.CheckStatusChange). *@
+                                <p class="small text-muted mb-0">Take the payment to complete this order.</p>
+                            }
                         </article>
                     }
                 </div>

@@ -205,7 +205,9 @@ public class OrderService : IOrderService
             return payment.IsAwaitingCounter
                 ? "This order is waiting to be paid at the counter. Cancel that payment under Counter payments first, then cancel the order."
                 : "The customer is paying for this order online. Wait until the payment finishes or runs out, then try again.";
-        // TODO: agree with the payment module whether an order must be paid before it can be marked completed.
+        // An order is only finished once it's been paid. A refunded payment was paid too, so its order can still be closed.
+        if (newStatus == OrderStatus.Completed && payment?.Status is not (PaymentStatus.Paid or PaymentStatus.Refunded))
+            return "This order hasn't been paid yet. Take the payment before marking it as completed.";
         return null;
     }
 

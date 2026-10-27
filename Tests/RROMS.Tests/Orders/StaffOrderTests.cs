@@ -26,6 +26,19 @@ public class StaffOrderTests : DatabaseTest
         return order;
     }
 
+    /// <summary>Saves a payment for the order straight to the database, in any state.</summary>
+    private async Task AddPaymentAsync(int orderId, string status, string method)
+    {
+        var paidAt = status is PaymentStatus.Paid or PaymentStatus.Refunded ? DateTime.Now : (DateTime?)null;
+        var db = NewContext();
+        db.Payments.Add(new Payment
+        {
+            OrderId = orderId, Amount = 3.80m, PaymentMethod = method, PaymentStatus = status,
+            CreatedAt = DateTime.Now, PaidAt = paidAt, RefundedAt = status == PaymentStatus.Refunded ? DateTime.Now : null
+        });
+        await db.SaveChangesAsync();
+    }
+
     private Task<Order> ReloadAsync(int orderId) =>
         NewContext().Set<Order>().AsNoTracking().SingleAsync(o => o.OrderId == orderId);
 
@@ -72,6 +85,8 @@ public class StaffOrderTests : DatabaseTest
 
         foreach (var (next, offeredAfter) in steps)
         {
+            if (next == OrderStatus.Served)
+                await AddPaymentAsync(order.OrderId, PaymentStatus.Paid, PaymentMethod.Cash);   // paid while being served
             var result = await MoveAsync(order.OrderId, next);
 
             Assert.True(result.Succeeded, result.ErrorMessage);
@@ -260,16 +275,7 @@ public class StaffOrderTests : DatabaseTest
     {
         var order = await AddOrderAsync();
         if (status is not null)
-        {
-            var paidAt = status is PaymentStatus.Paid or PaymentStatus.Refunded ? DateTime.Now : (DateTime?)null;
-            var db = NewContext();
-            db.Payments.Add(new Payment
-            {
-                OrderId = order.OrderId, Amount = 3.80m, PaymentMethod = method!, PaymentStatus = status,
-                CreatedAt = DateTime.Now, PaidAt = paidAt, RefundedAt = status == PaymentStatus.Refunded ? DateTime.Now : null
-            });
-            await db.SaveChangesAsync();
-        }
+            await AddPaymentAsync(order.OrderId, status, method!);
 
         var offered = (await FindInQueueAsync(order.OrderId))!.AllowedStatusChanges;
         var result = await MoveAsync(order.OrderId, OrderStatus.Cancelled);
@@ -277,5 +283,27 @@ public class StaffOrderTests : DatabaseTest
         Assert.Equal(expectedError, result.ErrorMessage);
         Assert.Equal(expectedError is null, offered.Contains(OrderStatus.Cancelled));   // the queue offers Cancel only when it would work
         Assert.Equal(expectedError is null ? OrderStatus.Cancelled : OrderStatus.Pending, (await ReloadAsync(order.OrderId)).Status);
+    }
+
+    [Theory(DisplayName = "TC-17-29 Complete a served order for each payment state: only once it's paid (or the payment was refunded)")]
+    [Trait("Technique", "Decision table")]
+    [InlineData(null, null, false)]
+    [InlineData(PaymentStatus.Pending, PaymentMethod.PayAtCounter, false)]
+    [InlineData(PaymentStatus.Pending, PaymentMethod.Card, false)]
+    [InlineData(PaymentStatus.Failed, PaymentMethod.Card, false)]
+    [InlineData(PaymentStatus.Paid, PaymentMethod.Cash, true)]
+    [InlineData(PaymentStatus.Refunded, PaymentMethod.Cash, true)]
+    public async Task CompleteForEachPaymentState(string? status, string? method, bool allowed)
+    {
+        var order = await AddOrderAsync(OrderStatus.Served);
+        if (status is not null)
+            await AddPaymentAsync(order.OrderId, status, method!);
+
+        var offered = (await FindInQueueAsync(order.OrderId))!.AllowedStatusChanges;
+        var result = await MoveAsync(order.OrderId, OrderStatus.Completed);
+
+        Assert.Equal(allowed ? null : "This order hasn't been paid yet. Take the payment before marking it as completed.", result.ErrorMessage);
+        Assert.Equal(allowed, offered.Contains(OrderStatus.Completed));   // the queue offers Complete only when it would work
+        Assert.Equal(allowed ? OrderStatus.Completed : OrderStatus.Served, (await ReloadAsync(order.OrderId)).Status);
     }
 }
