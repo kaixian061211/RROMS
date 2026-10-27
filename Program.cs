@@ -25,6 +25,8 @@ builder.Services.AddRazorPages(options =>
 
 builder.Services.AddSignalR();
 builder.Services.AddScoped<INotificationRealtime, NotificationRealtime>();
+builder.Services.AddScoped<INotificationEmailSender, NotificationEmailSender>();
+builder.Services.AddScoped<INotificationDelivery, NotificationDelivery>();
 
 // Sign-in cookie, carrying the claims the login module will issue: a numeric NameIdentifier and a Role.
 // TODO: the login module replaces this. Until then only the Development test login signs anyone in.
