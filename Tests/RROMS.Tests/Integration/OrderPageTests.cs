@@ -12,9 +12,6 @@ public class OrderPageTests : PageTest
 {
     public OrderPageTests(TestWebApp app) : base(app) { }
 
-    private const int NasiLemak = 1;
-    private const int TehTarik = 7;
-
     /// <summary>The form changes for choosing a table and some dishes.</summary>
     private static Dictionary<string, string?> Choices(IHtmlDocument orderPage, int table, params (int MenuItemId, int Quantity)[] dishes)
     {
@@ -75,7 +72,7 @@ public class OrderPageTests : PageTest
     {
         var orderPage = await GetPageAsync("/Orders/Create");
         var changes = Choices(orderPage, table: 2, (NasiLemak, 1));
-        changes["Input.Items[8].MenuItemId"] = "6";
+        changes["Input.Items[8].MenuItemId"] = ChickenSatay.ToString();
         changes["Input.Items[8].Quantity"] = "1";
 
         var page = await SubmitAsync(MainForm(orderPage), changes);

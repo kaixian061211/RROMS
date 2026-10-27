@@ -15,6 +15,7 @@ namespace RROMS.Tests;
 public abstract class DatabaseTest : IAsyncLifetime
 {
     // Dates are worked out from the day the tests run, so they never go out of date.
+    protected static DateOnly Today => DateOnly.FromDateTime(DateTime.Today);
     protected static DateOnly Tomorrow => DateOnly.FromDateTime(DateTime.Today.AddDays(1));
     protected static DateOnly Yesterday => DateOnly.FromDateTime(DateTime.Today.AddDays(-1));
     protected static readonly TimeOnly Lunch = new(12, 0);
@@ -81,10 +82,10 @@ public abstract class DatabaseTest : IAsyncLifetime
     protected Task<Reservation> ReloadReservationAsync(int reservationId) =>
         NewContext().Set<Reservation>().AsNoTracking().SingleAsync(r => r.ReservationId == reservationId);
 
-    /// <summary>The real order service, with the temporary menu unless the test passes its own.</summary>
+    /// <summary>The real order service, with the test menu's 9 dishes unless the test passes its own menu.</summary>
     protected OrderService NewOrderService(IMenuItemLookup? menu = null)
     {
         var db = NewContext();
-        return new OrderService(db, menu ?? new TemporaryMenuItemLookup(), new PaymentQueries(db, new PaymentOrderProvider(db)));
+        return new OrderService(db, menu ?? TestMenu.Standard(), new PaymentQueries(db, new PaymentOrderProvider(db)));
     }
 }

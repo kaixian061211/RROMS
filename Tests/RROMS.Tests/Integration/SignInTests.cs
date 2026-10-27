@@ -81,7 +81,7 @@ public class SignInTests : PageTest
         var order = new Order
         {
             CustomerUserId = TestCustomer, TableId = 4, Status = OrderStatus.Pending,
-            Items = { new OrderItem { MenuItemId = 7, Quantity = 1, UnitPrice = 3.80m } }
+            Items = { new OrderItem { MenuItemId = TehTarik, Quantity = 1, UnitPrice = 3.80m } }
         };
         await WithDatabaseAsync(db => { db.Add(order); return db.SaveChangesAsync(); });
         await SignInAsAsync(TestUsers.Staff);

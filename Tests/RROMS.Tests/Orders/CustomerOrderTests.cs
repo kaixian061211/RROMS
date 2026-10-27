@@ -140,7 +140,7 @@ public class CustomerOrderTests : DatabaseTest
     public async Task PriceChangeLater()
     {
         var menu = new TestMenu();
-        menu.Items[50] = new MenuItemInfo(50, "Seasonal Durian Cendol", 10.00m, IsAvailable: true);
+        menu.Items[50] = new MenuItemInfo(50, "Seasonal Durian Cendol", 10.00m, IsAvailable: true, "Desserts");
         var order = (await NewOrderService(menu).CreateAsync(Alice, OrderAt(4, (50, 2)))).Order!;
 
         menu.Items[50] = menu.Items[50] with { Price = 15.00m };
@@ -155,7 +155,7 @@ public class CustomerOrderTests : DatabaseTest
     public async Task DishTakenOffTheMenu()
     {
         var menu = new TestMenu();
-        menu.Items[50] = new MenuItemInfo(50, "Seasonal Durian Cendol", 10.00m, IsAvailable: true);
+        menu.Items[50] = new MenuItemInfo(50, "Seasonal Durian Cendol", 10.00m, IsAvailable: true, "Desserts");
         var order = (await NewOrderService(menu).CreateAsync(Alice, OrderAt(4, (50, 1)))).Order!;
 
         menu.Items.Remove(50);

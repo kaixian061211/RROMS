@@ -2,6 +2,7 @@ using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using RROMS.Web.Data;
 using RROMS.Web.Models.OrdersAndReservations;
+using RROMS.Web.Models.Restaurant;
 
 namespace RROMS.Tests;
 
@@ -52,7 +53,7 @@ public static class TestDatabase
         await EmptyAsync(db);
     }
 
-    /// <summary>Deletes every order, payment and reservation. Checks the database first, every time.</summary>
+    /// <summary>Deletes every order, payment, reservation and menu item. Checks the database first, every time.</summary>
     public static async Task EmptyAsync(AppDbContext db)
     {
         await db.Database.OpenConnectionAsync();
@@ -62,5 +63,7 @@ public static class TestDatabase
         await db.Set<Order>().ExecuteDeleteAsync();
         await db.Payments.ExecuteDeleteAsync();
         await db.Set<Reservation>().ExecuteDeleteAsync();
+        await db.Set<MenuItem>().ExecuteDeleteAsync();
+        await db.Set<MenuCategory>().ExecuteDeleteAsync();
     }
 }

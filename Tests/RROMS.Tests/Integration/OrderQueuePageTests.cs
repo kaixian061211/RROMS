@@ -23,7 +23,7 @@ public class OrderQueuePageTests : PageTest
         var order = new Order
         {
             CustomerUserId = TestCustomer, TableId = 4, Status = OrderStatus.Pending,
-            Items = { new OrderItem { MenuItemId = 7, Quantity = 1, UnitPrice = 3.80m } }
+            Items = { new OrderItem { MenuItemId = TehTarik, Quantity = 1, UnitPrice = 3.80m } }
         };
         await WithDatabaseAsync(db => { db.Add(order); return db.SaveChangesAsync(); });
         return order;
@@ -51,8 +51,8 @@ public class OrderQueuePageTests : PageTest
         await SubmitAsync(MainForm(orderPage), new()
         {
             ["Input.TableId"] = "6",
-            [QuantityField(orderPage, 1)] = "2",   // Nasi Lemak
-            [QuantityField(orderPage, 7)] = "1"    // Teh Tarik
+            [QuantityField(orderPage, NasiLemak)] = "2",
+            [QuantityField(orderPage, TehTarik)] = "1"
         });
         var orderId = await WithDatabaseAsync(db => db.Set<Order>().Select(o => o.OrderId).SingleAsync());
 
