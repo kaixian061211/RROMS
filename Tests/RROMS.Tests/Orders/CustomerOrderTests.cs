@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using RROMS.Web.Models.OrdersAndReservations;
+using RROMS.Web.Models.Payments;
 using RROMS.Web.Services.Payments;
 
 namespace RROMS.Tests.Orders;
@@ -9,7 +10,7 @@ namespace RROMS.Tests.Orders;
 [Trait("Story", "12")]
 public class CustomerOrderTests : DatabaseTest
 {
-    // Dishes on the temporary menu
+    // Dishes on the test menu (TestMenu.Dishes)
     private const int NasiLemak = 1;       // RM 12.90
     private const int CharKwayTeow = 3;    // RM 13.90
     private const int ChickenSatay = 6;    // RM 18.00, not available
@@ -207,7 +208,41 @@ public class CustomerOrderTests : DatabaseTest
 
         var mine = await NewOrderService().GetForCustomerAsync(Alice);
 
-        Assert.Equal(new[] { second.OrderId, first.OrderId }, mine.Select(o => o.OrderId));
-        Assert.Equal(new[] { 13.90m, 12.90m }, mine.Select(o => o.Total));
+        Assert.Equal(new[] { second.OrderId, first.OrderId }, mine.Select(o => o.Order.OrderId));
+        Assert.Equal(new[] { 13.90m, 12.90m }, mine.Select(o => o.Order.Total));
+    }
+
+    [Theory(DisplayName = "TC-12-29 Can the customer still pay? Not for a cancelled order or one already paid or refunded")]
+    [Trait("Technique", "Decision table")]
+    [InlineData(OrderStatus.Cancelled, null, null, false)]
+    [InlineData(OrderStatus.Pending, null, null, true)]
+    [InlineData(OrderStatus.Pending, PaymentStatus.Pending, PaymentMethod.Card, true)]      // paying now: can carry on
+    [InlineData(OrderStatus.Pending, PaymentStatus.Failed, PaymentMethod.Card, true)]       // can try again
+    [InlineData(OrderStatus.Served, PaymentStatus.Paid, PaymentMethod.Cash, false)]
+    [InlineData(OrderStatus.Pending, PaymentStatus.Refunded, PaymentMethod.Cash, false)]
+    public async Task CanPay(string orderStatus, string? paymentStatus, string? method, bool canPay)
+    {
+        var order = (await NewOrderService().CreateAsync(Alice, OrderAt(4, (TehTarik, 1)))).Order!;
+        var db = NewContext();
+        await db.Set<Order>().Where(o => o.OrderId == order.OrderId)
+            .ExecuteUpdateAsync(o => o.SetProperty(x => x.Status, orderStatus));
+        if (paymentStatus is not null)
+        {
+            var paidAt = paymentStatus is PaymentStatus.Paid or PaymentStatus.Refunded ? DateTime.Now : (DateTime?)null;
+            db.Payments.Add(new Payment
+            {
+                OrderId = order.OrderId, Amount = 3.80m, PaymentMethod = method!, PaymentStatus = paymentStatus,
+                CreatedAt = DateTime.Now, PaidAt = paidAt, RefundedAt = paymentStatus == PaymentStatus.Refunded ? DateTime.Now : null
+            });
+            await db.SaveChangesAsync();
+        }
+
+        var details = (await NewOrderService().GetByIdAsync(Alice, order.OrderId))!;
+        var inMyOrders = (await NewOrderService().GetForCustomerAsync(Alice)).Single();
+
+        Assert.Equal(canPay, details.CanPay);
+        Assert.Equal(canPay, inMyOrders.CanPay);
+        Assert.Equal(paymentStatus, details.Payment?.Status);
+        Assert.Equal(paymentStatus, inMyOrders.Payment?.Status);
     }
 }

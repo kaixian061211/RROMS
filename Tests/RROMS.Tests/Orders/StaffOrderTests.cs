@@ -226,7 +226,7 @@ public class StaffOrderTests : DatabaseTest
         await MoveAsync(order.OrderId, OrderStatus.Preparing);
 
         Assert.Equal(OrderStatus.Preparing, (await NewOrderService().GetByIdAsync(Alice, order.OrderId))!.Order.Status);
-        Assert.Equal(OrderStatus.Preparing, (await NewOrderService().GetForCustomerAsync(Alice)).Single().Status);
+        Assert.Equal(OrderStatus.Preparing, (await NewOrderService().GetForCustomerAsync(Alice)).Single().Order.Status);
     }
 
     [Theory(DisplayName = "TC-17-13 The payment shown on the queue for each payment state")]

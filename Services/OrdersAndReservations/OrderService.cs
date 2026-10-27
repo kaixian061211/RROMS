@@ -96,16 +96,35 @@ public class OrderService : IOrderService
             return null;
 
         var menuItems = await _menu.GetByIdsAsync(order.Items.Select(item => item.MenuItemId));
-        return new OrderDetails(order, ToLines(order, menuItems));
+        var payment = await _payments.GetByOrderAsync(order.OrderId);
+        return new OrderDetails(order, ToLines(order, menuItems), payment, CanPay(order, payment));
     }
 
-    public Task<List<Order>> GetForCustomerAsync(int customerUserId) =>
-        Orders.AsNoTracking()
+    public async Task<List<OrderDetails>> GetForCustomerAsync(int customerUserId)
+    {
+        var orders = await Orders.AsNoTracking()
             .Include(o => o.Items)
             .Where(o => o.CustomerUserId == customerUserId)
             .OrderByDescending(o => o.CreatedAt)
             .ThenByDescending(o => o.OrderId)
             .ToListAsync();
+        var menuItems = await _menu.GetByIdsAsync(orders.SelectMany(o => o.Items).Select(item => item.MenuItemId));
+        var payments = await _payments.GetByOrdersAsync(orders.Select(o => o.OrderId));
+
+        return orders.Select(order =>
+        {
+            payments.TryGetValue(order.OrderId, out var payment);
+            return new OrderDetails(order, ToLines(order, menuItems), payment, CanPay(order, payment));
+        }).ToList();
+    }
+
+    /// <summary>
+    /// A customer can go to payment unless the order is cancelled or its payment is already paid or refunded.
+    /// A pending payment can be continued and a failed one tried again.
+    /// </summary>
+    private static bool CanPay(Order order, PaymentDetails? payment) =>
+        order.Status != OrderStatus.Cancelled
+        && payment?.Status is not (PaymentStatus.Paid or PaymentStatus.Refunded);
 
     // Staff actions
 

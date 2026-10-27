@@ -18,7 +18,7 @@ public class IndexModel : PageModel
         _orders = orders;
     }
 
-    public List<Order> Orders { get; private set; } = new();
+    public List<OrderDetails> Orders { get; private set; } = new();
 
     public async Task<IActionResult> OnGetAsync()
     {

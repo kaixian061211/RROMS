@@ -17,8 +17,8 @@ public interface IOrderService
     /// <summary>The order with its items and their menu names. Null when it doesn't exist or belongs to another customer.</summary>
     Task<OrderDetails?> GetByIdAsync(int customerUserId, int orderId);
 
-    /// <summary>The customer's orders with their items (so totals can be shown), newest first.</summary>
-    Task<List<Order>> GetForCustomerAsync(int customerUserId);
+    /// <summary>The customer's orders with their items and payments, newest first.</summary>
+    Task<List<OrderDetails>> GetForCustomerAsync(int customerUserId);
 
     // Staff actions
 
