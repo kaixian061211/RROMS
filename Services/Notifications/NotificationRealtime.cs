@@ -44,4 +44,32 @@ public sealed class NotificationRealtime : INotificationRealtime
                 notification.NotificationId);
         }
     }
+
+    public async Task PublishReadStateChangedAsync(
+        int userId,
+        CancellationToken ct = default)
+    {
+        if (userId <= 0)
+            throw new ArgumentOutOfRangeException(nameof(userId));
+
+        if (System.Transactions.Transaction.Current is not null)
+        {
+            throw new InvalidOperationException(
+                "Publish read changes after the database transaction has committed.");
+        }
+
+        try
+        {
+            await _hub.Clients
+                .Group(NotificationHub.GroupName(userId))
+                .SendAsync("NotificationReadStateChanged", ct);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(
+                ex,
+                "Could not synchronize notification read state for user {UserId}.",
+                userId);
+        }
+    }
 }

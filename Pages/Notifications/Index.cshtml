@@ -22,21 +22,6 @@
     </form>
 }
 
-<div class="mb-3">
-    <button id="web-push-enable"
-            type="button"
-            class="btn btn-outline-primary"
-            disabled>
-        Enable browser notifications
-    </button>
-
-    <p id="web-push-status"
-       class="small text-body-secondary mt-2"
-       role="status">
-        Browser notifications are not available yet.
-    </p>
-</div>
-
 @if (Model.Notifications.Count == 0)
 {
     <div class="alert alert-info"> @(Model.BeforeId.HasValue? "There are no older notifications on this page." : "You have no notifications yet.")

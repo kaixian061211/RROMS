@@ -2,6 +2,7 @@ using AngleSharp.Dom;
 using AngleSharp.Html.Dom;
 using Microsoft.EntityFrameworkCore;
 using RROMS.Web.Models.Dev;
+using RROMS.Web.Models.Notifications;
 using RROMS.Web.Models.OrdersAndReservations;
 
 namespace RROMS.Tests.Integration;
@@ -58,6 +59,13 @@ public class StaffReservationPageTests : PageTest
         Assert.Contains($"{ReservationFormatter.Reference(id)} is now confirmed.", TextOf(afterConfirm));
         Assert.Equal(new[] { "Cancel" }, ButtonsFor(afterConfirm, id));
         Assert.Equal(ReservationStatus.Confirmed, await SavedStatusAsync(id));
+        var notifications = await WithDatabaseAsync(db =>
+            db.Notifications.Where(n => n.ReservationId == id)
+                .OrderBy(n => n.NotificationId)
+                .ToListAsync());
+        Assert.Equal(new[] { "Reservation request received", "Reservation status updated" },
+            notifications.Select(n => n.Title));
+        Assert.Contains("confirmed", notifications[1].Message);
         await SignInAsAsync(TestUsers.CustomerA);
         Assert.Contains("Confirmed", TextOf(await GetPageAsync("/Reservations")));
     }

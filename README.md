@@ -58,6 +58,18 @@ Expiry: Any future date
 CVC:    Any three digits
 
 
+## Order and reservation notifications
+
+Order placement and status changes create in-app notifications and are delivered
+in real time and through Web Push when the customer has a push subscription.
+Order notifications do not send email.
+
+Reservation requests and customer-triggered reservation status changes also send
+email to the signed-in customer's `ClaimTypes.Email` claim. Staff-triggered
+reservation status changes are in-app, real-time, and Web Push only; the app
+does not store customer email addresses on reservations. The authentication
+provider must issue an email claim for customer email notifications to work.
+
 3. Shared SMTP email configuration
 
 The `Smtp` section in `appsettings.json` holds the shared sender configuration:

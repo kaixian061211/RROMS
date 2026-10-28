@@ -15,15 +15,27 @@ public interface IReservationService
 
     // Customer actions
 
-    Task<ReservationResult> CreateAsync(int customerUserId, ReservationInput input);
+    Task<ReservationResult> CreateAsync(
+        int customerUserId,
+        ReservationInput input,
+        string? customerEmail = null);
 
     /// <summary>
     /// rowVersion is the value the customer's page loaded, so a change saved by someone else in between is caught.
     /// If a confirmed booking's date, time, table or party size changes, it goes back to pending.
     /// </summary>
-    Task<ReservationResult> ModifyAsync(int customerUserId, int reservationId, ReservationInput input, byte[] rowVersion);
+    Task<ReservationResult> ModifyAsync(
+        int customerUserId,
+        int reservationId,
+        ReservationInput input,
+        byte[] rowVersion,
+        string? customerEmail = null);
 
-    Task<ReservationResult> CancelAsync(int customerUserId, int reservationId, byte[] rowVersion);
+    Task<ReservationResult> CancelAsync(
+        int customerUserId,
+        int reservationId,
+        byte[] rowVersion,
+        string? customerEmail = null);
 
     /// <summary>The customer's pending and confirmed reservations that haven't started yet, soonest first.</summary>
     Task<List<Reservation>> GetUpcomingAsync(int customerUserId);

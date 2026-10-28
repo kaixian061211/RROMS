@@ -8,6 +8,7 @@ using RROMS.Web.Services.Payments.Notifications;
 using RROMS.Web.Services.OrdersAndReservations;
 using RROMS.Web.Services.Payments.Receipts;
 using RROMS.Web.Services.Notifications;
+using RROMS.Web.Services.Tracking;
 using RROMS.Web.Services.Restaurant;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -51,6 +52,7 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
     });
 
 builder.Services.AddScoped<IRestaurantLookup, RestaurantLookup>();
+builder.Services.AddScoped<TrackingQueries>();
 builder.Services.AddScoped<IReservationService, ReservationService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
 builder.Services.AddScoped<IMenuItemLookup, MenuItemLookup>();

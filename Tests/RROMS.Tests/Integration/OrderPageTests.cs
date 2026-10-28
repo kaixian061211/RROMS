@@ -3,6 +3,7 @@ using AngleSharp.Html.Dom;
 using Microsoft.EntityFrameworkCore;
 using RROMS.Web.Models.OrdersAndReservations;
 using RROMS.Web.Models.Payments;
+using RROMS.Web.Models.Notifications;
 
 namespace RROMS.Tests.Integration;
 
@@ -65,6 +66,11 @@ public class OrderPageTests : PageTest
         Assert.Contains("RM 37.20", shown);
         Assert.Equal(37.20m, saved.Total);
         Assert.Equal((TestCustomer, OrderStatus.Pending), (saved.CustomerUserId, saved.Status));
+        var notification = await WithDatabaseAsync(db => db.Notifications.SingleAsync());
+        Assert.Equal(TestCustomer, notification.UserId);
+        Assert.Equal(NotificationTypes.Order, notification.Type);
+        Assert.Equal(saved.OrderId, notification.OrderId);
+        Assert.Equal("Order placed", notification.Title);
     }
 
     [Fact(DisplayName = "TC-12-18 Forcing the unavailable Chicken Satay into the form: blocked by name, and the form keeps the customer's choices")]

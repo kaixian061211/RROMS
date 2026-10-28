@@ -198,7 +198,7 @@ internal static class CounterPaymentTestServices
         var settings = Options.Create(new StripeSettings());
         return new PaymentService(
             db,
-            new NotificationService(db),
+            new NotificationService(db, new RecordingRealtime()),
             delivery,
             new StripeGateway(settings, NullLogger<StripeGateway>.Instance),
             orders,
@@ -206,6 +206,17 @@ internal static class CounterPaymentTestServices
             [],
             NullLogger<PaymentService>.Instance,
             settings);
+    }
+
+    private sealed class RecordingRealtime : INotificationRealtime
+    {
+        public Task PublishAsync(
+            Notification notification,
+            CancellationToken ct = default) => Task.CompletedTask;
+
+        public Task PublishReadStateChangedAsync(
+            int userId,
+            CancellationToken ct = default) => Task.CompletedTask;
     }
 
     internal sealed class RecordingDelivery(Func<int, Task>? onDelivery = null) : INotificationDelivery

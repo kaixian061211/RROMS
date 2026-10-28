@@ -109,6 +109,14 @@
         window.location.reload();
     });
 
+    connection.on("NotificationReadStateChanged", () => {
+        void updateUnreadCount();
+
+        if (root.dataset.inboxPage === "true") {
+            refreshPageSoon();
+        }
+    });
+
     connection.onreconnected(() => {
         void updateUnreadCount();
         showTrackingUpdates();

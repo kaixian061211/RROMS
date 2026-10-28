@@ -5,13 +5,17 @@ using RROMS.Web.Models.OrdersAndReservations;
 
 namespace RROMS.Web.Services.Notifications;
 
-public class NotificationService : INotificationService
-{
+    public class NotificationService : INotificationService
+    {
     private readonly AppDbContext _db;
+    private readonly INotificationRealtime _realtime;
 
-    public NotificationService(AppDbContext db)
+    public NotificationService(
+        AppDbContext db,
+        INotificationRealtime realtime)
     {
         _db = db;
+        _realtime = realtime;
     }
 
     public async Task<Notification> StageAsync(
@@ -114,27 +118,59 @@ public class NotificationService : INotificationService
         if (notificationId <= 0)
             throw new ArgumentOutOfRangeException(nameof(notificationId));
 
+        CheckReadTransaction();
+
         var updated = await _db.Notifications
-            .Where(n => n.NotificationId == notificationId
-                && n.UserId == userId)
+            .Where(n =>
+                n.NotificationId == notificationId
+                && n.UserId == userId
+                && !n.IsRead)
             .ExecuteUpdateAsync(
-                s => s.SetProperty(n => n.IsRead, true),
+                setters => setters.SetProperty(n => n.IsRead, true),
                 ct);
 
-        return updated > 0;
+        if (updated == 0)
+        {
+            return await _db.Notifications.AnyAsync(
+                n => n.NotificationId == notificationId
+                    && n.UserId == userId,
+                ct);
+        }
+
+        await _realtime.PublishReadStateChangedAsync(userId, ct);
+
+        return true;
     }
 
-    public Task<int> MarkAllAsReadAsync(
+    public async Task<int> MarkAllAsReadAsync(
         int userId,
         CancellationToken ct = default)
     {
         CheckUserId(userId);
+        CheckReadTransaction();
 
-        return _db.Notifications
+        var updated = await _db.Notifications
             .Where(n => n.UserId == userId && !n.IsRead)
             .ExecuteUpdateAsync(
-                s => s.SetProperty(n => n.IsRead, true),
+                setters => setters.SetProperty(n => n.IsRead, true),
                 ct);
+
+        if (updated > 0)
+        {
+            await _realtime.PublishReadStateChangedAsync(userId, ct);
+        }
+
+        return updated;
+    }
+
+    private void CheckReadTransaction()
+    {
+        if (_db.Database.CurrentTransaction is not null
+            || System.Transactions.Transaction.Current is not null)
+        {
+            throw new InvalidOperationException(
+                "Read updates must run outside an active database transaction.");
+        }
     }
 
     private async Task<bool> OwnsRelatedRecordAsync(
