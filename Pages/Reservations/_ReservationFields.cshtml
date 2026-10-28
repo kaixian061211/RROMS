@@ -3,6 +3,10 @@
    stepper, so the page needs wwwroot/js/stepper.js. *@
 @using System.Globalization
 @model ReservationInput
+@{
+    // The page's tables (ViewData["Tables"]); the tiles offer the active ones.
+    var tables = ViewData["Tables"] as IReadOnlyDictionary<int, TableInfo> ?? new Dictionary<int, TableInfo>();
+}
 
 <div class="mb-4">
     <label asp-for="ReservationDate" class="form-label"></label>
@@ -37,15 +41,29 @@
 
 <fieldset class="mb-4">
     <legend class="form-label fs-6">@Html.DisplayNameFor(m => m.TableId)</legend>
-    <div class="rr-tiles">
-        @foreach (var tableId in TemporaryTables.TableIds)
-        {
-            var tileId = $"{Html.IdFor(m => m.TableId)}_{tableId}";
-            <input type="radio" class="btn-check" id="@tileId" name="@Html.NameFor(m => m.TableId)" value="@tableId"
-                   checked="@(tableId == Model.TableId)" required data-msg-required="Please choose a table." />
-            <label class="rr-tile" for="@tileId">@tableId</label>
-        }
-    </div>
+    @foreach (var area in ReservationFormatter.TablesByArea(tables))
+    {
+        <div class="rr-tile-group">
+            <span class="rr-label mb-2">@area.Key</span>
+            <div class="rr-tiles">
+                @foreach (var table in area)
+                {
+                    var tileId = $"{Html.IdFor(m => m.TableId)}_{table.TableId}";
+                    <input type="radio" class="btn-check" id="@tileId" name="@Html.NameFor(m => m.TableId)" value="@table.TableId"
+                           checked="@(table.TableId == Model.TableId)" required data-msg-required="Please choose a table." />
+                    <label class="rr-tile" for="@tileId">
+                        @table.TableNumber
+                        @* The tile's own colour, faded, so it still shows on a chosen (green) tile. *@
+                        <span class="d-block small text-nowrap opacity-75">@ReservationFormatter.Seats(table.Capacity)</span>
+                    </label>
+                }
+            </div>
+        </div>
+    }
+    @if (!tables.Values.Any(t => t.IsActive))
+    {
+        <p class="text-muted mb-0">No tables can be booked right now.</p>
+    }
     <span asp-validation-for="TableId" class="text-danger"></span>
 </fieldset>
 

@@ -2,6 +2,7 @@ using AngleSharp.Dom;
 using AngleSharp.Html.Dom;
 using Microsoft.EntityFrameworkCore;
 using RROMS.Web.Models.Dev;
+using RROMS.Web.Models.Notifications;
 using RROMS.Web.Models.OrdersAndReservations;
 
 namespace RROMS.Tests.Integration;
@@ -21,13 +22,13 @@ public class StaffReservationPageTests : PageTest
     /// A booking made the way a customer makes one: Customer A signs in and uses the booking form, then
     /// staff sign back in.
     /// </summary>
-    private async Task<int> CustomerBooksAsync(int table)
+    private async Task<int> CustomerBooksAsync(int table, DateOnly? date = null)
     {
         await SignInAsAsync(TestUsers.CustomerA);
         var form = MainForm(await GetPageAsync("/Reservations/Create"));
         await SubmitAsync(form, new()
         {
-            ["Input.ReservationDate"] = Tomorrow.ToString("yyyy-MM-dd"),
+            ["Input.ReservationDate"] = (date ?? Tomorrow).ToString("yyyy-MM-dd"),
             ["Input.TimeSlot"] = "19:30",
             ["Input.TableId"] = table.ToString(),
             ["Input.PartySize"] = "2"
@@ -58,6 +59,13 @@ public class StaffReservationPageTests : PageTest
         Assert.Contains($"{ReservationFormatter.Reference(id)} is now confirmed.", TextOf(afterConfirm));
         Assert.Equal(new[] { "Cancel" }, ButtonsFor(afterConfirm, id));
         Assert.Equal(ReservationStatus.Confirmed, await SavedStatusAsync(id));
+        var notifications = await WithDatabaseAsync(db =>
+            db.Notifications.Where(n => n.ReservationId == id)
+                .OrderBy(n => n.NotificationId)
+                .ToListAsync());
+        Assert.Equal(new[] { "Reservation request received", "Reservation status updated" },
+            notifications.Select(n => n.Title));
+        Assert.Contains("confirmed", notifications[1].Message);
         await SignInAsAsync(TestUsers.CustomerA);
         Assert.Contains("Confirmed", TextOf(await GetPageAsync("/Reservations")));
     }
@@ -94,5 +102,45 @@ public class StaffReservationPageTests : PageTest
         Assert.Contains($"{ReservationFormatter.Reference(id)} has been updated.", TextOf(saved));
         Assert.Contains("6 people", TextOf(saved));
         Assert.Equal(ReservationStatus.Confirmed, await SavedStatusAsync(id));
+    }
+
+    private const string Upcoming = "/Reservations/Manage/Upcoming";
+
+    [Fact(DisplayName = "TC-11-27 Staff confirm next week's booking from Upcoming: the tab counts it, and after Confirm it leaves the Pending list")]
+    [Trait("Technique", "Use case")]
+    public async Task ConfirmFromUpcoming()
+    {
+        var id = await CustomerBooksAsync(table: 3, date: Tomorrow.AddDays(6));
+        var dayView = await GetPageAsync("/Reservations/Manage");
+        Assert.Contains("Upcoming 1 pending", TextOf(dayView.QuerySelector("nav[aria-label=View]")!));
+
+        var upcoming = await GetPageAsync(Upcoming);
+        Assert.Contains(ReservationFormatter.LongDate(Tomorrow.AddDays(6)), TextOf(upcoming));
+        var afterConfirm = await SubmitAsync(StatusButton(upcoming, id, "Confirm")!);
+
+        Assert.Contains(Upcoming, afterConfirm.Url);
+        Assert.Contains($"{ReservationFormatter.Reference(id)} is now confirmed.", TextOf(afterConfirm));
+        Assert.Empty(ButtonsFor(afterConfirm, id));
+        Assert.Contains("Nothing waiting to be confirmed.", TextOf(afterConfirm));
+        Assert.Contains("Upcoming 0 pending", TextOf(afterConfirm.QuerySelector("nav[aria-label=View]")!));
+        Assert.Equal(new[] { "Cancel" }, ButtonsFor(await GetPageAsync($"{Upcoming}?status=all"), id));
+        Assert.Equal(ReservationStatus.Confirmed, await SavedStatusAsync(id));
+    }
+
+    [Fact(DisplayName = "TC-11-28 Staff edit a booking from Upcoming: Back and Save both return to Upcoming")]
+    [Trait("Technique", "Use case")]
+    public async Task EditFromUpcoming()
+    {
+        var id = await CustomerBooksAsync(table: 3);
+        var edit = (await GetPageAsync(Upcoming)).QuerySelectorAll<IHtmlAnchorElement>("a")
+            .Single(a => TextOf(a) == "Edit" && a.PathName.EndsWith($"/Edit/{id}"));
+
+        var editPage = await GetPageAsync(edit.Href);
+        var saved = await SubmitAsync(MainForm(editPage), new() { ["Input.PartySize"] = "6" });
+
+        Assert.Equal(Upcoming, editPage.QuerySelectorAll("a").Single(a => TextOf(a) == "Back to reservations").GetAttribute("href"));
+        Assert.Contains(Upcoming, saved.Url);
+        Assert.Contains($"{ReservationFormatter.Reference(id)} has been updated.", TextOf(saved));
+        Assert.Contains("6 people", TextOf(saved));
     }
 }

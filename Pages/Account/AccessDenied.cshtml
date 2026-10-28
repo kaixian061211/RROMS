@@ -1,0 +1,15 @@
+@page
+@model RROMS.Web.Pages.Account.AccessDeniedModel
+@{
+    ViewData["Title"] = "Access denied";
+}
+
+<div class="rr-narrow">
+    <header class="rr-page-header">
+        <div>
+            <h1>Access denied</h1>
+            <p class="rr-lede">Your account does not have permission to open this page.</p>
+        </div>
+    </header>
+    <a asp-page="/Index" class="btn btn-primary">Back to home</a>
+</div>

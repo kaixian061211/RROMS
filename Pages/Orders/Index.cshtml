@@ -29,14 +29,15 @@
     else
     {
         <ul class="list-unstyled d-grid gap-3 mb-0">
-            @foreach (var o in Model.Orders)
+            @foreach (var details in Model.Orders)
             {
+                var o = details.Order;
                 var reference = OrderFormatter.Reference(o.OrderId);
                 <li class="rr-slip">
                     <div class="rr-slip__body">
                         <div>
                             <div class="rr-slip__title">
-                                @OrderFormatter.Table(o.TableId) · @OrderFormatter.ItemCount(o) · <span class="rr-money">@OrderFormatter.Money(o.Total)</span>
+                                @OrderFormatter.Table(o.TableId, Model.Tables) · @OrderFormatter.ItemCount(o) · <span class="rr-money">@OrderFormatter.Money(o.Total)</span>
                             </div>
                             <span class="rr-ref">@reference</span>
                             <span class="small text-muted">· @OrderFormatter.PlacedAt(o.CreatedAt)</span>
@@ -45,10 +46,14 @@
                             <span class="@OrderFormatter.StatusBadge(o.Status)">@OrderFormatter.StatusLabel(o.Status)</span>
                             @* The hidden reference tells a screen reader which order each button is for. *@
                             <div class="d-flex gap-2">
-                                @* A cancelled order has nothing to pay. TODO: also hide it once the order is paid (Session 10). *@
-                                @if (o.Status != OrderStatus.Cancelled)
+                                @* Payment until the order is paid; then its receipt. A cancelled order has neither. *@
+                                @if (details.CanPay)
                                 {
                                     <a asp-page="/Payments/CheckOut" asp-route-orderId="@o.OrderId" class="btn btn-sm btn-outline-primary">Payment<span class="visually-hidden"> for @reference</span></a>
+                                }
+                                else if (details.Payment is { HasReceipt: true } payment)
+                                {
+                                    <a asp-page="/Payments/Receipt" asp-route-id="@payment.PaymentId" class="btn btn-sm btn-outline-secondary">Receipt<span class="visually-hidden"> for @reference</span></a>
                                 }
                                 <a asp-page="Details" asp-route-id="@o.OrderId" class="btn btn-sm btn-outline-secondary">View<span class="visually-hidden"> @reference</span></a>
                             </div>

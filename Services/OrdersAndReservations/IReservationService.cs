@@ -10,17 +10,32 @@ public interface IReservationService
     /// </summary>
     Task<bool> IsSlotFreeAsync(int tableId, DateOnly date, TimeOnly timeSlot, int? ignoreReservationId = null);
 
+    /// <summary>Every restaurant table by id, retired ones too, for showing table numbers. Forms offer only the active ones.</summary>
+    Task<IReadOnlyDictionary<int, TableInfo>> GetTablesAsync();
+
     // Customer actions
 
-    Task<ReservationResult> CreateAsync(int customerUserId, ReservationInput input);
+    Task<ReservationResult> CreateAsync(
+        int customerUserId,
+        ReservationInput input,
+        string? customerEmail = null);
 
     /// <summary>
     /// rowVersion is the value the customer's page loaded, so a change saved by someone else in between is caught.
     /// If a confirmed booking's date, time, table or party size changes, it goes back to pending.
     /// </summary>
-    Task<ReservationResult> ModifyAsync(int customerUserId, int reservationId, ReservationInput input, byte[] rowVersion);
+    Task<ReservationResult> ModifyAsync(
+        int customerUserId,
+        int reservationId,
+        ReservationInput input,
+        byte[] rowVersion,
+        string? customerEmail = null);
 
-    Task<ReservationResult> CancelAsync(int customerUserId, int reservationId, byte[] rowVersion);
+    Task<ReservationResult> CancelAsync(
+        int customerUserId,
+        int reservationId,
+        byte[] rowVersion,
+        string? customerEmail = null);
 
     /// <summary>The customer's pending and confirmed reservations that haven't started yet, soonest first.</summary>
     Task<List<Reservation>> GetUpcomingAsync(int customerUserId);
@@ -38,6 +53,15 @@ public interface IReservationService
 
     /// <summary>Every reservation on a date, optionally only those with one status, by time then table.</summary>
     Task<List<Reservation>> GetForDateAsync(DateOnly date, string? status);
+
+    /// <summary>
+    /// Reservations from today onwards, optionally only those with one status, by date, time then table,
+    /// one page at a time. A page number outside the list gives the first or last page.
+    /// </summary>
+    Task<ReservationPage> GetUpcomingForStaffAsync(string? status, int page);
+
+    /// <summary>How many pending reservations are dated on or after this date: the ones staff still have to confirm.</summary>
+    Task<int> CountPendingAsync(DateOnly from);
 
     /// <summary>Any customer's reservation if its details can still be changed; otherwise a failure saying why not.</summary>
     Task<ReservationResult> GetForStaffChangeAsync(int reservationId);

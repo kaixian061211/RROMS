@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -29,8 +30,12 @@ public class CancelModel : PageModel
 
     public string? ErrorMessage { get; private set; }
 
+    /// <summary>Every restaurant table by id, for table numbers (and on forms, the tables to choose from).</summary>
+    public IReadOnlyDictionary<int, TableInfo> Tables { get; private set; } = new Dictionary<int, TableInfo>();
+
     public async Task<IActionResult> OnGetAsync()
     {
+        Tables = await _reservations.GetTablesAsync();
         var result = await _reservations.GetForChangeAsync(User.GetPaymentUserId(), Id);
         if (!result.Succeeded)
         {
@@ -45,13 +50,18 @@ public class CancelModel : PageModel
 
     public async Task<IActionResult> OnPostAsync()
     {
+        Tables = await _reservations.GetTablesAsync();
         if (!ModelState.IsValid)
         {
             ErrorMessage = "Something went wrong. Please reload the page and try again.";
             return Page();
         }
 
-        var result = await _reservations.CancelAsync(User.GetPaymentUserId(), Id, RowVersion);
+        var result = await _reservations.CancelAsync(
+            User.GetPaymentUserId(),
+            Id,
+            RowVersion,
+            User.FindFirst(ClaimTypes.Email)?.Value);
         if (!result.Succeeded)
         {
             ErrorMessage = result.ErrorMessage;

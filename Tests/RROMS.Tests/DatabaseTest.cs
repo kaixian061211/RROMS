@@ -1,10 +1,14 @@
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
+using Microsoft.Extensions.Logging.Abstractions;
 using RROMS.Web.Data;
 using RROMS.Web.Models.OrdersAndReservations;
+using RROMS.Web.Models.Restaurant;
+using RROMS.Web.Models.Notifications;
 using RROMS.Web.Services.OrdersAndReservations;
 using RROMS.Web.Services.Payments;
+using RROMS.Web.Services.Notifications;
 
 namespace RROMS.Tests;
 
@@ -15,6 +19,7 @@ namespace RROMS.Tests;
 public abstract class DatabaseTest : IAsyncLifetime
 {
     // Dates are worked out from the day the tests run, so they never go out of date.
+    protected static DateOnly Today => DateOnly.FromDateTime(DateTime.Today);
     protected static DateOnly Tomorrow => DateOnly.FromDateTime(DateTime.Today.AddDays(1));
     protected static DateOnly Yesterday => DateOnly.FromDateTime(DateTime.Today.AddDays(-1));
     protected static readonly TimeOnly Lunch = new(12, 0);
@@ -58,7 +63,41 @@ public abstract class DatabaseTest : IAsyncLifetime
         return db;
     }
 
-    protected ReservationService NewReservationService(params IInterceptor[] interceptors) => new(NewContext(interceptors));
+    protected ReservationService NewReservationService(params IInterceptor[] interceptors)
+    {
+        var db = NewContext(interceptors);
+        return new ReservationService(
+            db,
+            new RestaurantLookup(db),
+            new NotificationService(db, new TestNotificationRealtime()),
+            new TestNotificationDelivery(),
+            NullLogger<ReservationService>.Instance);
+    }
+
+    /// <summary>Retires a table, as the restaurant module does, for this test only.</summary>
+    protected Task RetireTableAsync(int tableId) =>
+        NewContext().Set<RestaurantTable>().Where(t => t.RestaurantTableId == tableId)
+            .ExecuteUpdateAsync(t => t.SetProperty(x => x.IsActive, false));
+
+    /// <summary>Sets one day's opening hours, for this test only. Without any, the restaurant counts as open.</summary>
+    protected async Task SetOpeningHoursAsync(DayOfWeek day, bool closed, TimeOnly? opens = null, TimeOnly? closes = null)
+    {
+        var db = NewContext();
+        db.Add(new OperatingHour { DayOfWeek = day, IsClosed = closed, OpenTime = opens, CloseTime = closes });
+        await db.SaveChangesAsync();
+    }
+
+    /// <summary>Saves the restaurant's settings with these switches, for this test only.</summary>
+    protected async Task SetAcceptingAsync(bool reservations, bool orders)
+    {
+        var db = NewContext();
+        db.Add(new RestaurantInfo
+        {
+            Name = "RROMS test restaurant", Address = "1 Test Street", Phone = "03-0000 0000", Email = "test@example.com",
+            IsAcceptingReservations = reservations, IsAcceptingOrders = orders
+        });
+        await db.SaveChangesAsync();
+    }
 
     /// <summary>
     /// Saves a reservation straight to the database, skipping the service's checks, so a test can start
@@ -81,10 +120,37 @@ public abstract class DatabaseTest : IAsyncLifetime
     protected Task<Reservation> ReloadReservationAsync(int reservationId) =>
         NewContext().Set<Reservation>().AsNoTracking().SingleAsync(r => r.ReservationId == reservationId);
 
-    /// <summary>The real order service, with the temporary menu unless the test passes its own.</summary>
+    /// <summary>The real order service, with the test menu's 9 dishes unless the test passes its own menu.</summary>
     protected OrderService NewOrderService(IMenuItemLookup? menu = null)
     {
         var db = NewContext();
-        return new OrderService(db, menu ?? new TemporaryMenuItemLookup(), new PaymentQueries(db, new PaymentOrderProvider(db)));
+        return new OrderService(
+            db,
+            menu ?? TestMenu.Standard(),
+            new PaymentQueries(db, new PaymentOrderProvider(db)),
+            new RestaurantLookup(db),
+            new NotificationService(db, new TestNotificationRealtime()),
+            new TestNotificationDelivery(),
+            NullLogger<OrderService>.Instance);
+    }
+
+    private sealed class TestNotificationRealtime : INotificationRealtime
+    {
+        public Task PublishAsync(
+            Notification notification,
+            CancellationToken ct = default) => Task.CompletedTask;
+
+        public Task PublishReadStateChangedAsync(
+            int userId,
+            CancellationToken ct = default) => Task.CompletedTask;
+    }
+
+    private sealed class TestNotificationDelivery : INotificationDelivery
+    {
+        public Task DeliverAsync(
+            int notificationId,
+            bool sendEmail = false,
+            NotificationEmailRecipient? recipient = null,
+            CancellationToken ct = default) => Task.CompletedTask;
     }
 }

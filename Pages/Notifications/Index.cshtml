@@ -1,0 +1,131 @@
+@page
+@model RROMS.Web.Pages.Notifications.IndexModel
+@using System.Globalization
+
+@{
+    ViewData["Title"] = "Notifications";
+}
+
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+    <h1 class="h3 mb-0">Notifications</h1>
+    <span class="badge text-bg-primary">@Model.UnreadCount unread</span>
+</div>
+
+@if (Model.UnreadCount > 0)
+{
+    <form method="post" asp-page-handler="ReadAll" class="mb-3">
+        <input type="hidden" name="beforeId" value="@Model.BeforeId" />
+
+        <button type="submit" class="btn btn-sm btn-outline-secondary">
+            Mark all as read
+        </button>
+    </form>
+}
+
+@if (Model.Notifications.Count == 0)
+{
+    <div class="alert alert-info"> @(Model.BeforeId.HasValue? "There are no older notifications on this page." : "You have no notifications yet.")
+    </div>
+}
+else
+{
+    @foreach (var notification in Model.Notifications)
+    {
+        var createdAtUtc = notification.CreatedAt.Kind == DateTimeKind.Local
+            ? notification.CreatedAt.ToUniversalTime()
+            : DateTime.SpecifyKind(notification.CreatedAt, DateTimeKind.Utc);
+
+        <article class="card mb-3 @(notification.IsRead ? "" : "border-primary")">
+            <div class="card-body">
+                <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                    <span class="badge text-bg-light">
+                        @Model.TypeLabel(notification.Type)
+                    </span>
+
+                    @if (!notification.IsRead)
+                    {
+                        <span class="badge text-bg-primary">Unread</span>
+                    }
+                </div>
+
+                @if (notification.OrderId is int orderId)
+                {
+                    <div class="mt-2">
+                        <a asp-page="/Tracking/Index"
+                           asp-route-orderId="@orderId">
+                            Track order
+                        </a>
+                    </div>
+                }
+                else if (notification.ReservationId is int reservationId)
+                {
+                    <div class="mt-2">
+                        <a asp-page="/Tracking/Index"
+                           asp-route-reservationId="@reservationId">
+                            Track reservation
+                        </a>
+                    </div>
+                }
+                else if (notification.PaymentId is int paymentId)
+                {
+                    <div class="mt-2">
+                        <a asp-page="/Tracking/Index"
+                           asp-route-paymentId="@paymentId">
+                            Track payment
+                        </a>
+                    </div>
+                }
+
+                <h2 class="h6">@notification.Title</h2>
+
+                <p class="mb-2" style="white-space: pre-line;">@notification.Message</p>
+
+                <time class="small text-body-secondary"
+                      datetime="@createdAtUtc.ToString("O", CultureInfo.InvariantCulture)"
+                      data-notification-time>
+                    @createdAtUtc.ToString("dd MMM yyyy, HH:mm 'UTC'", CultureInfo.InvariantCulture)
+                </time>
+
+                @if (!notification.IsRead)
+                {
+                    <form method="post" asp-page-handler="Read" class="mt-3">
+                        <input type="hidden"
+                               name="notificationId"
+                               value="@notification.NotificationId" />
+
+                        <input type="hidden"
+                               name="beforeId"
+                               value="@Model.BeforeId" />
+
+                        <button type="submit" class="btn btn-sm btn-outline-primary">
+                            Mark as read
+                        </button>
+                    </form>
+                }
+            </div>
+        </article>
+    }
+}
+
+<nav class="d-flex gap-2 mt-3" aria-label="Notification history">
+    @if (Model.BeforeId.HasValue)
+    {
+        <a class="btn btn-outline-secondary" asp-page="./Index">
+            Newest
+        </a>
+    }
+
+    @if (Model.NextBeforeId.HasValue)
+    {
+        <a class="btn btn-outline-secondary"
+           asp-page="./Index"
+           asp-route-beforeId="@Model.NextBeforeId">
+            Older
+        </a>
+    }
+</nav>
+
+@section Scripts {
+    <script src="~/js/notifications-times.js"
+            asp-append-version="true"></script>
+}

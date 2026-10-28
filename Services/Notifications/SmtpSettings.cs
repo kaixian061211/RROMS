@@ -1,4 +1,4 @@
-namespace RROMS.Web.Services.Payments.Notifications;
+namespace RROMS.Web.Services.Notifications;
 
 /// <summary>Bound from the "Smtp" section. Leave Host empty to switch e-mail off.</summary>
 public class SmtpSettings

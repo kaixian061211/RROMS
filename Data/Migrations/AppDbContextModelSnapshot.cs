@@ -35,6 +35,128 @@ namespace RROMS.Web.Data.Migrations
                     b.HasIndex("PromotionId");
 
                     b.ToTable("MenuItemPromotion");
+            modelBuilder.Entity("RROMS.Web.Models.Accounts.UserAccount", b =>
+                {
+                    b.Property<int>("UserId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("UserId"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("SYSDATETIME()");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("FullName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("PasswordHash")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("Phone")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<int>("ResetOtpAttempts")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("ResetOtpExpiresAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ResetOtpHash")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.HasKey("UserId");
+
+                    b.HasIndex("Email")
+                        .IsUnique();
+
+                    b.ToTable("UserAccount", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_UserAccounts_Role", "[Role] IN ('Admin','Staff','Customer')");
+                        });
+                });
+
+            modelBuilder.Entity("RROMS.Web.Models.Notifications.Notification", b =>
+                {
+                    b.Property<int>("NotificationId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("NotificationId"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("SYSDATETIME()");
+
+                    b.Property<bool>("IsRead")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<int?>("OrderId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("PaymentId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("ReservationId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("NotificationId");
+
+                    b.HasIndex("OrderId");
+
+                    b.HasIndex("PaymentId");
+
+                    b.HasIndex("ReservationId");
+
+                    b.HasIndex("UserId", "NotificationId");
+
+                    b.ToTable("Notification", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_Notification_RelatedRecord", "([Type] = 'order' AND [OrderId] IS NOT NULL AND [ReservationId] IS NULL AND [PaymentId] IS NULL) OR ([Type] = 'reservation' AND [ReservationId] IS NOT NULL AND [OrderId] IS NULL AND [PaymentId] IS NULL) OR ([Type] = 'payment' AND [PaymentId] IS NOT NULL AND [OrderId] IS NULL AND [ReservationId] IS NULL) OR ([Type] IN ('promotion','announcement') AND [OrderId] IS NULL AND [ReservationId] IS NULL AND [PaymentId] IS NULL)");
+
+                            t.HasCheckConstraint("CK_Notification_Type", "[Type] IN ('reservation','order','payment','promotion','announcement')");
+                        });
                 });
 
             modelBuilder.Entity("RROMS.Web.Models.OrdersAndReservations.Order", b =>
@@ -250,6 +372,38 @@ namespace RROMS.Web.Data.Migrations
 
                             t.HasCheckConstraint("CK_Payments_RefundedAt", "([PaymentStatus] = 'refunded' AND [RefundedAt] IS NOT NULL) OR ([PaymentStatus] <> 'refunded' AND [RefundedAt] IS NULL)");
                         });
+                });
+
+            modelBuilder.Entity("RROMS.Web.Models.Restaurant.Announcement", b =>
+                {
+                    b.Property<int>("AnnouncementId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("AnnouncementId"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("ExpiresAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.HasKey("AnnouncementId");
+
+                    b.ToTable("Announcement", (string)null);
                 });
 
             modelBuilder.Entity("RROMS.Web.Models.Restaurant.DiningArea", b =>
@@ -539,6 +693,22 @@ namespace RROMS.Web.Data.Migrations
                         .HasForeignKey("PromotionId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+            modelBuilder.Entity("RROMS.Web.Models.Notifications.Notification", b =>
+                {
+                    b.HasOne("RROMS.Web.Models.OrdersAndReservations.Order", null)
+                        .WithMany()
+                        .HasForeignKey("OrderId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("RROMS.Web.Models.Payments.Payment", null)
+                        .WithMany()
+                        .HasForeignKey("PaymentId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("RROMS.Web.Models.OrdersAndReservations.Reservation", null)
+                        .WithMany()
+                        .HasForeignKey("ReservationId")
+                        .OnDelete(DeleteBehavior.Restrict);
                 });
 
             modelBuilder.Entity("RROMS.Web.Models.OrdersAndReservations.OrderItem", b =>

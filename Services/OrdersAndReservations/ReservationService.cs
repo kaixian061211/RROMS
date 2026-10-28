@@ -2,6 +2,8 @@ using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using RROMS.Web.Data;
 using RROMS.Web.Models.OrdersAndReservations;
+using RROMS.Web.Models.Notifications;
+using RROMS.Web.Services.Notifications;
 
 namespace RROMS.Web.Services.OrdersAndReservations;
 
@@ -24,10 +26,23 @@ public class ReservationService : IReservationService
     };
 
     private readonly AppDbContext _db;
+    private readonly IRestaurantLookup _restaurant;
+    private readonly INotificationService _notifications;
+    private readonly INotificationDelivery _notificationDelivery;
+    private readonly ILogger<ReservationService> _logger;
 
-    public ReservationService(AppDbContext db)
+    public ReservationService(
+        AppDbContext db,
+        IRestaurantLookup restaurant,
+        INotificationService notifications,
+        INotificationDelivery notificationDelivery,
+        ILogger<ReservationService> logger)
     {
         _db = db;
+        _restaurant = restaurant;
+        _notifications = notifications;
+        _notificationDelivery = notificationDelivery;
+        _logger = logger;
     }
 
     // AppDbContext picks up Reservation through ReservationConfiguration, so it needs no DbSet for it.
@@ -45,11 +60,20 @@ public class ReservationService : IReservationService
         return !taken;
     }
 
+    public Task<IReadOnlyDictionary<int, TableInfo>> GetTablesAsync() => _restaurant.GetTablesAsync();
+
     // Customer actions
 
-    public async Task<ReservationResult> CreateAsync(int customerUserId, ReservationInput input)
+    public async Task<ReservationResult> CreateAsync(
+        int customerUserId,
+        ReservationInput input,
+        string? customerEmail = null)
     {
-        var error = Validate(input);
+        // Switching reservations off stops new bookings. Existing ones can still be changed or cancelled.
+        if (!await _restaurant.IsAcceptingReservationsAsync())
+            return ReservationResult.Failure("Sorry, we're not taking new reservations right now. Please try again later.");
+
+        var error = Validate(input) ?? await CheckTableAndHoursAsync(input);
         if (error is not null)
             return ReservationResult.Failure(error);
 
@@ -71,14 +95,38 @@ public class ReservationService : IReservationService
         };
         Reservations.Add(reservation);
 
-        return await SaveAsync(reservation);
+        var result = await SaveAsync(reservation);
+        if (result.Succeeded)
+        {
+            await NotifyCustomerAsync(
+                reservation,
+                "Reservation request received",
+                $"Your reservation {ReservationFormatter.Reference(reservation.ReservationId)} for {ReservationFormatter.When(reservation.ReservationDate, reservation.TimeSlot)} is pending confirmation.",
+                sendEmail: true,
+                customerEmail: customerEmail);
+        }
+
+        return result;
     }
 
     public async Task<ReservationResult> ModifyAsync(
-        int customerUserId, int reservationId, ReservationInput input, byte[] rowVersion) =>
-        await ApplyChangesAsync(await FindOwnAsync(customerUserId, reservationId), input, rowVersion, byCustomer: true);
+        int customerUserId,
+        int reservationId,
+        ReservationInput input,
+        byte[] rowVersion,
+        string? customerEmail = null) =>
+        await ApplyChangesAsync(
+            await FindOwnAsync(customerUserId, reservationId),
+            input,
+            rowVersion,
+            byCustomer: true,
+            customerEmail: customerEmail);
 
-    public async Task<ReservationResult> CancelAsync(int customerUserId, int reservationId, byte[] rowVersion)
+    public async Task<ReservationResult> CancelAsync(
+        int customerUserId,
+        int reservationId,
+        byte[] rowVersion,
+        string? customerEmail = null)
     {
         var reservation = await FindOwnAsync(customerUserId, reservationId);
         if (reservation is null)
@@ -91,7 +139,18 @@ public class ReservationService : IReservationService
         reservation.Status = ReservationStatus.Cancelled;
         UseLoadedRowVersion(reservation, rowVersion);
 
-        return await SaveAsync(reservation);
+        var result = await SaveAsync(reservation);
+        if (result.Succeeded)
+        {
+            await NotifyCustomerAsync(
+                reservation,
+                "Reservation status updated",
+                $"Your reservation {ReservationFormatter.Reference(reservation.ReservationId)} is now cancelled.",
+                sendEmail: true,
+                customerEmail: customerEmail);
+        }
+
+        return result;
     }
 
     public async Task<List<Reservation>> GetUpcomingAsync(int customerUserId)
@@ -127,6 +186,30 @@ public class ReservationService : IReservationService
         return query.OrderBy(r => r.TimeSlot).ThenBy(r => r.TableId).ToListAsync();
     }
 
+    public async Task<ReservationPage> GetUpcomingForStaffAsync(string? status, int page)
+    {
+        var today = DateOnly.FromDateTime(DateTime.Today);
+        var query = Reservations.AsNoTracking().Where(r => r.ReservationDate >= today);
+        if (!string.IsNullOrEmpty(status))
+            query = query.Where(r => r.Status == status);
+
+        var count = await query.CountAsync();
+        var totalPages = Math.Max(1, (count + ReservationPage.PageSize - 1) / ReservationPage.PageSize);
+        page = Math.Clamp(page, 1, totalPages);
+
+        // Cancelled bookings can share a table, date and time, so the id keeps the order the same on every page.
+        var items = await query
+            .OrderBy(r => r.ReservationDate).ThenBy(r => r.TimeSlot).ThenBy(r => r.TableId).ThenBy(r => r.ReservationId)
+            .Skip((page - 1) * ReservationPage.PageSize)
+            .Take(ReservationPage.PageSize)
+            .ToListAsync();
+
+        return new ReservationPage(items, page, totalPages);
+    }
+
+    public Task<int> CountPendingAsync(DateOnly from) =>
+        Reservations.AsNoTracking().CountAsync(r => r.ReservationDate >= from && r.Status == ReservationStatus.Pending);
+
     public async Task<ReservationResult> GetForStaffChangeAsync(int reservationId) =>
         ForChange(await Reservations.AsNoTracking().FirstOrDefaultAsync(r => r.ReservationId == reservationId));
 
@@ -146,7 +229,17 @@ public class ReservationService : IReservationService
         reservation.Status = newStatus;
         UseLoadedRowVersion(reservation, rowVersion);
 
-        return await SaveAsync(reservation);
+        var result = await SaveAsync(reservation);
+        if (result.Succeeded)
+        {
+            await NotifyCustomerAsync(
+                reservation,
+                "Reservation status updated",
+                $"Your reservation {ReservationFormatter.Reference(reservation.ReservationId)} is now {ReservationFormatter.StatusLabel(newStatus).ToLowerInvariant()}.",
+                sendEmail: false);
+        }
+
+        return result;
     }
 
     public IReadOnlyList<string> GetAllowedStatusChanges(Reservation reservation) =>
@@ -157,12 +250,16 @@ public class ReservationService : IReservationService
     // Rules shared by customers and staff
 
     private async Task<ReservationResult> ApplyChangesAsync(
-        Reservation? reservation, ReservationInput input, byte[] rowVersion, bool byCustomer)
+        Reservation? reservation,
+        ReservationInput input,
+        byte[] rowVersion,
+        bool byCustomer,
+        string? customerEmail = null)
     {
         if (reservation is null)
             return ReservationResult.Failure(NotFoundMessage);
 
-        var error = CheckCanChange(reservation) ?? Validate(input);
+        var error = CheckCanChange(reservation) ?? Validate(input) ?? await CheckTableAndHoursAsync(input);
         if (error is not null)
             return ReservationResult.Failure(error);
 
@@ -172,6 +269,8 @@ public class ReservationService : IReservationService
 
         if (!await IsSlotFreeAsync(input.TableId, date, input.TimeSlot, reservation.ReservationId))
             return ReservationResult.Failure(SlotTakenMessage);
+
+        var previousStatus = reservation.Status;
 
         // A customer who moves a confirmed booking needs the restaurant to confirm it again.
         if (byCustomer && reservation.Status == ReservationStatus.Confirmed && ChangesBooking(reservation, input))
@@ -184,7 +283,56 @@ public class ReservationService : IReservationService
         reservation.SpecialRequest = TrimToNull(input.SpecialRequest);
         UseLoadedRowVersion(reservation, rowVersion);
 
-        return await SaveAsync(reservation);
+        var result = await SaveAsync(reservation);
+        if (result.Succeeded && byCustomer && reservation.Status != previousStatus)
+        {
+            await NotifyCustomerAsync(
+                reservation,
+                "Reservation status updated",
+                $"Your reservation {ReservationFormatter.Reference(reservation.ReservationId)} is now pending confirmation.",
+                sendEmail: true,
+                customerEmail: customerEmail);
+        }
+
+        return result;
+    }
+
+    private async Task NotifyCustomerAsync(
+        Reservation reservation,
+        string title,
+        string message,
+        bool sendEmail,
+        string? customerEmail = null)
+    {
+        try
+        {
+            var notification = await _notifications.StageAsync(new NotificationInput
+            {
+                UserId = reservation.CustomerUserId,
+                Type = NotificationTypes.Reservation,
+                Title = title,
+                Message = message,
+                ReservationId = reservation.ReservationId
+            });
+
+            await _db.SaveChangesAsync();
+            var recipient = sendEmail
+                ? new NotificationEmailRecipient(
+                    reservation.CustomerUserId,
+                    customerEmail ?? string.Empty)
+                : null;
+            await _notificationDelivery.DeliverAsync(
+                notification.NotificationId,
+                sendEmail,
+                recipient);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(
+                ex,
+                "Reservation {ReservationId} was saved, but its notification could not be staged or delivered.",
+                reservation.ReservationId);
+        }
     }
 
     /// <summary>True when the date, time, table or party size would change. The special request doesn't count.</summary>
@@ -227,9 +375,10 @@ public class ReservationService : IReservationService
         return null;
     }
 
+    /// <summary>The checks that need nothing but the form. The table itself is checked by CheckTableAndHoursAsync.</summary>
     private static string? Validate(ReservationInput input)
     {
-        if (!TemporaryTables.Exists(input.TableId))
+        if (input.TableId <= 0)
             return "Please choose a table.";
         if (input.ReservationDate is null)
             return "Please choose a date.";
@@ -237,13 +386,33 @@ public class ReservationService : IReservationService
             return "Please enter the party size.";
         if (input.PartySize <= 0)
             return "Party size must be at least 1.";
-        // TODO: check PartySize against the table's capacity once the RestaurantTable table exists.
         if (!ReservationTimeSlots.IsValid(input.TimeSlot))
             return "Please choose one of the available time slots.";
         if (IsInPast(input.ReservationDate.Value, input.TimeSlot))
             return "Please choose a date and time in the future.";
         if (input.SpecialRequest?.Length > MaxSpecialRequestLength)
             return $"Special requests can be at most {MaxSpecialRequestLength} characters.";
+        return null;
+    }
+
+    /// <summary>
+    /// The checks against the restaurant's own data: the table must exist, still be in use and seat the party,
+    /// and the restaurant must be open at that seating. Runs after Validate, so the date and party size are filled in.
+    /// </summary>
+    private async Task<string?> CheckTableAndHoursAsync(ReservationInput input)
+    {
+        var tables = await _restaurant.GetTablesAsync();
+        if (!tables.TryGetValue(input.TableId, out var table) || !table.IsActive)
+            return "Please choose a table.";
+        if (input.PartySize > table.Capacity)
+            return $"Table {table.TableNumber} seats {ReservationFormatter.PartySize(table.Capacity)}. Please choose a bigger table.";
+
+        var day = input.ReservationDate!.Value.DayOfWeek;
+        var hours = await _restaurant.GetOpeningHoursAsync(day);
+        if (hours is { IsClosed: true })
+            return $"We're closed on {day}s. Please choose another day.";
+        if (hours is { Opens: { } opens, Closes: { } closes } && (input.TimeSlot < opens || input.TimeSlot >= closes))
+            return $"On {day}s we're open from {ReservationFormatter.Time(opens)} to {ReservationFormatter.Time(closes)}. Please choose another time.";
         return null;
     }
 

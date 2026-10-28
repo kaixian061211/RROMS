@@ -15,7 +15,7 @@ public class DashboardPageTests : PageTest
 
     [Theory(DisplayName = "TC-00-08 Switching user lands on that role's dashboard: built cards open their pages, unbuilt ones don't link, other dashboards refuse")]
     [Trait("Technique", "Decision table")]
-    [InlineData("Customer A", "/Dashboards/Customer", "/Reservations, /Orders", 8)]
+    [InlineData("Customer A", "/Dashboards/Customer", "/Reservations, /Orders, /Notifications/Index", 7)]
     [InlineData("Staff", "/Dashboards/Staff", "/Payments/Counter, /Reservations/Manage, /Orders/Queue", 2)]
     [InlineData("Admin", "/Dashboards/Admin", "", 5)]
     public async Task EachRolesDashboard(string name, string expectedDashboard, string expectedLinks, int expectedNotBuilt)

@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.AspNetCore.Mvc.Rendering;
 using RROMS.Web.Models.OrdersAndReservations;
 using RROMS.Web.Models.Payments;
 using RROMS.Web.Services.OrdersAndReservations;
@@ -26,17 +25,19 @@ public class CreateModel : PageModel
     /// <summary>The dishes on the form. Input.Items has one line per dish, in the same order.</summary>
     public IReadOnlyList<MenuItemInfo> Menu { get; private set; } = Array.Empty<MenuItemInfo>();
 
-    public IEnumerable<SelectListItem> TableOptions =>
-        TemporaryTables.TableIds.Select(id => new SelectListItem(OrderFormatter.Table(id), id.ToString()));
+    /// <summary>Every restaurant table by id, for table numbers (and on forms, the tables to choose from).</summary>
+    public IReadOnlyDictionary<int, TableInfo> Tables { get; private set; } = new Dictionary<int, TableInfo>();
 
     public async Task<IActionResult> OnGetAsync()
     {
+        Tables = await _orders.GetTablesAsync();
         await LoadMenuAsync();
         return Page();
     }
 
     public async Task<IActionResult> OnPostAsync()
     {
+        Tables = await _orders.GetTablesAsync();
         if (!ModelState.IsValid)
         {
             // Only a quantity that isn't a whole number from 0 to 20 gets here, so one message covers it.

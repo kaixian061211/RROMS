@@ -3,6 +3,7 @@ using AngleSharp.Dom;
 using AngleSharp.Html.Dom;
 using Microsoft.EntityFrameworkCore;
 using RROMS.Web.Models.Dev;
+using RROMS.Web.Models.Notifications;
 using RROMS.Web.Models.OrdersAndReservations;
 using RROMS.Web.Models.Payments;
 
@@ -23,7 +24,7 @@ public class OrderQueuePageTests : PageTest
         var order = new Order
         {
             CustomerUserId = TestCustomer, TableId = 4, Status = OrderStatus.Pending,
-            Items = { new OrderItem { MenuItemId = 7, Quantity = 1, UnitPrice = 3.80m } }
+            Items = { new OrderItem { MenuItemId = TehTarik, Quantity = 1, UnitPrice = 3.80m } }
         };
         await WithDatabaseAsync(db => { db.Add(order); return db.SaveChangesAsync(); });
         return order;
@@ -51,10 +52,13 @@ public class OrderQueuePageTests : PageTest
         await SubmitAsync(MainForm(orderPage), new()
         {
             ["Input.TableId"] = "6",
-            [QuantityField(orderPage, 1)] = "2",   // Nasi Lemak
-            [QuantityField(orderPage, 7)] = "1"    // Teh Tarik
+            [QuantityField(orderPage, NasiLemak)] = "2",
+            [QuantityField(orderPage, TehTarik)] = "1"
         });
         var orderId = await WithDatabaseAsync(db => db.Set<Order>().Select(o => o.OrderId).SingleAsync());
+        var placedNotification = await WithDatabaseAsync(db => db.Notifications.SingleAsync());
+        Assert.Equal(NotificationTypes.Order, placedNotification.Type);
+        Assert.Equal(orderId, placedNotification.OrderId);
 
         await SignInAsAsync(TestUsers.Staff);
         var queue = await GetPageAsync("/Orders/Queue");
@@ -73,6 +77,10 @@ public class OrderQueuePageTests : PageTest
         Assert.Equal(new[] { "Mark ready" }, ButtonsOn(CardFor(afterPress, orderId)));
         Assert.Equal("Preparing", ColumnOf(afterPress, orderId));
         Assert.Equal(OrderStatus.Preparing, await SavedStatusAsync(orderId));
+        var notifications = await WithDatabaseAsync(db =>
+            db.Notifications.Where(n => n.OrderId == orderId).OrderBy(n => n.NotificationId).ToListAsync());
+        Assert.Equal(new[] { "Order placed", "Order status updated" }, notifications.Select(n => n.Title));
+        Assert.Contains("preparing", notifications[1].Message);
         await SignInAsAsync(TestUsers.CustomerA);
         Assert.Contains("Preparing", TextOf(await GetPageAsync($"/Orders/Details/{orderId}")));
     }

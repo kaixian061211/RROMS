@@ -1,0 +1,24 @@
+@inject Microsoft.Extensions.Options.IOptions<RROMS.Web.Services.Notifications.WebPushSettings> PushOptions
+@inject Microsoft.AspNetCore.Hosting.IWebHostEnvironment PushEnvironment
+
+@{
+    var configured = Guid.TryParse(PushOptions.Value.AppId, out var appId)
+        && appId != Guid.Empty;
+
+    var workerPath = Url.Content("~/OneSignalSDKWorker.js")!.TrimStart('/');
+}
+
+@if (configured)
+{
+    <div id="web-push-config"
+         hidden
+         data-app-id="@appId.ToString("D")"
+         data-token-url="@Url.Content("~/notifications/push-token")"
+         data-identity-url="@Url.Content("~/notifications/push-identity")"
+         data-worker-path="@workerPath"
+         data-worker-scope="@Url.Content("~/")"
+         data-local="@PushEnvironment.IsDevelopment().ToString().ToLowerInvariant()">
+    </div>
+
+    <script src="~/js/web-push.js" asp-append-version="true"></script>
+}
