@@ -1,0 +1,58 @@
+@page
+@model RROMS.Web.Pages.Admin.Accounts.CreateModel
+@{
+    ViewData["Title"] = "Create account";
+}
+
+<div class="rr-narrow">
+    <header class="rr-page-header">
+        <div>
+            <span class="rr-label">Admin</span>
+            <h1>Create account</h1>
+            <p class="rr-lede">Staff and admin accounts are sent a welcome email. It does not contain the password, so tell the person their password yourself.</p>
+        </div>
+    </header>
+
+    <form method="post">
+        <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+        <div class="rr-panel">
+            <div class="mb-4">
+                <label asp-for="Input.FullName" class="form-label"></label>
+                <input asp-for="Input.FullName" class="form-control" />
+                <span asp-validation-for="Input.FullName" class="text-danger"></span>
+            </div>
+            <div class="mb-4">
+                <label asp-for="Input.Email" class="form-label"></label>
+                <input asp-for="Input.Email" class="form-control" />
+                <span asp-validation-for="Input.Email" class="text-danger"></span>
+            </div>
+            <div class="mb-4">
+                <label asp-for="Input.Phone" class="form-label">Phone number (optional)</label>
+                <input asp-for="Input.Phone" class="form-control" />
+                <span asp-validation-for="Input.Phone" class="text-danger"></span>
+            </div>
+            <div class="mb-4">
+                <label asp-for="Input.Role" class="form-label"></label>
+                <select asp-for="Input.Role" class="form-select" asp-items="@(new SelectList(UserRoles.All))"></select>
+                <span asp-validation-for="Input.Role" class="text-danger"></span>
+            </div>
+            <div class="form-check mb-4">
+                <input asp-for="Input.IsActive" class="form-check-input" />
+                <label asp-for="Input.IsActive" class="form-check-label"></label>
+            </div>
+            <div>
+                <label asp-for="Input.Password" class="form-label">Password</label>
+                <input asp-for="Input.Password" class="form-control" autocomplete="new-password" />
+                <span asp-validation-for="Input.Password" class="text-danger"></span>
+            </div>
+        </div>
+        <div class="rr-actionbar">
+            <button type="submit" class="btn btn-primary">Create account</button>
+            <a asp-page="Index" class="btn btn-outline-secondary">Cancel</a>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

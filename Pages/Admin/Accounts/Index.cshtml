@@ -1,0 +1,80 @@
+@page
+@model RROMS.Web.Pages.Admin.Accounts.IndexModel
+@{
+    ViewData["Title"] = "Manage accounts";
+}
+
+<header class="rr-page-header">
+    <div>
+        <span class="rr-label">Admin</span>
+        <h1>Manage accounts</h1>
+        <p class="rr-lede">Customers, staff and administrators. Deactivating an account keeps its reservations, orders and payments.</p>
+    </div>
+    <div class="rr-page-actions">
+        <a asp-page="Create" class="btn btn-primary">Create account</a>
+    </div>
+</header>
+
+@if (!string.IsNullOrEmpty(Model.StatusMessage))
+{
+    <div class="alert alert-success" role="status">@Model.StatusMessage</div>
+}
+@if (!string.IsNullOrEmpty(Model.ErrorMessage))
+{
+    <div class="alert alert-danger" role="alert">@Model.ErrorMessage</div>
+}
+
+<ul class="nav nav-pills mb-3" aria-label="Filter by role">
+    <li class="nav-item">
+        <a class="nav-link @(string.IsNullOrEmpty(Model.RoleFilter) ? "active" : null)" asp-page="Index" asp-route-Search="@Model.Search">All</a>
+    </li>
+    @foreach (var role in UserRoles.All)
+    {
+        <li class="nav-item">
+            <a class="nav-link @(Model.RoleFilter == role ? "active" : null)" asp-page="Index" asp-route-RoleFilter="@role" asp-route-Search="@Model.Search">@role</a>
+        </li>
+    }
+</ul>
+
+<form method="get" class="mb-4 d-flex flex-wrap gap-2">
+    <input type="hidden" name="RoleFilter" value="@Model.RoleFilter" />
+    <label for="search" class="visually-hidden">Search by name or email</label>
+    <input id="search" name="Search" value="@Model.Search" class="form-control w-auto flex-grow-1" placeholder="Search by name or email" />
+    <button type="submit" class="btn btn-outline-secondary">Search</button>
+</form>
+
+@if (Model.Accounts.Any())
+{
+    <h2 class="rr-group-title">Accounts <span class="rr-count">@Model.Accounts.Count</span></h2>
+    <ul class="rr-list">
+        @foreach (var account in Model.Accounts)
+        {
+            <li class="rr-list__item">
+                <div class="rr-list__main">
+                    <div class="fw-semibold">
+                        @account.FullName
+                        <span class="rr-status @(account.IsActive ? "rr-status--good" : "rr-status--off") ms-2">@(account.IsActive ? "Active" : "Deactivated")</span>
+                    </div>
+                    <div class="small text-muted">@account.Role · @account.Email@(string.IsNullOrEmpty(account.Phone) ? null : " · " + account.Phone)</div>
+                </div>
+                <div class="rr-list__actions">
+                    <a asp-page="Edit" asp-route-id="@account.UserId" class="btn btn-sm btn-outline-secondary">Edit<span class="visually-hidden"> @account.FullName</span></a>
+                    <form method="post" asp-page-handler="Toggle" asp-route-id="@account.UserId"
+                          asp-route-activate="@(!account.IsActive)" asp-route-Search="@Model.Search"
+                          asp-route-RoleFilter="@Model.RoleFilter" class="d-inline">
+                        <button type="submit" class="btn btn-sm @(account.IsActive ? "btn-outline-danger" : "btn-outline-secondary")">
+                            @(account.IsActive ? "Deactivate" : "Activate")<span class="visually-hidden"> @account.FullName</span>
+                        </button>
+                    </form>
+                </div>
+            </li>
+        }
+    </ul>
+}
+else
+{
+    <div class="rr-empty">
+        <p class="rr-empty__title">No accounts found</p>
+        <p class="mb-0">Try another search or role, or create the first account.</p>
+    </div>
+}
