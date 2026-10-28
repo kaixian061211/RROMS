@@ -20,10 +20,12 @@ public class PaymentService : IPaymentService
     private readonly ILogger<PaymentService> _logger;
     private readonly StripeSettings _stripeSettings;
     private readonly INotificationService _notifications;
+    private readonly INotificationDelivery _notificationDelivery;
 
-        public PaymentService(
+    public PaymentService(
         AppDbContext db,
         INotificationService notifications,
+        INotificationDelivery notificationDelivery,
         IStripeGateway stripe,
         IPaymentOrderProvider orders,
         IPaymentQueries queries,
@@ -33,6 +35,7 @@ public class PaymentService : IPaymentService
     {
         _db = db;
         _notifications = notifications;
+        _notificationDelivery = notificationDelivery;
         _stripe = stripe;
         _orders = orders;
         _queries = queries;
@@ -441,11 +444,13 @@ public class PaymentService : IPaymentService
             return false;
         }
 
-        await SavePaymentNotificationAsync(
+        var notificationId = await SavePaymentNotificationAsync(
             payment.PaymentId,
             isRefund: false);
 
         await transaction.CommitAsync();
+
+        await _notificationDelivery.DeliverAsync(notificationId);
 
         await NotifyAsync(
             payment.PaymentId,
@@ -538,14 +543,47 @@ public class PaymentService : IPaymentService
 
     // Counter payments
 
-        public async Task CollectAtCounterAsync(
+    public async Task CollectAtCounterAsync(
         int paymentId,
         int staffUserId,
         string method)
     {
+        if (paymentId <= 0 || staffUserId <= 0)
+        {
+            throw new PaymentException(
+                "The payment or staff ID is invalid.");
+        }
+
         if (!PaymentMethod.CounterMethods.Contains(method))
         {
             throw new PaymentException("Choose cash, card or e-wallet.");
+        }
+
+        var payment = await _db.Payments
+            .AsNoTracking()
+            .SingleOrDefaultAsync(p =>
+                p.PaymentId == paymentId &&
+                p.PaymentStatus == PaymentStatus.Pending &&
+                p.PaymentMethod == PaymentMethod.PayAtCounter)
+            ?? throw new PaymentException(
+                "This payment is no longer waiting to be collected.");
+
+        var order = await _orders.GetOrderAsync(payment.OrderId)
+            ?? throw new PaymentException(
+                "We couldn't find the order for this payment.");
+
+        if (order.OrderStatus == OrderStatus.Cancelled)
+        {
+            throw new PaymentException(
+                "Cancelled orders cannot be paid.");
+        }
+
+        if (payment.Amount <= 0 ||
+            payment.Amount > 99999999.99m ||
+            decimal.Round(payment.Amount, 2) != payment.Amount)
+        {
+            throw new PaymentException(
+                "This payment has an invalid amount.");
         }
 
         DateTime? paidAt = DateTime.Now;
@@ -556,7 +594,10 @@ public class PaymentService : IPaymentService
         var updated = await _db.Payments
             .Where(p => p.PaymentId == paymentId
                      && p.PaymentStatus == PaymentStatus.Pending
-                     && p.PaymentMethod == PaymentMethod.PayAtCounter)
+                     && p.PaymentMethod == PaymentMethod.PayAtCounter
+                     && p.Amount == payment.Amount
+                     && p.OrderId == payment.OrderId
+                     && p.CreatedAt == payment.CreatedAt)
             .ExecuteUpdateAsync(s => s
                 .SetProperty(p => p.PaymentStatus, PaymentStatus.Paid)
                 .SetProperty(p => p.PaymentMethod, method)
@@ -566,14 +607,16 @@ public class PaymentService : IPaymentService
         if (updated == 0)
         {
             throw new PaymentException(
-                "This payment is no longer waiting to be collected.");
+                "This payment changed while it was being collected. Check its current status before trying again.");
         }
 
-        await SavePaymentNotificationAsync(
+        var notificationId = await SavePaymentNotificationAsync(
             paymentId,
             isRefund: false);
 
         await transaction.CommitAsync();
+
+        await _notificationDelivery.DeliverAsync(notificationId);
 
         await NotifyAsync(
             paymentId,
@@ -758,11 +801,13 @@ public class PaymentService : IPaymentService
                 "The payment changed while the refund was being processed. Check its current status and Stripe before trying again.");
         }
 
-        await SavePaymentNotificationAsync(
+        var notificationId = await SavePaymentNotificationAsync(
             paymentId,
             isRefund: true);
 
         await transaction.CommitAsync();
+
+        await _notificationDelivery.DeliverAsync(notificationId);
 
         await NotifyAsync(
             paymentId,
@@ -821,7 +866,7 @@ public class PaymentService : IPaymentService
         }
     }
 
-        private async Task SavePaymentNotificationAsync(
+    private async Task<int> SavePaymentNotificationAsync(
         int paymentId,
         bool isRefund)
     {
@@ -840,7 +885,7 @@ public class PaymentService : IPaymentService
 
         var amount = PaymentFormatter.Money(details.Amount);
 
-        await _notifications.StageAsync(new NotificationInput
+        var notification = await _notifications.StageAsync(new NotificationInput
         {
             UserId = details.CustomerUserId,
             Type = NotificationTypes.Payment,
@@ -855,5 +900,7 @@ public class PaymentService : IPaymentService
 
         // Save within the transaction started by the payment action.
         await _db.SaveChangesAsync();
+
+        return notification.NotificationId;
     }
 }

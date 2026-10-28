@@ -6,6 +6,8 @@
     const toast = document.getElementById("notification-toast");
     const title = document.getElementById("notification-toast-title");
     const message = document.getElementById("notification-toast-message");
+    const trackingBanner = document.getElementById("tracking-updates-banner");
+    const trackingRefreshButton = document.getElementById("tracking-refresh-button");
     const refreshPage = root.dataset.refreshPage === "true";
 
     const connection = new signalR.HubConnectionBuilder()
@@ -18,6 +20,11 @@
     let retryTimer;
     let connectedBefore = false;
     let startFailed = false;
+    const toastQueue = [];
+    let toastShowing = false;
+    const toastInstance = window.bootstrap?.Toast && toast
+        ? window.bootstrap.Toast.getOrCreateInstance(toast, { delay: 8000 })
+        : null;
 
     document.addEventListener("submit", event => {
         const form = event.target;
@@ -31,12 +38,40 @@
 
     function refreshPageSoon() {
         if (!refreshPage || submitting) return;
+        if (toastShowing || toastQueue.length > 0) return;
 
         clearTimeout(reloadTimer);
 
         reloadTimer = setTimeout(() => {
             if (!submitting) window.location.reload();
         }, 500);
+    }
+
+    function showNextToast() {
+        if (toastShowing || toastQueue.length === 0)
+            return;
+
+        if (!toastInstance) {
+            toastQueue.length = 0;
+            refreshPageSoon();
+            return;
+        }
+
+        const notification = toastQueue.shift();
+        title.textContent = notification.title;
+        message.textContent = notification.message;
+        toastShowing = true;
+        toastInstance.show();
+    }
+
+    function queueToast(notification) {
+        clearTimeout(reloadTimer);
+        toastQueue.push(notification);
+        showNextToast();
+    }
+
+    function showTrackingUpdates() {
+        if (trackingBanner) trackingBanner.hidden = false;
     }
 
     async function updateUnreadCount() {
@@ -57,22 +92,26 @@
     }
 
     connection.on("NotificationReceived", notification => {
-        title.textContent = notification.title;
-        message.textContent = notification.message;
-
-        if (window.bootstrap?.Toast) {
-            bootstrap.Toast.getOrCreateInstance(
-                toast,
-                { delay: 8000 }
-            ).show();
-        }
+        queueToast(notification);
 
         void updateUnreadCount();
+        showTrackingUpdates();
         refreshPageSoon();
+    });
+
+    toast?.addEventListener("hidden.bs.toast", () => {
+        toastShowing = false;
+        showNextToast();
+        refreshPageSoon();
+    });
+
+    trackingRefreshButton?.addEventListener("click", () => {
+        window.location.reload();
     });
 
     connection.onreconnected(() => {
         void updateUnreadCount();
+        showTrackingUpdates();
         refreshPageSoon();
     });
 
@@ -87,6 +126,7 @@
             void updateUnreadCount();
 
             if (connectedBefore || startFailed) {
+                showTrackingUpdates();
                 refreshPageSoon();
             }
 

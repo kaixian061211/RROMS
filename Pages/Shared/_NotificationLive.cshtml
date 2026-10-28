@@ -1,9 +1,6 @@
 @{
     var page = ViewContext.RouteData.Values["page"] as string;
-    var refreshPage = page is "/Notifications/Index" or "/Tracking/Index";
-
-    var signalRClient =
-        "https://cdn.jsdelivr.net/npm/@microsoft/signalr@10.0.11/dist/browser/signalr.min.js";
+    var refreshPage = page == "/Notifications/Index";
 }
 
 <div id="notification-live"
@@ -39,5 +36,5 @@
     </div>
 </div>
 
-<script src="@signalRClient"></script>
+<script src="~/lib/signalr/signalr.min.js" asp-append-version="true"></script>
 <script src="~/js/notifications-live.js" asp-append-version="true"></script>

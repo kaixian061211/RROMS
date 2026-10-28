@@ -37,33 +37,7 @@ public class NotificationService : INotificationService
                 nameof(input));
         }
 
-        var validLink = input.Type switch
-        {
-            NotificationTypes.Order =>
-                input.OrderId is > 0
-                && input.ReservationId is null
-                && input.PaymentId is null,
-
-            NotificationTypes.Reservation =>
-                input.ReservationId is > 0
-                && input.OrderId is null
-                && input.PaymentId is null,
-
-            NotificationTypes.Payment =>
-                input.PaymentId is > 0
-                && input.OrderId is null
-                && input.ReservationId is null,
-
-            NotificationTypes.Promotion
-                or NotificationTypes.Announcement =>
-                input.OrderId is null
-                && input.ReservationId is null
-                && input.PaymentId is null,
-
-            _ => false
-        };
-
-        if (!validLink)
+        if (!NotificationTypes.HasValidRelatedRecord(input))
         {
             throw new ArgumentException(
                 "The notification type and related record do not match.",

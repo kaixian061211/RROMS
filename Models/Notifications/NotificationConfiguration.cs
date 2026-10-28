@@ -10,11 +10,15 @@ public class NotificationConfiguration
 {
     public void Configure(EntityTypeBuilder<Notification> builder)
     {
+        var notificationTypes = string.Join(
+            ",",
+            NotificationTypes.All.Select(type => $"'{type}'"));
+
         builder.ToTable("Notification", t =>
         {
             t.HasCheckConstraint(
                 "CK_Notification_Type",
-                "[Type] IN ('reservation','order','payment','promotion','announcement')");
+                $"[Type] IN ({notificationTypes})");
 
             // Only the relevant business record may be referenced.
             t.HasCheckConstraint(

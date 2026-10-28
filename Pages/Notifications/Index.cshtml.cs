@@ -86,13 +86,5 @@ public class IndexModel : PageModel
         return RedirectToPage("./Index", new { beforeId = BeforeId });
     }
 
-    public string TypeLabel(string type) => type switch
-    {
-        NotificationTypes.Reservation => "Reservation",
-        NotificationTypes.Order => "Order",
-        NotificationTypes.Payment => "Payment",
-        NotificationTypes.Promotion => "Promotion",
-        NotificationTypes.Announcement => "Announcement",
-        _ => "Notification"
-    };
+    public string TypeLabel(string type) => NotificationTypes.Label(type);
 }

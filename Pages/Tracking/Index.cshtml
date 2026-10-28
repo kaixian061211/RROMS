@@ -9,6 +9,19 @@
 
 <h1 class="h3 mb-3">Track status</h1>
 
+<div id="tracking-updates-banner"
+     class="alert alert-info"
+     role="status"
+     aria-live="polite"
+     hidden>
+    <span>New updates are available for this page.</span>
+    <button id="tracking-refresh-button"
+            class="btn btn-sm btn-outline-primary ms-2"
+            type="button">
+        Refresh status
+    </button>
+</div>
+
 @if (Model.TrackedOrder is { } order)
 {
     <section class="card mb-3">

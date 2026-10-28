@@ -1,4 +1,3 @@
-using System.ComponentModel.DataAnnotations;
 using Microsoft.EntityFrameworkCore;
 using MimeKit;
 using RROMS.Web.Data;
@@ -58,17 +57,7 @@ public sealed class NotificationDelivery : INotificationDelivery
                 return;
             }
 
-            try
-            {
-                await _realtime.PublishAsync(notificationId, ct);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(
-                    ex,
-                    "Live update failed for notification {NotificationId}.",
-                    notificationId);
-            }
+            await _realtime.PublishAsync(notification, ct);
 
             if (!sendEmail)
                 return;
@@ -76,8 +65,7 @@ public sealed class NotificationDelivery : INotificationDelivery
             if (recipient is null
                 || recipient.UserId != notification.UserId
                 || !MailboxAddress.TryParse(recipient.Email, out var mailbox)
-                || mailbox is null
-                || !new EmailAddressAttribute().IsValid(mailbox.Address))
+                || mailbox is null)
             {
                 _logger.LogWarning(
                     "Email skipped for notification {NotificationId}: " +
@@ -88,7 +76,7 @@ public sealed class NotificationDelivery : INotificationDelivery
             }
 
             await _email.SendAsync(
-                recipient.Email,
+                mailbox,
                 notification.Title,
                 notification.Message,
                 ct);

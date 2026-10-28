@@ -56,3 +56,26 @@ text
 Card:   4242 4242 4242 4242
 Expiry: Any future date
 CVC:    Any three digits
+
+
+3. Shared SMTP email configuration
+
+The `Smtp` section in `appsettings.json` holds the shared sender configuration:
+`Host`, `Port`, `UserName`, `Password`, `FromName` and `FromEmail`.
+`UserName` and the Google app password in `Password` must belong to the same
+SMTP account.
+
+The shared login and sender are `p24016577@student.newinti.edu.my`. Enter that
+account's matching app password in `Smtp.Password` locally before distributing
+the configured project to other computers.
+
+Once these shared values are configured and copied with the project, other
+computers don't need to set SMTP User Secrets. Start the app normally:
+
+```powershell
+dotnet run --launch-profile https
+```
+
+Existing `Smtp:*` User Secrets in Development and `Smtp__*` environment variables
+still override values in `appsettings.json`. Computers with older local SMTP
+overrides must use matching values or remove those overrides.

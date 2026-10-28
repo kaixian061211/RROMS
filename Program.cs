@@ -23,12 +23,6 @@ builder.Services.AddRazorPages(options =>
         options.Conventions.AddFolderRouteModelConvention("/Dev", page => page.Selectors.Clear());
 });
 
-builder.Services.AddSignalR();
-builder.Services.AddScoped<INotificationRealtime, NotificationRealtime>();
-builder.Services.AddScoped<INotificationEmailSender, NotificationEmailSender>();
-builder.Services.AddScoped<INotificationDelivery, NotificationDelivery>();
-builder.Services.AddScoped<INotificationService, NotificationService>();
-
 // Sign-in cookie, carrying the claims the login module will issue: a numeric NameIdentifier and a Role.
 // TODO: the login module replaces this. Until then only the Development test login signs anyone in.
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
@@ -64,13 +58,22 @@ builder.Services.AddScoped<IPaymentOrderProvider, PaymentOrderProvider>();
 builder.Services.AddHttpContextAccessor();
 
 
+// ---- Notification module ----
+
+builder.Services.Configure<SmtpSettings>(builder.Configuration.GetSection(SmtpSettings.SectionName));
+builder.Services.AddScoped<ISmtpEmailSender, SmtpEmailSender>();
+builder.Services.AddSignalR();
+builder.Services.AddScoped<INotificationRealtime, NotificationRealtime>();
+builder.Services.AddScoped<INotificationEmailSender, NotificationEmailSender>();
+builder.Services.AddScoped<INotificationDelivery, NotificationDelivery>();
+builder.Services.AddScoped<INotificationService, NotificationService>();
+
 // ---- Payment module ----
 
 builder.Services.Configure<StripeSettings>(builder.Configuration.GetSection(StripeSettings.SectionName));
 builder.Services.AddSingleton<IStripeGateway, StripeGateway>();
 builder.Services.AddScoped<IPaymentQueries, PaymentQueries>();
 builder.Services.AddScoped<IPaymentNotifier, LoggingPaymentNotifier>();
-builder.Services.Configure<SmtpSettings>(builder.Configuration.GetSection(SmtpSettings.SectionName));
 builder.Services.AddScoped<IPaymentNotifier, EmailPaymentNotifier>();
 builder.Services.AddScoped<IPaymentService, PaymentService>();
 QuestPDF.Settings.License = LicenseType.Community;
