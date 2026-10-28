@@ -300,6 +300,38 @@ namespace RROMS.Web.Data.Migrations
                         });
                 });
 
+            modelBuilder.Entity("RROMS.Web.Models.Restaurant.Announcement", b =>
+                {
+                    b.Property<int>("AnnouncementId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("AnnouncementId"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("ExpiresAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.HasKey("AnnouncementId");
+
+                    b.ToTable("Announcement", (string)null);
+                });
+
             modelBuilder.Entity("RROMS.Web.Models.Restaurant.DiningArea", b =>
                 {
                     b.Property<int>("DiningAreaId")
@@ -396,24 +428,6 @@ namespace RROMS.Web.Data.Migrations
                         {
                             t.HasCheckConstraint("CK_MenuItem_Price", "[Price] > 0");
                         });
-                });
-
-            modelBuilder.Entity("RROMS.Web.Models.Notifications.Notification", b =>
-                {
-                    b.HasOne("RROMS.Web.Models.OrdersAndReservations.Order", null)
-                        .WithMany()
-                        .HasForeignKey("OrderId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.HasOne("RROMS.Web.Models.Payments.Payment", null)
-                        .WithMany()
-                        .HasForeignKey("PaymentId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.HasOne("RROMS.Web.Models.OrdersAndReservations.Reservation", null)
-                        .WithMany()
-                        .HasForeignKey("ReservationId")
-                        .OnDelete(DeleteBehavior.Restrict);
                 });
 
             modelBuilder.Entity("RROMS.Web.Models.Restaurant.OperatingHour", b =>
@@ -540,6 +554,24 @@ namespace RROMS.Web.Data.Migrations
                         {
                             t.HasCheckConstraint("CK_RestaurantTable_Capacity", "[Capacity] BETWEEN 1 AND 20");
                         });
+                });
+
+            modelBuilder.Entity("RROMS.Web.Models.Notifications.Notification", b =>
+                {
+                    b.HasOne("RROMS.Web.Models.OrdersAndReservations.Order", null)
+                        .WithMany()
+                        .HasForeignKey("OrderId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("RROMS.Web.Models.Payments.Payment", null)
+                        .WithMany()
+                        .HasForeignKey("PaymentId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("RROMS.Web.Models.OrdersAndReservations.Reservation", null)
+                        .WithMany()
+                        .HasForeignKey("ReservationId")
+                        .OnDelete(DeleteBehavior.Restrict);
                 });
 
             modelBuilder.Entity("RROMS.Web.Models.OrdersAndReservations.OrderItem", b =>
