@@ -1,0 +1,71 @@
+@page
+@model RROMS.Web.Pages.Promotions.Manage.IndexModel
+@using RROMS.Web.Models.Restaurant
+@{
+    ViewData["Title"] = "Promotions";
+    var hasAny = Model.Running.Any() || Model.Scheduled.Any() || Model.Past.Any();
+}
+
+<header class="rr-page-header">
+    <div>
+        <h1>Promotions</h1>
+        <p class="rr-lede">Discounts on dishes. Customers see the lower price while a promotion is running.</p>
+    </div>
+    <div class="rr-page-actions">
+        <a asp-page="/Promotions/Manage/Edit" class="btn btn-primary">Add promotion</a>
+    </div>
+</header>
+
+@if (TempData["Message"] is string message)
+{
+    <div class="alert alert-success" role="status">@message</div>
+}
+
+@if (!hasAny)
+{
+    <div class="rr-empty">
+        <p class="rr-empty__title">No promotions yet</p>
+        <p class="mb-0">Create a promotion, choose the dishes it applies to, and set the dates.</p>
+        <a asp-page="/Promotions/Manage/Edit" class="btn btn-primary">Add promotion</a>
+    </div>
+}
+
+@{
+    async Task Group(string title, List<Promotion> promotions)
+    {
+        if (!promotions.Any()) return;
+
+        <section class="mb-5" aria-label="@title">
+            <h2 class="rr-group-title">@title <span class="rr-count">@promotions.Count</span></h2>
+            <ul class="rr-list">
+                @foreach (var promotion in promotions)
+                {
+                    var status = RestaurantFormatter.PromotionStatus(promotion, Model.Today);
+                    <li class="rr-list__item">
+                        @if (!string.IsNullOrEmpty(promotion.BannerPath))
+                        {
+                            <img class="thumb" src="@promotion.BannerPath" alt="" />
+                        }
+                        <div class="rr-list__main">
+                            <div class="fw-semibold">@promotion.Title · @RestaurantFormatter.DiscountLabel(promotion)</div>
+                            <span class="small text-muted">@RestaurantFormatter.Date(promotion.StartDate) to @RestaurantFormatter.Date(promotion.EndDate)</span>
+                            <p class="small text-muted mt-1 mb-0">@string.Join(", ", promotion.MenuItems.OrderBy(m => m.Name).Select(m => m.Name))</p>
+                        </div>
+                        <span class="rr-status @status.Css">@status.Label</span>
+                        <div class="rr-list__actions">
+                            <a asp-page="/Promotions/Manage/Edit" asp-route-id="@promotion.PromotionId" class="btn btn-sm btn-outline-secondary">Edit<span class="visually-hidden"> @promotion.Title</span></a>
+                            <form method="post" asp-page-handler="Delete" asp-route-id="@promotion.PromotionId" class="d-inline"
+                                  onsubmit="return confirm('Delete this promotion?');">
+                                <button type="submit" class="btn btn-sm btn-outline-danger">Delete<span class="visually-hidden"> @promotion.Title</span></button>
+                            </form>
+                        </div>
+                    </li>
+                }
+            </ul>
+        </section>
+    }
+
+    await Group("Running now", Model.Running);
+    await Group("Scheduled", Model.Scheduled);
+    await Group("Expired or switched off", Model.Past);
+}
