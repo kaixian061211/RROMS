@@ -22,6 +22,19 @@ namespace RROMS.Web.Data.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("MenuItemPromotion", b =>
+                {
+                    b.Property<int>("MenuItemId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("PromotionId")
+                        .HasColumnType("int");
+
+                    b.HasKey("MenuItemId", "PromotionId");
+
+                    b.HasIndex("PromotionId");
+
+                    b.ToTable("MenuItemPromotion");
             modelBuilder.Entity("RROMS.Web.Models.Accounts.UserAccount", b =>
                 {
                     b.Property<int>("UserId")
@@ -522,6 +535,56 @@ namespace RROMS.Web.Data.Migrations
                         });
                 });
 
+            modelBuilder.Entity("RROMS.Web.Models.Restaurant.Promotion", b =>
+                {
+                    b.Property<int>("PromotionId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("PromotionId"));
+
+                    b.Property<string>("BannerPath")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("DiscountType")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<decimal>("DiscountValue")
+                        .HasPrecision(10, 2)
+                        .HasColumnType("decimal(10,2)");
+
+                    b.Property<DateOnly>("EndDate")
+                        .HasColumnType("date");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<DateOnly>("StartDate")
+                        .HasColumnType("date");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.HasKey("PromotionId");
+
+                    b.ToTable("Promotion", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_Promotion_Dates", "[EndDate] >= [StartDate]");
+
+                            t.HasCheckConstraint("CK_Promotion_DiscountValue", "[DiscountValue] > 0");
+                        });
+                });
+
             modelBuilder.Entity("RROMS.Web.Models.Restaurant.RestaurantInfo", b =>
                 {
                     b.Property<int>("RestaurantInfoId")
@@ -617,6 +680,19 @@ namespace RROMS.Web.Data.Migrations
                         });
                 });
 
+            modelBuilder.Entity("MenuItemPromotion", b =>
+                {
+                    b.HasOne("RROMS.Web.Models.Restaurant.MenuItem", null)
+                        .WithMany()
+                        .HasForeignKey("MenuItemId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("RROMS.Web.Models.Restaurant.Promotion", null)
+                        .WithMany()
+                        .HasForeignKey("PromotionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
             modelBuilder.Entity("RROMS.Web.Models.Notifications.Notification", b =>
                 {
                     b.HasOne("RROMS.Web.Models.OrdersAndReservations.Order", null)
