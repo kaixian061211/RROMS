@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using RROMS.Web.Data;
 using RROMS.Web.Models.OrdersAndReservations;
 using RROMS.Web.Models.Payments;
+using RROMS.Web.Services.OrdersAndReservations;
 using RROMS.Web.Services.Payments;
 
 namespace RROMS.Web.Pages.Tracking;
@@ -14,15 +15,19 @@ namespace RROMS.Web.Pages.Tracking;
 public class IndexModel : PageModel
 {
     private readonly AppDbContext _db;
+    private readonly IRestaurantLookup _restaurant;
 
-    public IndexModel(AppDbContext db)
+    public IndexModel(AppDbContext db, IRestaurantLookup restaurant)
     {
         _db = db;
+        _restaurant = restaurant;
     }
 
     public Order? TrackedOrder { get; private set; }
     public Reservation? TrackedReservation { get; private set; }
     public Payment? TrackedPayment { get; private set; }
+    public IReadOnlyDictionary<int, TableInfo> Tables { get; private set; } =
+        new Dictionary<int, TableInfo>();
 
     public async Task<IActionResult> OnGetAsync(
         int? orderId,
@@ -44,6 +49,8 @@ public class IndexModel : PageModel
         {
             return BadRequest();
         }
+
+        Tables = await _restaurant.GetTablesAsync();
 
         if (reservationId is int selectedReservationId)
         {

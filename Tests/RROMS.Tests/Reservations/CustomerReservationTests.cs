@@ -327,4 +327,68 @@ public class CustomerReservationTests : DatabaseTest
         Assert.Equal(expectedMessage, result.ErrorMessage);
         Assert.Equal(0, await CountBookingsAsync(3, Tomorrow, Dinner));
     }
+
+    // TC-05-32 to TC-05-41 are the browser and UAT tests in the report workbook.
+    [Theory(DisplayName = "TC-05-42 Party size against the table's seats (table 10 seats 2): 2 accepted, 3 rejected")]
+    [Trait("Technique", "Boundary value analysis")]
+    [InlineData(2, null)]
+    [InlineData(3, "Table 10 seats 2 people. Please choose a bigger table.")]
+    public async Task PartySizeAgainstCapacity(int partySize, string? expectedError)
+    {
+        var result = await NewReservationService().CreateAsync(Alice, Booking(10, Tomorrow, Dinner, partySize));
+
+        Assert.Equal(expectedError, result.ErrorMessage);
+    }
+
+    [Fact(DisplayName = "TC-05-43 A table the restaurant has retired: can't be booked, but still shows on old bookings")]
+    [Trait("Technique", "Equivalence partitioning")]
+    public async Task RetiredTable()
+    {
+        await RetireTableAsync(5);
+
+        var result = await NewReservationService().CreateAsync(Alice, Booking(5, Tomorrow, Dinner));
+        var tables = await NewReservationService().GetTablesAsync();
+
+        Assert.Equal("Please choose a table.", result.ErrorMessage);
+        Assert.Equal("Table 5", ReservationFormatter.Table(5, tables));
+        Assert.Equal("Table #99", ReservationFormatter.Table(99, tables));   // a table that's gone altogether
+    }
+
+    [Theory(DisplayName = "TC-05-44 Opening hours: a closed day and seatings outside the hours are rejected; no hours set means open")]
+    [Trait("Technique", "Decision table")]
+    [InlineData(null, false, null, null, "19:30", true)]            // no hours set for that day
+    [InlineData("closed", true, null, null, "19:30", false)]
+    [InlineData("dinner only", false, "18:00", "22:00", "12:00", false)]
+    [InlineData("dinner only", false, "18:00", "22:00", "18:00", true)]     // the opening time itself
+    [InlineData("closes at 21:00", false, "11:00", "21:00", "21:00", false)]  // the closing time itself
+    [InlineData("closes at 21:00", false, "11:00", "21:00", "19:30", true)]
+    public async Task OpeningHours(string? hoursSet, bool closed, string? opens, string? closes, string seating, bool accepted)
+    {
+        var day = Tomorrow.DayOfWeek;
+        if (hoursSet is not null)
+            await SetOpeningHoursAsync(day, closed, opens is null ? null : TimeOnly.Parse(opens), closes is null ? null : TimeOnly.Parse(closes));
+
+        var result = await NewReservationService().CreateAsync(Alice, Booking(3, Tomorrow, TimeOnly.Parse(seating)));
+
+        Assert.Equal(accepted, result.Succeeded);
+        if (closed)
+            Assert.Equal($"We're closed on {day}s. Please choose another day.", result.ErrorMessage);
+        else if (!accepted)
+            Assert.Equal($"On {day}s we're open from {ReservationFormatter.Time(TimeOnly.Parse(opens!))} to " +
+                         $"{ReservationFormatter.Time(TimeOnly.Parse(closes!))}. Please choose another time.", result.ErrorMessage);
+    }
+
+    [Fact(DisplayName = "TC-05-45 Reservations switched off: no new bookings, but an existing one can still be changed")]
+    [Trait("Technique", "Equivalence partitioning")]
+    public async Task ReservationsSwitchedOff()
+    {
+        var existing = await AddReservationAsync(Alice, 3, Tomorrow, Dinner);
+        await SetAcceptingAsync(reservations: false, orders: true);
+
+        var newBooking = await NewReservationService().CreateAsync(Alice, Booking(4, Tomorrow, Dinner));
+        var change = await NewReservationService().ModifyAsync(Alice, existing.ReservationId, Booking(3, Tomorrow, Dinner, partySize: 4), existing.RowVersion);
+
+        Assert.Equal("Sorry, we're not taking new reservations right now. Please try again later.", newBooking.ErrorMessage);
+        Assert.True(change.Succeeded, change.ErrorMessage);
+    }
 }

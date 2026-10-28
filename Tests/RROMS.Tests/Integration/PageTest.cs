@@ -38,9 +38,17 @@ public abstract class PageTest : IClassFixture<TestWebApp>, IAsyncLifetime
     /// <summary>Who each test starts signed in as. Null starts it signed out.</summary>
     protected virtual TestUser? SignedInAs => TestUsers.CustomerA;
 
+    private Dictionary<string, int> _dishIds = new();
+
+    /// <summary>The test menu's dishes, as saved for this test. Their ids are new every test.</summary>
+    protected int NasiLemak => _dishIds["Nasi Lemak"];
+    protected int TehTarik => _dishIds["Teh Tarik"];
+    protected int ChickenSatay => _dishIds["Chicken Satay (10 sticks)"];   // sold out
+
     public async Task InitializeAsync()
     {
         await WithDatabaseAsync(TestDatabase.EmptyAsync);
+        _dishIds = await WithDatabaseAsync(TestMenu.SaveToDatabaseAsync);
         if (SignedInAs is not null)
             await SignInAsAsync(SignedInAs);
     }

@@ -63,7 +63,21 @@ public static class ReservationFormatter
     /// <summary>"01 Dec 2026, 7:30 PM", the same layout as PaymentFormatter.When.</summary>
     public static string When(DateOnly date, TimeOnly time) => $"{Date(date)}, {Time(time)}";
 
-    public static string Table(int tableId) => $"Table {tableId}";
+    /// <summary>"Table A2", using the restaurant's table number. A table that's no longer listed shows its id: "Table #4".</summary>
+    public static string Table(int tableId, IReadOnlyDictionary<int, TableInfo> tables) => $"Table {TableNumber(tableId, tables)}";
+
+    /// <summary>Just the number, "A2", for where "Table" is already written beside it.</summary>
+    public static string TableNumber(int tableId, IReadOnlyDictionary<int, TableInfo> tables) =>
+        tables.TryGetValue(tableId, out var table) ? table.TableNumber : $"#{tableId}";
+
+    /// <summary>The tables a form offers: active ones, grouped by dining area, then by number (2 before 10).</summary>
+    public static IEnumerable<IGrouping<string, TableInfo>> TablesByArea(IReadOnlyDictionary<int, TableInfo> tables) =>
+        tables.Values
+            .Where(t => t.IsActive)
+            .OrderBy(t => t.AreaName).ThenBy(t => t.TableNumber.Length).ThenBy(t => t.TableNumber)
+            .GroupBy(t => t.AreaName);
+
+    public static string Seats(int capacity) => $"seats {capacity}";
 
     public static string PartySize(int partySize) => partySize == 1 ? "1 person" : $"{partySize} people";
 

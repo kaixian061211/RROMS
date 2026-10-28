@@ -1,11 +1,15 @@
 using RROMS.Web.Models.OrdersAndReservations;
 
+
 namespace RROMS.Web.Services.OrdersAndReservations;
 
 public interface IOrderService
 {
     /// <summary>The dishes that can be ordered right now, in menu order.</summary>
     Task<IReadOnlyList<MenuItemInfo>> GetMenuAsync();
+
+    /// <summary>Every restaurant table by id, retired ones too, for showing table numbers. Forms offer only the active ones.</summary>
+    Task<IReadOnlyDictionary<int, TableInfo>> GetTablesAsync();
 
     /// <summary>
     /// Places an order for the customer's table. Only the table, menu item ids and quantities come from
@@ -16,8 +20,8 @@ public interface IOrderService
     /// <summary>The order with its items and their menu names. Null when it doesn't exist or belongs to another customer.</summary>
     Task<OrderDetails?> GetByIdAsync(int customerUserId, int orderId);
 
-    /// <summary>The customer's orders with their items (so totals can be shown), newest first.</summary>
-    Task<List<Order>> GetForCustomerAsync(int customerUserId);
+    /// <summary>The customer's orders with their items and payments, newest first.</summary>
+    Task<List<OrderDetails>> GetForCustomerAsync(int customerUserId);
 
     // Staff actions
 
@@ -29,7 +33,8 @@ public interface IOrderService
 
     /// <summary>
     /// Moves an order on. Only pending → preparing → ready → served → completed and pending → cancelled
-    /// are allowed, and a paid order can't be cancelled. rowVersion is what the staff member's page loaded.
+    /// are allowed. An order can't be cancelled while its payment is paid or pending, and can only be completed once
+    /// it's paid (or was paid and refunded). rowVersion is what the staff member's page loaded.
     /// </summary>
     Task<OrderResult> ChangeStatusAsync(int orderId, string newStatus, byte[] rowVersion);
 }

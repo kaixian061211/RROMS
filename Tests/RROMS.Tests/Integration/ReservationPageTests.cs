@@ -146,4 +146,21 @@ public class ReservationPageTests : PageTest
         Assert.Contains(attack, TextOf(confirmation));
         Assert.DoesNotContain(confirmation.Scripts, script => script.Text.Contains("hacked"));
     }
+
+    [Fact(DisplayName = "TC-05-46 The booking form offers the restaurant's tables by dining area with their seats, and a party too big for the table is refused")]
+    [Trait("Technique", "Equivalence partitioning")]
+    public async Task TablesOnTheForm()
+    {
+        var form = await GetPageAsync("/Reservations/Create");
+        var tableTiles = form.QuerySelectorAll<IHtmlInputElement>("input[name='Input.TableId']").ToList();
+
+        Assert.Equal(Enumerable.Range(1, 10).Select(n => n.ToString()), tableTiles.Select(t => t.Value));
+        Assert.Contains("Main hall", TextOf(form));
+        Assert.Equal("10 seats 2", TextOf(form.QuerySelector("label[for='Input_TableId_10']")!));
+
+        var page = await SubmitAsync(MainForm(form), Booking(table: 10, partySize: 3));
+
+        Assert.Contains("Table 10 seats 2 people. Please choose a bigger table.", TextOf(page));
+        Assert.Equal(0, await WithDatabaseAsync(db => db.Set<Reservation>().CountAsync()));
+    }
 }

@@ -1,0 +1,93 @@
+@page
+@model RROMS.Web.Pages.Restaurant.Manage.DiningAreasModel
+@{
+    ViewData["Title"] = "Dining areas";
+    var editing = Model.Input.DiningAreaId != 0;
+}
+
+<header class="rr-page-header">
+    <div>
+        <h1>Dining areas</h1>
+        <p class="rr-lede">The sections of the restaurant, such as Indoor, Outdoor or VIP room. Every table belongs to one.</p>
+    </div>
+    <div class="rr-page-actions">
+        <a asp-page="/Restaurant/Manage/Tables" class="btn btn-outline-secondary">Tables</a>
+    </div>
+</header>
+
+@if (TempData["Message"] is string message)
+{
+    <div class="alert alert-success" role="status">@message</div>
+}
+@if (TempData["Error"] is string error)
+{
+    <div class="alert alert-danger" role="alert">@error</div>
+}
+
+<div class="row g-4">
+    <div class="col-lg-5">
+        <form method="post" asp-page-handler="Save">
+            <div class="rr-panel">
+                <h2 class="h3 mb-4">@(editing ? "Edit dining area" : "New dining area")</h2>
+
+                <input type="hidden" asp-for="Input.DiningAreaId" />
+
+                <div class="mb-4">
+                    <label asp-for="Input.Name" class="form-label">Name</label>
+                    <input asp-for="Input.Name" class="form-control" />
+                    <span asp-validation-for="Input.Name" class="text-danger"></span>
+                </div>
+
+                <div>
+                    <label asp-for="Input.Description" class="form-label">Description (optional)</label>
+                    <input asp-for="Input.Description" class="form-control" />
+                    <span asp-validation-for="Input.Description" class="text-danger"></span>
+                </div>
+            </div>
+
+            <div class="rr-actionbar">
+                <button type="submit" class="btn btn-primary">@(editing ? "Save changes" : "Add dining area")</button>
+                @if (editing)
+                {
+                    <a asp-page="/Restaurant/Manage/DiningAreas" class="btn btn-outline-secondary">Cancel</a>
+                }
+            </div>
+        </form>
+    </div>
+
+    <div class="col-lg-7">
+        @if (Model.Areas.Any())
+        {
+            <h2 class="rr-group-title">All dining areas <span class="rr-count">@Model.Areas.Count</span></h2>
+            <ul class="rr-list">
+                @foreach (var area in Model.Areas)
+                {
+                    <li class="rr-list__item">
+                        <div class="rr-list__main">
+                            <div class="fw-semibold">@area.Name</div>
+                            @if (!string.IsNullOrEmpty(area.Description))
+                            {
+                                <p class="small text-muted mt-1 mb-0">@area.Description</p>
+                            }
+                            <span class="small text-muted">@area.TableCount @(area.TableCount == 1 ? "table" : "tables")</span>
+                        </div>
+                        <div class="rr-list__actions">
+                            <a asp-page="/Restaurant/Manage/DiningAreas" asp-route-id="@area.DiningAreaId" class="btn btn-sm btn-outline-secondary">Edit<span class="visually-hidden"> @area.Name</span></a>
+                            <form method="post" asp-page-handler="Delete" asp-route-id="@area.DiningAreaId" class="d-inline"
+                                  onsubmit="return confirm('Delete this dining area?');">
+                                <button type="submit" class="btn btn-sm btn-outline-danger">Delete<span class="visually-hidden"> @area.Name</span></button>
+                            </form>
+                        </div>
+                    </li>
+                }
+            </ul>
+        }
+        else
+        {
+            <div class="rr-empty">
+                <p class="rr-empty__title">No dining areas yet</p>
+                <p class="mb-0">Add your first dining area, such as Indoor. Tables are placed in a dining area.</p>
+            </div>
+        }
+    </div>
+</div>

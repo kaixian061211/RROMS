@@ -1,0 +1,100 @@
+@page
+@model RROMS.Web.Pages.Restaurant.Manage.DetailsModel
+@{
+    ViewData["Title"] = "Restaurant details";
+}
+
+<header class="rr-page-header">
+    <div>
+        <h1>Restaurant details</h1>
+        <p class="rr-lede">What customers see on the restaurant page, and the settings the system uses.</p>
+    </div>
+    <div class="rr-page-actions">
+        <a asp-page="/Restaurant/Manage/Hours" class="btn btn-outline-secondary">Opening hours</a>
+    </div>
+</header>
+
+@if (TempData["Message"] is string message)
+{
+    <div class="alert alert-success" role="status">@message</div>
+}
+
+<form method="post" enctype="multipart/form-data">
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+    <div class="rr-panel mb-4">
+        <h2 class="h3 mb-4">Details</h2>
+
+        <div class="mb-4">
+            <label asp-for="Input.Name" class="form-label">Restaurant name</label>
+            <input asp-for="Input.Name" class="form-control" />
+            <span asp-validation-for="Input.Name" class="text-danger"></span>
+        </div>
+
+        <div class="mb-4">
+            <label asp-for="Input.Address" class="form-label">Address</label>
+            <input asp-for="Input.Address" class="form-control" />
+            <span asp-validation-for="Input.Address" class="text-danger"></span>
+        </div>
+
+        <div class="row g-3 mb-4">
+            <div class="col-md-6">
+                <label asp-for="Input.Phone" class="form-label">Phone</label>
+                <input asp-for="Input.Phone" class="form-control" />
+                <span asp-validation-for="Input.Phone" class="text-danger"></span>
+            </div>
+            <div class="col-md-6">
+                <label asp-for="Input.Email" class="form-label">Email</label>
+                <input asp-for="Input.Email" class="form-control" />
+                <span asp-validation-for="Input.Email" class="text-danger"></span>
+            </div>
+        </div>
+
+        <div class="mb-4">
+            <label asp-for="Input.Description" class="form-label">Description (optional)</label>
+            <textarea asp-for="Input.Description" class="form-control" rows="3"></textarea>
+            <span asp-validation-for="Input.Description" class="text-danger"></span>
+        </div>
+
+        <div>
+            <label asp-for="LogoFile" class="form-label">Logo (optional)</label>
+            @if (!string.IsNullOrEmpty(Model.LogoPath))
+            {
+                <div class="mb-2"><img class="logo" src="@Model.LogoPath" alt="Current logo" /></div>
+            }
+            <input asp-for="LogoFile" type="file" class="form-control" accept="image/*" />
+            <div class="form-text">JPG, PNG, WEBP or GIF, up to 2 MB.</div>
+            <span asp-validation-for="LogoFile" class="text-danger"></span>
+        </div>
+    </div>
+
+    <div class="rr-panel">
+        <h2 class="h3 mb-4">Settings</h2>
+
+        <div class="row g-3 mb-4">
+            <div class="col-md-6">
+                <label asp-for="Input.ServiceChargePercent" class="form-label">Service charge (%)</label>
+                <input asp-for="Input.ServiceChargePercent" type="number" step="0.01" min="0" max="100" class="form-control" />
+                <span asp-validation-for="Input.ServiceChargePercent" class="text-danger"></span>
+            </div>
+            <div class="col-md-6">
+                <label asp-for="Input.TaxPercent" class="form-label">Tax (%)</label>
+                <input asp-for="Input.TaxPercent" type="number" step="0.01" min="0" max="100" class="form-control" />
+                <span asp-validation-for="Input.TaxPercent" class="text-danger"></span>
+            </div>
+        </div>
+
+        <div class="form-check mb-2">
+            <input asp-for="Input.IsAcceptingOrders" class="form-check-input" />
+            <label asp-for="Input.IsAcceptingOrders" class="form-check-label">Accepting online orders</label>
+        </div>
+        <div class="form-check">
+            <input asp-for="Input.IsAcceptingReservations" class="form-check-input" />
+            <label asp-for="Input.IsAcceptingReservations" class="form-check-label">Accepting reservations</label>
+        </div>
+    </div>
+
+    <div class="rr-actionbar">
+        <button type="submit" class="btn btn-primary">Save changes</button>
+    </div>
+</form>

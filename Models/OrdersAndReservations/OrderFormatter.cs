@@ -82,7 +82,7 @@ public static class OrderFormatter
         _ => "rr-status rr-status--off"
     };
 
-    public static string Table(int tableId) => $"Table {tableId}";
+    public static string Table(int tableId, IReadOnlyDictionary<int, TableInfo> tables) => ReservationFormatter.Table(tableId, tables);
 
     /// <summary>"7:45 PM".</summary>
     public static string Time(DateTime value) => value.ToString("h:mm tt", CultureInfo.InvariantCulture);

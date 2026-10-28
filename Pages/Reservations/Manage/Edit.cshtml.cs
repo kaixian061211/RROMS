@@ -20,6 +20,12 @@ public class EditModel : PageModel
     [BindProperty(SupportsGet = true)]
     public int Id { get; set; }
 
+    /// <summary>"upcoming" when staff came from the Upcoming list, so Save and Back go back there.</summary>
+    [BindProperty(SupportsGet = true, Name = "from")]
+    public string? From { get; set; }
+
+    public bool FromUpcoming => From == UpcomingModel.From;
+
     [BindProperty]
     public ReservationInput Input { get; set; } = new();
 
@@ -33,8 +39,12 @@ public class EditModel : PageModel
     /// <summary>Set when the reservation can't be changed. The page shows it instead of the form.</summary>
     public string? BlockedMessage { get; private set; }
 
+    /// <summary>Every restaurant table by id, for table numbers (and on forms, the tables to choose from).</summary>
+    public IReadOnlyDictionary<int, TableInfo> Tables { get; private set; } = new Dictionary<int, TableInfo>();
+
     public async Task<IActionResult> OnGetAsync()
     {
+        Tables = await _reservations.GetTablesAsync();
         var result = await _reservations.GetForStaffChangeAsync(Id);
         if (!result.Succeeded)
         {
@@ -50,6 +60,7 @@ public class EditModel : PageModel
 
     public async Task<IActionResult> OnPostAsync()
     {
+        Tables = await _reservations.GetTablesAsync();
         if (!ModelState.IsValid)
             return Page();
 
@@ -61,6 +72,8 @@ public class EditModel : PageModel
         }
 
         TempData["StatusMessage"] = $"{ReservationFormatter.Reference(Id)} has been updated.";
+        if (FromUpcoming)
+            return RedirectToPage("Upcoming");
         return RedirectToPage("Index", new { date = ReservationFormatter.InputDate(result.Reservation!.ReservationDate) });
     }
 }

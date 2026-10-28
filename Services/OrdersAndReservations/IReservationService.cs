@@ -10,6 +10,9 @@ public interface IReservationService
     /// </summary>
     Task<bool> IsSlotFreeAsync(int tableId, DateOnly date, TimeOnly timeSlot, int? ignoreReservationId = null);
 
+    /// <summary>Every restaurant table by id, retired ones too, for showing table numbers. Forms offer only the active ones.</summary>
+    Task<IReadOnlyDictionary<int, TableInfo>> GetTablesAsync();
+
     // Customer actions
 
     Task<ReservationResult> CreateAsync(int customerUserId, ReservationInput input);
@@ -38,6 +41,15 @@ public interface IReservationService
 
     /// <summary>Every reservation on a date, optionally only those with one status, by time then table.</summary>
     Task<List<Reservation>> GetForDateAsync(DateOnly date, string? status);
+
+    /// <summary>
+    /// Reservations from today onwards, optionally only those with one status, by date, time then table,
+    /// one page at a time. A page number outside the list gives the first or last page.
+    /// </summary>
+    Task<ReservationPage> GetUpcomingForStaffAsync(string? status, int page);
+
+    /// <summary>How many pending reservations are dated on or after this date: the ones staff still have to confirm.</summary>
+    Task<int> CountPendingAsync(DateOnly from);
 
     /// <summary>Any customer's reservation if its details can still be changed; otherwise a failure saying why not.</summary>
     Task<ReservationResult> GetForStaffChangeAsync(int reservationId);

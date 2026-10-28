@@ -1,10 +1,11 @@
 using RROMS.Web.Models.OrdersAndReservations;
+using RROMS.Web.Models.Restaurant;
 
 namespace RROMS.Web.Services.OrdersAndReservations;
 
 /// <summary>
 /// The one place ordering reads menu items (names, prices, availability). The MenuItem table belongs
-/// to another module, so swapping TemporaryMenuItemLookup for the real one changes nothing else.
+/// to another module, which provides the lookup (MenuItemLookup), so ordering never reads that table itself.
 /// </summary>
 public interface IMenuItemLookup
 {

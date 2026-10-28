@@ -2,6 +2,7 @@ using AngleSharp.Dom;
 using AngleSharp.Html.Dom;
 using Microsoft.EntityFrameworkCore;
 using RROMS.Web.Models.OrdersAndReservations;
+using RROMS.Web.Models.Payments;
 
 namespace RROMS.Tests.Integration;
 
@@ -11,9 +12,6 @@ namespace RROMS.Tests.Integration;
 public class OrderPageTests : PageTest
 {
     public OrderPageTests(TestWebApp app) : base(app) { }
-
-    private const int NasiLemak = 1;
-    private const int TehTarik = 7;
 
     /// <summary>The form changes for choosing a table and some dishes.</summary>
     private static Dictionary<string, string?> Choices(IHtmlDocument orderPage, int table, params (int MenuItemId, int Quantity)[] dishes)
@@ -75,7 +73,7 @@ public class OrderPageTests : PageTest
     {
         var orderPage = await GetPageAsync("/Orders/Create");
         var changes = Choices(orderPage, table: 2, (NasiLemak, 1));
-        changes["Input.Items[8].MenuItemId"] = "6";
+        changes["Input.Items[8].MenuItemId"] = ChickenSatay.ToString();
         changes["Input.Items[8].Quantity"] = "1";
 
         var page = await SubmitAsync(MainForm(orderPage), changes);
@@ -104,5 +102,38 @@ public class OrderPageTests : PageTest
         Assert.Contains("Order not found.", TextOf(details));
         Assert.DoesNotContain(OrderFormatter.Reference(order.OrderId), TextOf(myOrders));
         Assert.Contains("You haven't placed any orders yet.", TextOf(myOrders));
+    }
+
+    [Fact(DisplayName = "TC-12-30 A paid order shows its receipt instead of Payment, on My orders and on the order; an unpaid one still shows Payment")]
+    [Trait("Technique", "Equivalence partitioning")]
+    public async Task PaidOrderShowsTheReceipt()
+    {
+        Order NewOrder() => new()
+        {
+            CustomerUserId = TestCustomer, TableId = 5, Status = OrderStatus.Served,
+            Items = { new OrderItem { MenuItemId = TehTarik, Quantity = 1, UnitPrice = 3.80m } }
+        };
+        var paid = NewOrder();
+        var unpaid = NewOrder();
+        await WithDatabaseAsync(db => { db.AddRange(paid, unpaid); return db.SaveChangesAsync(); });
+        var payment = new Payment
+        {
+            OrderId = paid.OrderId, Amount = 3.80m, PaymentMethod = PaymentMethod.Cash, PaymentStatus = PaymentStatus.Paid,
+            CreatedAt = DateTime.Now, PaidAt = DateTime.Now
+        };
+        await WithDatabaseAsync(db => { db.Payments.Add(payment); return db.SaveChangesAsync(); });
+
+        var myOrders = await GetPageAsync("/Orders");
+        string[] LinksFor(int orderId) => myOrders.QuerySelectorAll(".rr-slip")
+            .Single(slip => TextOf(slip).Contains(OrderFormatter.Reference(orderId)))
+            .QuerySelectorAll("a").Select(a => a.GetAttribute("href")!).ToArray();
+        var paidPage = await GetPageAsync($"/Orders/Details/{paid.OrderId}");
+        var unpaidPage = await GetPageAsync($"/Orders/Details/{unpaid.OrderId}");
+
+        Assert.Equal(new[] { $"/Payments/Receipt/{payment.PaymentId}", $"/Orders/Details/{paid.OrderId}" }, LinksFor(paid.OrderId));
+        Assert.Equal(new[] { $"/Payments/CheckOut?orderId={unpaid.OrderId}", $"/Orders/Details/{unpaid.OrderId}" }, LinksFor(unpaid.OrderId));
+        Assert.Contains("Download receipt", TextOf(paidPage));
+        Assert.DoesNotContain("Go to payment", TextOf(paidPage));
+        Assert.Contains("Go to payment", TextOf(unpaidPage));
     }
 }

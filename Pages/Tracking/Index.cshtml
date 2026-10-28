@@ -37,7 +37,7 @@
                 </span>
             </p>
 
-            <p>@OrderFormatter.Table(order.TableId)</p>
+            <p>@OrderFormatter.Table(order.TableId, Model.Tables)</p>
 
             <a class="btn btn-sm btn-outline-primary"
                asp-page="/Orders/Details"
@@ -107,7 +107,7 @@
             </p>
 
             <p class="mb-1">
-                @ReservationFormatter.Table(reservation.TableId)
+                @ReservationFormatter.Table(reservation.TableId, Model.Tables)
             </p>
 
             <p>
