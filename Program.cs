@@ -1,4 +1,6 @@
+using System.Security.Claims;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using QuestPDF.Infrastructure;
 using RROMS.Web.Data;
@@ -10,6 +12,7 @@ using RROMS.Web.Services.Payments.Receipts;
 using RROMS.Web.Services.Notifications;
 using RROMS.Web.Services.Tracking;
 using RROMS.Web.Services.Restaurant;
+using RROMS.Web.Services.Accounts;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -24,33 +27,42 @@ builder.Services.AddRazorPages(options =>
         options.Conventions.AddFolderRouteModelConvention("/Dev", page => page.Selectors.Clear());
 });
 
-// Sign-in cookie, carrying the claims the login module will issue: a numeric NameIdentifier and a Role.
-// TODO: the login module replaces this. Until then only the Development test login signs anyone in.
+// Sign-in cookie. Real accounts are signed in by /Account/Login (AccountClaims.CreatePrincipal): a numeric
+// NameIdentifier, Name, Email and Role. In Development the test login (/Dev/SwitchUser) still signs in the test users.
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
     {
-        if (builder.Environment.IsDevelopment())
+        options.ExpireTimeSpan = TimeSpan.FromMinutes(30);   // log out after 30 minutes without activity
+        options.SlidingExpiration = true;
+        options.Cookie.HttpOnly = true;
+
+
+        // Not signed in, or signed in without the right role: choose a test user (log in with a real account at /Account/Login).
+        
+            options.LoginPath = "/Account/Login";
+            options.AccessDeniedPath = "/Account/AccessDenied";
+        
+
+        // On every request: if a real account was deactivated, deleted or had its role changed, force a new login.
+        // The Development test users have no UserAccount row, so only sign-ins marked as real accounts are checked.
+        options.Events.OnValidatePrincipal = async context =>
         {
-            // Not signed in, or signed in without the right role: choose a test user.
-            options.LoginPath = "/Dev/SwitchUser";
-            options.AccessDeniedPath = "/Dev/SwitchUser";
-        }
-        else
-        {
-            // There is no login page yet, so refuse with 401 / 403 instead of redirecting to one.
-            options.Events.OnRedirectToLogin = context =>
+            var principal = context.Principal;
+            if (principal is null || !principal.HasClaim(c => c.Type == AccountClaims.AccountClaimType))
+                return;
+
+            var accounts = context.HttpContext.RequestServices.GetRequiredService<IAccountService>();
+            if (!principal.TryGetUserId(out var userId)
+                || await accounts.GetActiveRoleAsync(userId) != principal.FindFirstValue(ClaimTypes.Role))
             {
-                context.Response.StatusCode = StatusCodes.Status401Unauthorized;
-                return Task.CompletedTask;
-            };
-            options.Events.OnRedirectToAccessDenied = context =>
-            {
-                context.Response.StatusCode = StatusCodes.Status403Forbidden;
-                return Task.CompletedTask;
-            };
-        }
+                context.RejectPrincipal();
+                await context.HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+            }
+        };
     });
 
+builder.Services.AddScoped<IAccountService, AccountService>();
+builder.Services.AddScoped<IAccountMailer, AccountMailer>();   // sends through the shared Smtp settings (see Notification module)
 builder.Services.AddScoped<IRestaurantLookup, RestaurantLookup>();
 builder.Services.AddScoped<TrackingQueries>();
 builder.Services.AddScoped<IReservationService, ReservationService>();
@@ -110,6 +122,12 @@ if (app.Environment.IsDevelopment())
 {
     using var scope = app.Services.CreateScope();
     await scope.ServiceProvider.GetRequiredService<AppDbContext>().Database.MigrateAsync();
+
+    // The first administrator, so someone can log in and create the other accounts.
+    // Override with DefaultAdmin:Email / DefaultAdmin:Password in user-secrets, and change the password after the first login.
+    await scope.ServiceProvider.GetRequiredService<IAccountService>().EnsureDefaultAdminAsync(
+        builder.Configuration["DefaultAdmin:Email"] ?? "admin@gmail.com",
+        builder.Configuration["DefaultAdmin:Password"] ?? "admin123");
 }
 
 app.Run();
