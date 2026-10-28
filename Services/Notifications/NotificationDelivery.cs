@@ -12,15 +12,19 @@ public sealed class NotificationDelivery : INotificationDelivery
     private readonly INotificationEmailSender _email;
     private readonly ILogger<NotificationDelivery> _logger;
 
+    private readonly INotificationPushSender _push;
+
     public NotificationDelivery(
         AppDbContext db,
         INotificationRealtime realtime,
         INotificationEmailSender email,
+        INotificationPushSender push,
         ILogger<NotificationDelivery> logger)
     {
         _db = db;
         _realtime = realtime;
         _email = email;
+        _push = push;
         _logger = logger;
     }
 
@@ -58,6 +62,18 @@ public sealed class NotificationDelivery : INotificationDelivery
             }
 
             await _realtime.PublishAsync(notification, ct);
+
+            try
+            {
+                await _push.SendAsync(notification, ct);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(
+                    ex,
+                    "Web Push failed for notification {NotificationId}.",
+                    notificationId);
+            }
 
             if (!sendEmail)
                 return;

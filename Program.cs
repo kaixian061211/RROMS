@@ -67,6 +67,9 @@ builder.Services.AddScoped<INotificationRealtime, NotificationRealtime>();
 builder.Services.AddScoped<INotificationEmailSender, NotificationEmailSender>();
 builder.Services.AddScoped<INotificationDelivery, NotificationDelivery>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
+builder.Services.Configure<WebPushSettings>(builder.Configuration.GetSection(WebPushSettings.SectionName));
+builder.Services.AddSingleton<WebPushIdentity>();
+builder.Services.AddHttpClient<INotificationPushSender, OneSignalPushSender>(http => http.Timeout = TimeSpan.FromSeconds(15));
 
 // ---- Payment module ----
 
@@ -98,6 +101,7 @@ app.MapStaticAssets();
 app.MapRazorPages().WithStaticAssets();
 app.MapStripeWebhook();
 app.MapHub<NotificationHub>("/hubs/notifications");
+app.MapNotificationWebPush();
 
 // Dev only: create the database on startup
 if (app.Environment.IsDevelopment())

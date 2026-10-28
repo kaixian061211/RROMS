@@ -28,6 +28,7 @@
     <link rel="stylesheet" href="~/css/rroms.css" asp-append-version="true" />
     @* The bundle of page-specific stylesheets (CSS isolation). Its name comes from the project, so keep it. *@
     <link rel="stylesheet" href="~/PaymentModule.styles.css" asp-append-version="true" />
+        <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
 </head>
 <body>
     @if (HostEnvironment.IsDevelopment())
@@ -128,6 +129,8 @@
     {
         <partial name="/Pages/Shared/_NotificationLive.cshtml" />
     }
+
+    <partial name="/Pages/Shared/_WebPush.cshtml" />
 
     @await RenderSectionAsync("Scripts", required: false)
 </body>
