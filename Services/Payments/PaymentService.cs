@@ -3,8 +3,10 @@ using Microsoft.Extensions.Options;
 using RROMS.Web.Data;
 using RROMS.Web.Models.OrdersAndReservations;
 using RROMS.Web.Models.Payments;
+using RROMS.Web.Models.Notifications;
 using RROMS.Web.Services.Payments.Gateways;
 using RROMS.Web.Services.Payments.Notifications;
+using RROMS.Web.Services.Notifications;
 
 namespace RROMS.Web.Services.Payments;
 
@@ -17,9 +19,13 @@ public class PaymentService : IPaymentService
     private readonly IEnumerable<IPaymentNotifier> _notifiers;
     private readonly ILogger<PaymentService> _logger;
     private readonly StripeSettings _stripeSettings;
+    private readonly INotificationService _notifications;
+    private readonly INotificationDelivery _notificationDelivery;
 
     public PaymentService(
         AppDbContext db,
+        INotificationService notifications,
+        INotificationDelivery notificationDelivery,
         IStripeGateway stripe,
         IPaymentOrderProvider orders,
         IPaymentQueries queries,
@@ -28,6 +34,8 @@ public class PaymentService : IPaymentService
         IOptions<StripeSettings> stripeSettings)
     {
         _db = db;
+        _notifications = notifications;
+        _notificationDelivery = notificationDelivery;
         _stripe = stripe;
         _orders = orders;
         _queries = queries;
@@ -403,44 +411,46 @@ public class PaymentService : IPaymentService
 
         DateTime? paidAt = DateTime.Now;
 
+        await using var transaction =
+            await _db.Database.BeginTransactionAsync();
+
         var updated = await matchingAttempt
-            .Where(p =>
-                p.PaymentStatus == PaymentStatus.Pending ||
-                p.PaymentStatus == PaymentStatus.Failed)
+            .Where(p => p.PaymentStatus == PaymentStatus.Pending
+                     || p.PaymentStatus == PaymentStatus.Failed)
             .ExecuteUpdateAsync(s => s
-                .SetProperty(
-                    p => p.PaymentStatus,
-                    PaymentStatus.Paid)
-                .SetProperty(
-                    p => p.PaidAt,
-                    paidAt)
-                .SetProperty(
-                    p => p.TransactionRef,
-                    confirmation.SessionId)
+                .SetProperty(p => p.PaymentStatus, PaymentStatus.Paid)
+                .SetProperty(p => p.PaidAt, paidAt)
+                .SetProperty(p => p.TransactionRef, confirmation.SessionId)
                 .SetProperty(
                     p => p.StripePaymentIntentId,
-                    p => p.StripePaymentIntentId ??
-                         paymentIntentId));
+                    p => p.StripePaymentIntentId ?? paymentIntentId));
 
         if (updated == 0)
         {
-            // A duplicate event may fill a late reference.
-            // It must not change timestamps or notify again.
+            // A repeated callback may supply a late payment reference.
+            // Preserve the status and avoid another notification.
             await matchingAttempt
-                .Where(p =>
-                    p.PaymentStatus == PaymentStatus.Paid ||
-                    p.PaymentStatus == PaymentStatus.Refunded)
+                .Where(p => p.PaymentStatus == PaymentStatus.Paid
+                         || p.PaymentStatus == PaymentStatus.Refunded)
                 .ExecuteUpdateAsync(s => s
                     .SetProperty(
                         p => p.TransactionRef,
                         confirmation.SessionId)
                     .SetProperty(
                         p => p.StripePaymentIntentId,
-                        p => p.StripePaymentIntentId ??
-                             paymentIntentId));
+                        p => p.StripePaymentIntentId ?? paymentIntentId));
 
+            await transaction.CommitAsync();
             return false;
         }
+
+        var notificationId = await SavePaymentNotificationAsync(
+            payment.PaymentId,
+            isRefund: false);
+
+        await transaction.CommitAsync();
+
+        await _notificationDelivery.DeliverAsync(notificationId);
 
         await NotifyAsync(
             payment.PaymentId,
@@ -546,8 +556,7 @@ public class PaymentService : IPaymentService
 
         if (!PaymentMethod.CounterMethods.Contains(method))
         {
-            throw new PaymentException(
-                "Choose cash, card or e-wallet.");
+            throw new PaymentException("Choose cash, card or e-wallet.");
         }
 
         var payment = await _db.Payments
@@ -579,33 +588,35 @@ public class PaymentService : IPaymentService
 
         DateTime? paidAt = DateTime.Now;
 
+        await using var transaction =
+            await _db.Database.BeginTransactionAsync();
+
         var updated = await _db.Payments
-            .Where(p =>
-                p.PaymentId == paymentId &&
-                p.PaymentStatus == PaymentStatus.Pending &&
-                p.PaymentMethod == PaymentMethod.PayAtCounter &&
-                p.Amount == payment.Amount &&
-                p.OrderId == payment.OrderId &&
-                p.CreatedAt == payment.CreatedAt)
+            .Where(p => p.PaymentId == paymentId
+                     && p.PaymentStatus == PaymentStatus.Pending
+                     && p.PaymentMethod == PaymentMethod.PayAtCounter
+                     && p.Amount == payment.Amount
+                     && p.OrderId == payment.OrderId
+                     && p.CreatedAt == payment.CreatedAt)
             .ExecuteUpdateAsync(s => s
-                .SetProperty(
-                    p => p.PaymentStatus,
-                    PaymentStatus.Paid)
-                .SetProperty(
-                    p => p.PaymentMethod,
-                    method)
-                .SetProperty(
-                    p => p.PaidAt,
-                    paidAt)
-                .SetProperty(
-                    p => p.RecordedByStaffId,
-                    (int?)staffUserId));
+                .SetProperty(p => p.PaymentStatus, PaymentStatus.Paid)
+                .SetProperty(p => p.PaymentMethod, method)
+                .SetProperty(p => p.PaidAt, paidAt)
+                .SetProperty(p => p.RecordedByStaffId, (int?)staffUserId));
 
         if (updated == 0)
         {
             throw new PaymentException(
                 "This payment changed while it was being collected. Check its current status before trying again.");
         }
+
+        var notificationId = await SavePaymentNotificationAsync(
+            paymentId,
+            isRefund: false);
+
+        await transaction.CommitAsync();
+
+        await _notificationDelivery.DeliverAsync(notificationId);
 
         await NotifyAsync(
             paymentId,
@@ -755,6 +766,9 @@ public class PaymentService : IPaymentService
         // Counter refunds record money already returned manually.
         DateTime refundedAt = DateTime.Now;
 
+        await using var transaction =
+            await _db.Database.BeginTransactionAsync();
+
         var updated = await _db.Payments
             .Where(p =>
                 p.PaymentId == paymentId &&
@@ -787,10 +801,17 @@ public class PaymentService : IPaymentService
                 "The payment changed while the refund was being processed. Check its current status and Stripe before trying again.");
         }
 
+        var notificationId = await SavePaymentNotificationAsync(
+            paymentId,
+            isRefund: true);
+
+        await transaction.CommitAsync();
+
+        await _notificationDelivery.DeliverAsync(notificationId);
+
         await NotifyAsync(
             paymentId,
-            (notifier, details) =>
-                notifier.PaymentRefundedAsync(details));
+            (notifier, details) => notifier.PaymentRefundedAsync(details));
     }
 
     private async Task<bool> OwnsAsync(
@@ -843,5 +864,43 @@ public class PaymentService : IPaymentService
                     paymentId);
             }
         }
+    }
+
+    private async Task<int> SavePaymentNotificationAsync(
+        int paymentId,
+        bool isRefund)
+    {
+        var details = await (
+            from payment in _db.Payments.AsNoTracking()
+            join order in _db.Set<Order>().AsNoTracking()
+                on payment.OrderId equals order.OrderId
+            where payment.PaymentId == paymentId
+            select new
+            {
+                payment.PaymentId,
+                payment.OrderId,
+                payment.Amount,
+                order.CustomerUserId
+            }).SingleAsync();
+
+        var amount = PaymentFormatter.Money(details.Amount);
+
+        var notification = await _notifications.StageAsync(new NotificationInput
+        {
+            UserId = details.CustomerUserId,
+            Type = NotificationTypes.Payment,
+            Title = isRefund
+                ? "Payment refunded"
+                : "Payment confirmed",
+            Message = isRefund
+                ? $"Your payment of {amount} for order #{details.OrderId} has been refunded."
+                : $"We have received your payment of {amount} for order #{details.OrderId}.",
+            PaymentId = details.PaymentId
+        });
+
+        // Save within the transaction started by the payment action.
+        await _db.SaveChangesAsync();
+
+        return notification.NotificationId;
     }
 }

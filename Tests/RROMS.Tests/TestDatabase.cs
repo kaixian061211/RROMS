@@ -2,6 +2,7 @@ using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using RROMS.Web.Data;
 using RROMS.Web.Models.OrdersAndReservations;
+using RROMS.Web.Models.Notifications;
 using RROMS.Web.Models.Restaurant;
 
 namespace RROMS.Tests;
@@ -81,12 +82,13 @@ public static class TestDatabase
                 $"{Name} should have exactly tables 1 to 10, with ids 1 to 10. Drop the {Name} database and run the tests again to recreate it.");
     }
 
-    /// <summary>Deletes every order, payment, reservation and menu item. Checks the database first, every time.</summary>
+    /// <summary>Deletes every notification, order, payment, reservation and menu item. Checks the database first, every time.</summary>
     public static async Task EmptyAsync(AppDbContext db)
     {
         await db.Database.OpenConnectionAsync();
         CheckIsTestDatabase((SqlConnection)db.Database.GetDbConnection());
 
+        await db.Notifications.ExecuteDeleteAsync();
         await db.Set<OrderItem>().ExecuteDeleteAsync();
         await db.Set<Order>().ExecuteDeleteAsync();
         await db.Payments.ExecuteDeleteAsync();

@@ -1,8 +1,10 @@
 using Microsoft.EntityFrameworkCore;
 using RROMS.Web.Data;
 using RROMS.Web.Models.OrdersAndReservations;
+using RROMS.Web.Models.Notifications;
 using RROMS.Web.Models.Payments;
 using RROMS.Web.Services.Payments;
+using RROMS.Web.Services.Notifications;
 
 namespace RROMS.Web.Services.OrdersAndReservations;
 
@@ -29,13 +31,26 @@ public class OrderService : IOrderService
     private readonly IMenuItemLookup _menu;
     private readonly IPaymentQueries _payments;
     private readonly IRestaurantLookup _restaurant;
+    private readonly INotificationService _notifications;
+    private readonly INotificationDelivery _notificationDelivery;
+    private readonly ILogger<OrderService> _logger;
 
-    public OrderService(AppDbContext db, IMenuItemLookup menu, IPaymentQueries payments, IRestaurantLookup restaurant)
+    public OrderService(
+        AppDbContext db,
+        IMenuItemLookup menu,
+        IPaymentQueries payments,
+        IRestaurantLookup restaurant,
+        INotificationService notifications,
+        INotificationDelivery notificationDelivery,
+        ILogger<OrderService> logger)
     {
         _db = db;
         _menu = menu;
         _payments = payments;
         _restaurant = restaurant;
+        _notifications = notifications;
+        _notificationDelivery = notificationDelivery;
+        _logger = logger;
     }
 
     // AppDbContext picks up Order through OrderConfiguration, so it needs no DbSet for it.
@@ -90,6 +105,10 @@ public class OrderService : IOrderService
         };
         Orders.Add(order);
         await _db.SaveChangesAsync();
+        await NotifyCustomerAsync(
+            order,
+            "Order placed",
+            $"Your order #{order.OrderId} has been placed.");
 
         return OrderResult.Success(order);
     }
@@ -185,11 +204,40 @@ public class OrderService : IOrderService
         try
         {
             await _db.SaveChangesAsync();
+            await NotifyCustomerAsync(
+                order,
+                "Order status updated",
+                $"Your order #{order.OrderId} is now {OrderFormatter.StatusLabel(newStatus).ToLowerInvariant()}.");
             return OrderResult.Success(order);
         }
         catch (DbUpdateConcurrencyException)
         {
             return OrderResult.Failure(ChangedByOthersMessage);
+        }
+    }
+
+    private async Task NotifyCustomerAsync(Order order, string title, string message)
+    {
+        try
+        {
+            var notification = await _notifications.StageAsync(new NotificationInput
+            {
+                UserId = order.CustomerUserId,
+                Type = NotificationTypes.Order,
+                Title = title,
+                Message = message,
+                OrderId = order.OrderId
+            });
+
+            await _db.SaveChangesAsync();
+            await _notificationDelivery.DeliverAsync(notification.NotificationId);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(
+                ex,
+                "Order {OrderId} was saved, but its notification could not be staged or delivered.",
+                order.OrderId);
         }
     }
 
