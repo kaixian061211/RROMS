@@ -31,9 +31,9 @@ else
 {
     @foreach (var notification in Model.Notifications)
     {
-        var createdAtUtc = notification.CreatedAt.Kind == DateTimeKind.Local
-            ? notification.CreatedAt.ToUniversalTime()
-            : DateTime.SpecifyKind(notification.CreatedAt, DateTimeKind.Utc);
+        // SYSDATETIME() stores database-local wall time, without an offset.
+        // Preserve that value instead of incorrectly declaring it to be UTC.
+        var recordedTime = DateTime.SpecifyKind(notification.CreatedAt, DateTimeKind.Unspecified);
 
         <article class="card mb-3 @(notification.IsRead ? "" : "border-primary")">
             <div class="card-body">
@@ -81,9 +81,8 @@ else
                 <p class="mb-2" style="white-space: pre-line;">@notification.Message</p>
 
                 <time class="small text-body-secondary"
-                      datetime="@createdAtUtc.ToString("O", CultureInfo.InvariantCulture)"
-                      data-notification-time>
-                    @createdAtUtc.ToString("dd MMM yyyy, HH:mm 'UTC'", CultureInfo.InvariantCulture)
+                      datetime="@recordedTime.ToString("yyyy-MM-ddTHH:mm:ss", CultureInfo.InvariantCulture)">
+                    @recordedTime.ToString("dd MMM yyyy, HH:mm", CultureInfo.InvariantCulture)
                 </time>
 
                 @if (!notification.IsRead)
@@ -124,8 +123,3 @@ else
         </a>
     }
 </nav>
-
-@section Scripts {
-    <script src="~/js/notifications-times.js"
-            asp-append-version="true"></script>
-}

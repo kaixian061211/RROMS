@@ -5,6 +5,7 @@
 
 @{
     ViewData["Title"] = "Track status";
+
 }
 
 <h1 class="h3 mb-3">Track status</h1>
@@ -14,13 +15,20 @@
      role="status"
      aria-live="polite"
      hidden>
-    <span>New updates are available for this page.</span>
+    <span>Automatic status refresh is unavailable. You can refresh this page.</span>
     <button id="tracking-refresh-button"
             class="btn btn-sm btn-outline-primary ms-2"
             type="button">
         Refresh status
     </button>
 </div>
+
+<div id="tracking-content"
+     data-order-id="@Model.TrackedOrder?.OrderId"
+     data-reservation-id="@Model.TrackedReservation?.ReservationId"
+     data-snapshot="@Model.Snapshot"
+     aria-live="polite"
+     aria-atomic="true">
 
 @if (Model.TrackedOrder is { } order)
 {
@@ -122,6 +130,7 @@
         </div>
     </section>
 }
+</div>
 
 <a class="btn btn-outline-secondary" asp-page="/Notifications/Index">
     Back to notifications

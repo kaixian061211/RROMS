@@ -3,6 +3,11 @@
     var refreshPage = page == "/Notifications/Index";
 }
 
+@if (page == "/Tracking/Index")
+{
+    <script src="~/js/tracking-live.js" asp-append-version="true"></script>
+}
+
 <div id="notification-live"
      data-hub-url="@Url.Content("~/hubs/notifications")"
      data-refresh-page="@refreshPage.ToString().ToLowerInvariant()"

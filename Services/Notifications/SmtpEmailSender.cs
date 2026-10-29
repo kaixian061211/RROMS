@@ -35,7 +35,12 @@ public sealed class SmtpEmailSender : ISmtpEmailSender
                 new MailboxAddress(_settings.FromName, _settings.FromEmail));
         }
 
-        using var client = new SmtpClient();
+        var timeout = TimeSpan.FromSeconds(Math.Clamp(_settings.TimeoutSeconds, 1, 30));
+        using var deadline = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        deadline.CancelAfter(timeout);
+        ct = deadline.Token;
+
+        using var client = new SmtpClient { Timeout = (int)timeout.TotalMilliseconds };
         await client.ConnectAsync(
             _settings.Host,
             _settings.Port,

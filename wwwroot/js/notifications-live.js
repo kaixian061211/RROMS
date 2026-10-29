@@ -6,14 +6,15 @@
     const toast = document.getElementById("notification-toast");
     const title = document.getElementById("notification-toast-title");
     const message = document.getElementById("notification-toast-message");
-    const trackingBanner = document.getElementById("tracking-updates-banner");
-    const trackingRefreshButton = document.getElementById("tracking-refresh-button");
+
     const refreshPage = root.dataset.refreshPage === "true";
 
     const connection = new signalR.HubConnectionBuilder()
         .withUrl(root.dataset.hubUrl)
         .withAutomaticReconnect()
         .build();
+
+    const tracking = window.RromsTracking;
 
     let submitting = false;
     let reloadTimer;
@@ -26,6 +27,25 @@
         ? window.bootstrap.Toast.getOrCreateInstance(toast, { delay: 8000 })
         : null;
 
+    function showNextToast() {
+        if (toastShowing || toastQueue.length === 0) return;
+        if (!toastInstance) {
+            toastQueue.length = 0;
+            return;
+        }
+        const notification = toastQueue.shift();
+        title.textContent = notification.title;
+        message.textContent = notification.message;
+        toastShowing = true;
+        toastInstance.show();
+    }
+
+    toast?.addEventListener("hidden.bs.toast", () => {
+        toastShowing = false;
+        showNextToast();
+        refreshPageSoon();
+    });
+
     document.addEventListener("submit", event => {
         const form = event.target;
 
@@ -37,41 +57,18 @@
     });
 
     function refreshPageSoon() {
-        if (!refreshPage || submitting) return;
-        if (toastShowing || toastQueue.length > 0) return;
+        if (tracking) {
+            tracking.refresh();
+            return;
+        }
+
+        if (!refreshPage || submitting || toastShowing || toastQueue.length > 0) return;
 
         clearTimeout(reloadTimer);
 
         reloadTimer = setTimeout(() => {
             if (!submitting) window.location.reload();
         }, 500);
-    }
-
-    function showNextToast() {
-        if (toastShowing || toastQueue.length === 0)
-            return;
-
-        if (!toastInstance) {
-            toastQueue.length = 0;
-            refreshPageSoon();
-            return;
-        }
-
-        const notification = toastQueue.shift();
-        title.textContent = notification.title;
-        message.textContent = notification.message;
-        toastShowing = true;
-        toastInstance.show();
-    }
-
-    function queueToast(notification) {
-        clearTimeout(reloadTimer);
-        toastQueue.push(notification);
-        showNextToast();
-    }
-
-    function showTrackingUpdates() {
-        if (trackingBanner) trackingBanner.hidden = false;
     }
 
     async function updateUnreadCount() {
@@ -82,6 +79,7 @@
 
             badge.textContent = String(count);
             badge.hidden = count === 0;
+
             badge.setAttribute(
                 "aria-label",
                 `${count} unread notifications`
@@ -92,21 +90,12 @@
     }
 
     connection.on("NotificationReceived", notification => {
-        queueToast(notification);
+        clearTimeout(reloadTimer);
+        toastQueue.push(notification);
+        showNextToast();
 
         void updateUnreadCount();
-        showTrackingUpdates();
         refreshPageSoon();
-    });
-
-    toast?.addEventListener("hidden.bs.toast", () => {
-        toastShowing = false;
-        showNextToast();
-        refreshPageSoon();
-    });
-
-    trackingRefreshButton?.addEventListener("click", () => {
-        window.location.reload();
     });
 
     connection.on("NotificationReadStateChanged", () => {
@@ -119,7 +108,7 @@
 
     connection.onreconnected(() => {
         void updateUnreadCount();
-        showTrackingUpdates();
+
         refreshPageSoon();
     });
 
@@ -133,8 +122,9 @@
             await connection.start();
             void updateUnreadCount();
 
-            if (connectedBefore || startFailed) {
-                showTrackingUpdates();
+            tracking?.refresh();
+
+            if (!tracking && (connectedBefore || startFailed)) {
                 refreshPageSoon();
             }
 
@@ -146,6 +136,9 @@
         }
     }
 
-    connection.onclose(retryStart);
+    connection.onclose(() => {
+        retryStart();
+    });
+
     void start();
 })();

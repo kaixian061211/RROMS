@@ -61,41 +61,34 @@ public sealed class NotificationDelivery : INotificationDelivery
                 return;
             }
 
-            await _realtime.PublishAsync(notification, ct);
-
-            try
+            MailboxAddress? mailbox = null;
+            if (sendEmail && (recipient is null || recipient.UserId != notification.UserId
+                || !MailboxAddress.TryParse(recipient.Email, out mailbox)
+                || mailbox is null))
             {
-                await _push.SendAsync(notification, ct);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(
-                    ex,
-                    "Web Push failed for notification {NotificationId}.",
-                    notificationId);
-            }
-
-            if (!sendEmail)
-                return;
-
-            if (recipient is null
-                || recipient.UserId != notification.UserId
-                || !MailboxAddress.TryParse(recipient.Email, out var mailbox)
-                || mailbox is null)
-            {
+                mailbox = null;
                 _logger.LogWarning(
                     "Email skipped for notification {NotificationId}: " +
                     "a valid recipient matching its owner is required.",
                     notificationId);
-
-                return;
             }
 
-            await _email.SendAsync(
-                mailbox,
-                notification.Title,
-                notification.Message,
-                ct);
+            // Providers are independent and do not use the DbContext. Start all
+            // eligible channels together, with a separate deadline for each.
+            var deliveries = new List<Task>
+            {
+                DeliverChannelAsync("SignalR", notificationId,
+                    token => _realtime.PublishAsync(notification, token), ct),
+                DeliverChannelAsync("Web Push", notificationId,
+                    token => _push.SendAsync(notification, token), ct)
+            };
+            if (sendEmail && mailbox is not null)
+            {
+                deliveries.Add(DeliverChannelAsync("Email", notificationId,
+                    token => _email.SendAsync(mailbox, notification.Title, notification.Message, token), ct));
+            }
+
+            await Task.WhenAll(deliveries);
         }
         catch (Exception ex)
         {
@@ -105,6 +98,24 @@ public sealed class NotificationDelivery : INotificationDelivery
                 "Delivery failed for notification {NotificationId}; " +
                 "its saved inbox record remains available.",
                 notificationId);
+        }
+    }
+
+    private async Task DeliverChannelAsync(
+        string channel, int notificationId,
+        Func<CancellationToken, Task> send, CancellationToken ct)
+    {
+        using var deadline = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        deadline.CancelAfter(TimeSpan.FromSeconds(5));
+        try
+        {
+            await send(deadline.Token);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex,
+                "{Channel} delivery failed or timed out for notification {NotificationId}; its inbox record remains available.",
+                channel, notificationId);
         }
     }
 }

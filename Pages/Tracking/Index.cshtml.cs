@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
 using RROMS.Web.Data;
 using RROMS.Web.Models.OrdersAndReservations;
 using RROMS.Web.Models.Payments;
@@ -28,6 +29,43 @@ public class IndexModel : PageModel
     public Payment? TrackedPayment { get; private set; }
     public IReadOnlyDictionary<int, TableInfo> Tables { get; private set; } =
         new Dictionary<int, TableInfo>();
+
+    // Both initial HTML and polling use the same authorized data and snapshot.
+    public string Snapshot => JsonSerializer.Serialize(new
+    {
+        orderId = TrackedOrder?.OrderId,
+        orderStatus = TrackedOrder?.Status,
+        orderTableId = TrackedOrder?.TableId,
+
+        reservationId = TrackedReservation?.ReservationId,
+        reservationStatus = TrackedReservation?.Status,
+        reservationDate = TrackedReservation?.ReservationDate,
+        reservationTime = TrackedReservation?.TimeSlot,
+        reservationTableId = TrackedReservation?.TableId,
+        reservationPartySize = TrackedReservation?.PartySize,
+
+        paymentId = TrackedPayment?.PaymentId,
+        paymentStatus = TrackedPayment?.PaymentStatus,
+        paymentAmount = TrackedPayment?.Amount,
+        paymentMethod = TrackedPayment?.PaymentMethod
+    }, JsonSerializerOptions.Web);
+
+    public async Task<IActionResult> OnGetStatusAsync(
+        int? orderId,
+        int? reservationId,
+        int? paymentId,
+        CancellationToken ct)
+    {
+        var result = await OnGetAsync(
+            orderId,
+            reservationId,
+            paymentId,
+            ct);
+
+        return result is PageResult
+            ? Content(Snapshot, "application/json")
+            : result;
+    }
 
     public async Task<IActionResult> OnGetAsync(
         int? orderId,
