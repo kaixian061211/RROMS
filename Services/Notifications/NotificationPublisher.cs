@@ -3,6 +3,7 @@ using RROMS.Web.Data;
 using RROMS.Web.Models.Accounts;
 using RROMS.Web.Models.Notifications;
 using RROMS.Web.Models.Restaurant;
+using RROMS.Web.Models.OrdersAndReservations;
 
 namespace RROMS.Web.Services.Notifications;
 
@@ -38,9 +39,15 @@ public sealed class NotificationPublisher(
     {
         try
         {
-            var recipients = await db.Set<UserAccount>().AsNoTracking()
-                .Where(u => u.IsActive && u.Role == UserRoles.Customer)
-                .Select(u => u.UserId).ToListAsync(ct);
+            var audience = db.Set<UserAccount>().AsNoTracking()
+                .Where(u => u.IsActive && u.Role == UserRoles.Customer);
+            if (type == NotificationTypes.Promotion)
+            {
+                var previousCustomers = db.Set<Order>().Select(o => o.CustomerUserId)
+                    .Union(db.Set<Reservation>().Select(r => r.CustomerUserId));
+                audience = audience.Where(u => previousCustomers.Contains(u.UserId));
+            }
+            var recipients = await audience.Select(u => u.UserId).ToListAsync(ct);
             var staged = new List<Notification>();
             foreach (var userId in recipients)
             {

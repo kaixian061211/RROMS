@@ -19,10 +19,12 @@ namespace RROMS.Tests.Notifications;
 public class NotificationPublishingTests : DatabaseTest
 {
     [Fact]
-    public async Task PromotionReachesActiveCustomersWithoutEmailingStaffOrInactiveAccounts()
+    public async Task PromotionTargetsOnlyActiveCustomersWithOrderOrReservationHistoryOnce()
     {
         await using var db = NewContext();
         var customer = Account(UserRoles.Customer);
+        var orderCustomer = Account(UserRoles.Customer);
+        var noHistory = Account(UserRoles.Customer);
         var staff = Account(UserRoles.Staff);
         var inactive = Account(UserRoles.Customer, active: false);
         var promotion = new Promotion
@@ -31,7 +33,13 @@ public class NotificationPublishingTests : DatabaseTest
             StartDate = DateOnly.FromDateTime(DateTime.Today.AddDays(1)),
             EndDate = DateOnly.FromDateTime(DateTime.Today.AddDays(3))
         };
-        db.AddRange(customer, staff, inactive, promotion);
+        db.AddRange(customer, orderCustomer, noHistory, staff, inactive, promotion);
+        await db.SaveChangesAsync();
+        await AddReservationAsync(customer.UserId, 1, DateOnly.FromDateTime(DateTime.Today.AddDays(3)), new TimeOnly(12, 0));
+        await AddReservationAsync(staff.UserId, 2, DateOnly.FromDateTime(DateTime.Today.AddDays(3)), new TimeOnly(12, 0));
+        await AddReservationAsync(inactive.UserId, 3, DateOnly.FromDateTime(DateTime.Today.AddDays(3)), new TimeOnly(12, 0));
+        db.AddRange(new Order { CustomerUserId = orderCustomer.UserId, TableId = 1 },
+            new Order { CustomerUserId = orderCustomer.UserId, TableId = 1 });
         await db.SaveChangesAsync();
         var delivery = new RecordingDelivery();
         using var services = new ServiceCollection().AddSingleton<INotificationDelivery>(delivery).BuildServiceProvider();
@@ -41,8 +49,10 @@ public class NotificationPublishingTests : DatabaseTest
         var ownNotice = Assert.Single(notices, n => n.UserId == customer.UserId);
         Assert.Equal(NotificationTypes.Promotion, ownNotice.Type);
         Assert.Contains("10% off", ownNotice.Message);
-        Assert.DoesNotContain(notices, n => n.UserId == staff.UserId || n.UserId == inactive.UserId);
+        var orderNotice = Assert.Single(notices, n => n.UserId == orderCustomer.UserId);
+        Assert.DoesNotContain(notices, n => n.UserId == staff.UserId || n.UserId == inactive.UserId || n.UserId == noHistory.UserId);
         Assert.Single(delivery.Calls, c => c.Id == ownNotice.NotificationId);
+        Assert.Single(delivery.Calls, c => c.Id == orderNotice.NotificationId);
         Assert.All(delivery.Calls, call => Assert.False(call.SendEmail));
     }
 

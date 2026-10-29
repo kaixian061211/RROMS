@@ -87,7 +87,9 @@ or invalid addresses are logged and skipped. Other reservation events keep email
 disabled. Payment receipt emails keep their existing separate notifier.
 
 New or newly activated promotions and announcements publish system/push notices
-to active Customer accounts through `NotificationPublisher`. Ordinary edits do
+through `NotificationPublisher`. Promotions target active Customer accounts with
+at least one order or reservation; announcements still target all active Customer
+accounts. Ordinary edits do
 not rebroadcast. Scheduled promotions are announced when published, including
 their dates; there is no background watcher or automatic second announcement on
 the start date. Drafts, expired records, staff and inactive accounts are excluded.
