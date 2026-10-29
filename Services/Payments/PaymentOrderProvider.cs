@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using RROMS.Web.Data;
+using RROMS.Web.Models.Accounts;
 using RROMS.Web.Models.OrdersAndReservations;
 using RROMS.Web.Models.Payments;
 
@@ -19,7 +20,7 @@ public sealed class PaymentOrderProvider : IPaymentOrderProvider
         var order = await OrdersWithItems()
             .SingleOrDefaultAsync(o => o.OrderId == orderId);
 
-        return order is null ? null : ToPaymentOrderInfo(order);
+        return order is null ? null : (await MapOrdersAsync(new[] { order })).Single();
     }
 
     public async Task<IReadOnlyList<PaymentOrderInfo>>
@@ -30,7 +31,7 @@ public sealed class PaymentOrderProvider : IPaymentOrderProvider
             .OrderByDescending(o => o.OrderId)
             .ToListAsync();
 
-        return orders.Select(ToPaymentOrderInfo).ToList();
+        return await MapOrdersAsync(orders);
     }
 
     public async Task<IReadOnlyDictionary<int, PaymentOrderInfo>>
@@ -47,8 +48,7 @@ public sealed class PaymentOrderProvider : IPaymentOrderProvider
             .Where(o => ids.Contains(o.OrderId))
             .ToListAsync();
 
-        return orders
-            .Select(ToPaymentOrderInfo)
+        return (await MapOrdersAsync(orders))
             .ToDictionary(order => order.OrderId);
     }
 
@@ -64,6 +64,26 @@ public sealed class PaymentOrderProvider : IPaymentOrderProvider
         _db.Set<Order>()
             .AsNoTracking()
             .Include(order => order.Items);
+
+    private async Task<List<PaymentOrderInfo>> MapOrdersAsync(IReadOnlyCollection<Order> orders)
+    {
+        var customerIds = orders.Select(o => o.CustomerUserId).Distinct().ToList();
+        var customers = await _db.Set<UserAccount>().AsNoTracking()
+            .Where(u => customerIds.Contains(u.UserId) && u.Role == UserRoles.Customer)
+            .Select(u => new { u.UserId, u.FullName, u.Email, u.IsActive })
+            .ToDictionaryAsync(u => u.UserId);
+
+        return orders.Select(order =>
+        {
+            var result = ToPaymentOrderInfo(order);
+            if (customers.TryGetValue(order.CustomerUserId, out var customer))
+            {
+                result.CustomerName = customer.FullName;
+                result.CustomerEmail = customer.IsActive ? customer.Email : string.Empty;
+            }
+            return result;
+        }).ToList();
+    }
 
     private static PaymentOrderInfo ToPaymentOrderInfo(Order order) =>
         new()
