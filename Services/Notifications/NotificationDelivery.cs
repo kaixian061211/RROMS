@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using MimeKit;
 using RROMS.Web.Data;
 using RROMS.Web.Models.Notifications;
+using RROMS.Web.Models.Accounts;
 
 namespace RROMS.Web.Services.Notifications;
 
@@ -59,6 +60,16 @@ public sealed class NotificationDelivery : INotificationDelivery
                     notificationId);
 
                 return;
+            }
+
+            // Resolve the affected customer, never the currently signed-in staff
+            // member. Explicit trusted recipients remain supported for callers.
+            if (sendEmail && (recipient is null || string.IsNullOrWhiteSpace(recipient.Email)))
+            {
+                recipient = await _db.Set<UserAccount>().AsNoTracking()
+                    .Where(u => u.UserId == notification.UserId && u.IsActive && u.Role == UserRoles.Customer)
+                    .Select(u => new NotificationEmailRecipient(u.UserId, u.Email))
+                    .SingleOrDefaultAsync(ct);
             }
 
             MailboxAddress? mailbox = null;

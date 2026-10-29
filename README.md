@@ -80,10 +80,20 @@ in real time and through Web Push when the customer has a push subscription.
 Order notifications do not send email.
 
 Only reservation confirmation requests email, through the same single delivery
-call as its system and push notifications. The caller must supply the affected
-customer's trusted account email to `ChangeStatusAsync`; missing or invalid
-addresses are logged and skipped. Other reservation events keep email disabled.
-The staff pages still need the account module's email lookup to supply this address.
+call as its system and push notifications. When the caller omits the address,
+delivery looks up the affected customer's active `UserAccount` record using the
+notification owner's ID. Explicit trusted recipients remain supported; missing
+or invalid addresses are logged and skipped. Other reservation events keep email
+disabled. Payment receipt emails keep their existing separate notifier.
+
+New or newly activated promotions and announcements publish system/push notices
+to active Customer accounts through `NotificationPublisher`. Ordinary edits do
+not rebroadcast. Scheduled promotions are announced when published, including
+their dates; there is no background watcher or automatic second announcement on
+the start date. Drafts, expired records, staff and inactive accounts are excluded.
+Long text is shortened for the inbox without changing the original record.
+Publishing uses one notification per recipient; delivery failures are logged
+without undoing the business save or automatically retrying the broadcast.
 
 3. Shared SMTP email configuration
 

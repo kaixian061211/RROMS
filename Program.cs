@@ -79,6 +79,7 @@ builder.Services.AddScoped<INotificationRealtime, NotificationRealtime>();
 builder.Services.AddScoped<INotificationEmailSender, NotificationEmailSender>();
 builder.Services.AddScoped<INotificationDelivery, NotificationDelivery>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
+builder.Services.AddScoped<NotificationPublisher>();
 builder.Services.Configure<WebPushSettings>(builder.Configuration.GetSection(WebPushSettings.SectionName));
 builder.Services.AddSingleton<WebPushIdentity>();
 builder.Services.AddHttpClient<INotificationPushSender, OneSignalPushSender>(http => http.Timeout = TimeSpan.FromSeconds(15));
