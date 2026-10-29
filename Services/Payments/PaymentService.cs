@@ -52,6 +52,7 @@ public class PaymentService : IPaymentService
         string method,
         string baseUrl)
     {
+
         if (orderId <= 0 || customerUserId <= 0)
         {
             throw new PaymentException(
@@ -64,71 +65,101 @@ public class PaymentService : IPaymentService
                 "Please choose how you would like to pay.");
         }
 
-        // Ownership and amount come from the order provider.
-        var order = await _orders.GetOrderAsync(orderId);
-
-        if (order is null ||
-            order.CustomerUserId != customerUserId)
-        {
-            throw new PaymentException(
-                "We couldn't find that order.");
-        }
-
-        if (order.OrderStatus == OrderStatus.Cancelled)
-        {
-            throw new PaymentException(
-                "Cancelled orders cannot be paid.");
-        }
-
-        if (order.TotalAmount <= 0 ||
-            order.TotalAmount > 99999999.99m ||
-            decimal.Round(order.TotalAmount, 2) != order.TotalAmount)
-        {
-            throw new PaymentException(
-                "This order does not have a valid payment amount.");
-        }
-
-        var existing = await _db.Payments
-            .AsNoTracking()
-            .FirstOrDefaultAsync(p => p.OrderId == orderId);
-
+        PaymentOrderInfo? order;
         Payment payment;
 
-        if (existing is null)
+        // Expire Stripe sessions outside the transaction, then revalidate this
+        // exact attempt under the order lock before reopening it.
+        var checkoutOrder = await _orders.GetOrderAsync(orderId);
+        if (checkoutOrder is null || checkoutOrder.CustomerUserId != customerUserId)
+            throw new PaymentException("We couldn't find that order.");
+        if (checkoutOrder.OrderStatus == OrderStatus.Cancelled)
+            throw new PaymentException("Cancelled orders cannot be paid.");
+
+        var previous = await _db.Payments.AsNoTracking()
+            .SingleOrDefaultAsync(p => p.OrderId == orderId);
+        if (previous is { PaymentStatus: PaymentStatus.Pending }
+            && previous.PaymentMethod != PaymentMethod.PayAtCounter
+            && !string.IsNullOrEmpty(previous.TransactionRef)
+            && !await _stripe.TryExpireSessionAsync(previous.TransactionRef))
         {
-            payment = new Payment
-            {
-                OrderId = order.OrderId,
-                Amount = order.TotalAmount,
-                PaymentMethod = method,
-                PaymentStatus = PaymentStatus.Pending
-            };
-
-            _db.Payments.Add(payment);
-
-            try
-            {
-                await _db.SaveChangesAsync();
-            }
-            catch (DbUpdateException ex)
-            {
-                _db.Entry(payment).State = EntityState.Detached;
-
-                _logger.LogWarning(
-                    ex,
-                    "Could not create a payment for order {OrderId}",
-                    orderId);
-
-                throw new PaymentException(
-                    "We couldn't save the payment. Please check its status before trying again.");
-            }
+            throw new PaymentException("Your previous payment is still being processed. Please wait a moment and refresh.");
         }
-        else
+
+        await using (var transaction = await _db.Database.BeginTransactionAsync())
         {
-            payment = await ReopenAsync(
-                existing,
-                order,
-                method);
+            await LockOrderForPaymentAsync(orderId, customerUserId);
+            order = await _orders.GetOrderAsync(orderId);
+
+            if (order is null ||
+                order.CustomerUserId != customerUserId)
+            {
+                throw new PaymentException(
+                    "We couldn't find that order.");
+            }
+
+            if (order.OrderStatus == OrderStatus.Cancelled)
+            {
+                throw new PaymentException(
+                    "Cancelled orders cannot be paid.");
+            }
+
+            if (order.TotalAmount <= 0 ||
+                order.TotalAmount > 99999999.99m ||
+                decimal.Round(order.TotalAmount, 2) != order.TotalAmount)
+            {
+                throw new PaymentException(
+                    "This order does not have a valid payment amount.");
+            }
+
+            var existing = await _db.Payments
+                .AsNoTracking()
+                .FirstOrDefaultAsync(p => p.OrderId == orderId);
+
+            if (existing is null)
+            {
+                payment = new Payment
+                {
+                    OrderId = order.OrderId,
+                    Amount = order.TotalAmount,
+                    PaymentMethod = method,
+                    PaymentStatus = PaymentStatus.Pending
+                };
+
+                _db.Payments.Add(payment);
+
+                try
+                {
+                    await _db.SaveChangesAsync();
+                }
+                catch (DbUpdateException ex)
+                {
+                    _db.Entry(payment).State = EntityState.Detached;
+
+                    _logger.LogWarning(
+                        ex,
+                        "Could not create a payment for order {OrderId}",
+                        orderId);
+
+                    throw new PaymentException(
+                        "We couldn't save the payment. Please check its status before trying again.");
+                }
+            }
+            else
+            {
+                if (previous is null || existing.CreatedAt != previous.CreatedAt
+                    || existing.TransactionRef != previous.TransactionRef
+                    || existing.PaymentStatus != previous.PaymentStatus)
+                {
+                    throw new PaymentException("The payment changed while checkout was starting. Please refresh before trying again.");
+                }
+                payment = await ReopenAsync(
+                    existing,
+                    order,
+                    method);
+            }
+
+            await transaction.CommitAsync();
         }
 
         if (method == PaymentMethod.PayAtCounter)
@@ -211,6 +242,23 @@ public class PaymentService : IPaymentService
         };
     }
 
+    // A same-value SQL Server update advances RowVersion and holds an exclusive
+    // lock until commit. Cancellation already rejects a stale order RowVersion.
+    private async Task LockOrderForPaymentAsync(int orderId, int customerUserId)
+    {
+        if (_db.Database.CurrentTransaction is null)
+            throw new InvalidOperationException("An order lock requires a transaction.");
+
+        var updated = await _db.Set<Order>()
+            .Where(o => o.OrderId == orderId
+                && o.CustomerUserId == customerUserId
+                && o.Status != OrderStatus.Cancelled)
+            .ExecuteUpdateAsync(s => s.SetProperty(o => o.Status, o => o.Status));
+
+        if (updated == 0)
+            throw new PaymentException("The order was not found or has been cancelled. Please refresh before paying.");
+    }
+
     private async Task<Payment> ReopenAsync(
         Payment existing,
         PaymentOrderInfo order,
@@ -236,15 +284,6 @@ public class PaymentService : IPaymentService
                 throw new PaymentException(
                     "The previous online payment is not confirmed yet. Please contact the restaurant to check it before paying again.",
                     paymentMayBeInProgress: true);
-            }
-
-            if (!string.IsNullOrEmpty(existing.TransactionRef) &&
-                existing.PaymentMethod != PaymentMethod.PayAtCounter &&
-                !await _stripe.TryExpireSessionAsync(
-                    existing.TransactionRef))
-            {
-                throw new PaymentException(
-                    "Your previous payment is still being processed. Please wait a moment and refresh.");
             }
 
             await _db.Payments
