@@ -28,6 +28,9 @@ public class IndexModel : PageModel
 
     public List<Row> Rows { get; private set; } = new();
 
+    /// <summary>Pending bookings from today onwards, for the Upcoming tab.</summary>
+    public int PendingCount { get; private set; }
+
     [TempData]
     public string? StatusMessage { get; set; }
 
@@ -37,12 +40,17 @@ public class IndexModel : PageModel
     /// <summary>A reservation plus what staff may do with it right now.</summary>
     public record Row(Reservation Reservation, IReadOnlyList<string> NextStatuses, bool CanEdit);
 
+    /// <summary>Every restaurant table by id, for table numbers (and on forms, the tables to choose from).</summary>
+    public IReadOnlyDictionary<int, TableInfo> Tables { get; private set; } = new Dictionary<int, TableInfo>();
+
     public async Task<IActionResult> OnGetAsync()
     {
+        Tables = await _reservations.GetTablesAsync();
         var reservations = await _reservations.GetForDateAsync(SelectedDate, StatusFilter);
         Rows = reservations
             .Select(r => new Row(r, _reservations.GetAllowedStatusChanges(r), _reservations.CanChangeDetails(r)))
             .ToList();
+        PendingCount = await _reservations.CountPendingAsync(DateOnly.FromDateTime(DateTime.Today));
         return Page();
     }
 

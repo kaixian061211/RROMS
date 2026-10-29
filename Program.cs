@@ -8,6 +8,7 @@ using RROMS.Web.Services.Payments.Notifications;
 using RROMS.Web.Services.OrdersAndReservations;
 using RROMS.Web.Services.Payments.Receipts;
 using RROMS.Web.Services.CustomerSupportAndFeedback;
+using RROMS.Web.Services.Restaurant;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -49,10 +50,10 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
         }
     });
 
+builder.Services.AddScoped<IRestaurantLookup, RestaurantLookup>();
 builder.Services.AddScoped<IReservationService, ReservationService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
-// TODO: use a lookup that reads the real MenuItem table once it's on main.
-builder.Services.AddScoped<IMenuItemLookup, TemporaryMenuItemLookup>();
+builder.Services.AddScoped<IMenuItemLookup, MenuItemLookup>();
 builder.Services.AddScoped<IPaymentOrderProvider, PaymentOrderProvider>();
 builder.Services.AddHttpContextAccessor();
 
@@ -72,7 +73,6 @@ builder.Services.AddScoped<StripeWebhookHandler>();
 
 // ---- Customer support and feedback module ----
 builder.Services.AddScoped<IFeedbackService, FeedbackService>();
-builder.Services.AddScoped<ICustomerRequestService, CustomerRequestService>();
 
 var app = builder.Build();
 
@@ -83,6 +83,7 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseStaticFiles();
 app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();

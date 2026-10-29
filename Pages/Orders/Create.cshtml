@@ -28,41 +28,76 @@
                     @* Choice tiles: radio buttons drawn as tiles (see /Dev/StyleGuide). *@
                     <fieldset class="mb-4">
                         <legend class="form-label fs-6">@Html.DisplayNameFor(m => m.Input.TableId)</legend>
-                        <div class="rr-tiles">
-                            @foreach (var tableId in TemporaryTables.TableIds)
-                            {
-                                <input type="radio" class="btn-check" id="table-@tableId" name="Input.TableId" value="@tableId"
-                                       checked="@(tableId == Model.Input.TableId)" required />
-                                <label class="rr-tile" for="table-@tableId">@tableId</label>
-                            }
-                        </div>
+                        @foreach (var area in ReservationFormatter.TablesByArea(Model.Tables))
+                        {
+                            <div class="rr-tile-group">
+                                <span class="rr-label mb-2">@area.Key</span>
+                                <div class="rr-tiles">
+                                    @foreach (var table in area)
+                                    {
+                                        <input type="radio" class="btn-check" id="table-@table.TableId" name="Input.TableId" value="@table.TableId"
+                                               checked="@(table.TableId == Model.Input.TableId)" required />
+                                        <label class="rr-tile" for="table-@table.TableId">@table.TableNumber</label>
+                                    }
+                                </div>
+                            </div>
+                        }
                     </fieldset>
+                        @{
+                            var groupedMenu = Model.Menu
+                                .Select((dish, index) => new { Dish = dish, Index = index })
+                                .GroupBy(x => string.IsNullOrWhiteSpace(x.Dish.CategoryName) ? "Uncategorized" : x.Dish.CategoryName)
+                                .OrderBy(g => g.FirstOrDefault()?.Dish.CategoryDisplayOrder ?? int.MaxValue);
+                        }
 
-                    <fieldset>
-                        <legend class="form-label fs-6">Dishes</legend>
-                        <ul class="rr-dishes">
-                            @for (var i = 0; i < Model.Menu.Count; i++)
-                            {
-                                var dish = Model.Menu[i];
+                        @foreach (var group in groupedMenu)
+                        {
+                            <fieldset class="mb-4">
+                                <legend class="form-label fs-6">@group.Key</legend>
+                                <ul class="rr-dishes">
+                                    @foreach (var item in group)
+                                    {
+                                        var i = item.Index;
+                                        var dish = item.Dish;
                                 var quantityId = $"quantity-{dish.MenuItemId}";
-                                <li class="rr-dish" data-dish>
+                                var isAvailable = dish.IsAvailable;
+
+                                <li class="rr-dish @(!isAvailable ? "rr-dish--sold-out opacity-50" : "")" data-dish>
                                     <label for="@quantityId">
                                         <span class="rr-dish__name">@dish.Name</span>
+                                        @if (!isAvailable)
+                                        {
+                                            <span class="badge bg-secondary ms-2">Sold out</span>
+                                        }
                                         <span class="rr-dish__price">@OrderFormatter.Money(dish.Price)</span>
                                     </label>
                                     @* Only the dish id and quantity are form fields. data-price and data-name are for the docket on screen. *@
                                     <input type="hidden" name="Input.Items[@i].MenuItemId" value="@dish.MenuItemId" />
-                                    <div class="rr-stepper" data-stepper>
-                                        <button type="button" class="rr-stepper__button" data-step="-1" aria-label="One less @dish.Name">&minus;</button>
-                                        <input type="number" class="rr-stepper__input" id="@quantityId" name="Input.Items[@i].Quantity"
-                                               value="@Model.Input.Items[i].Quantity" min="0" max="@OrderLineInput.MaxQuantity" step="1"
-                                               data-price="@dish.Price.ToString(CultureInfo.InvariantCulture)" data-name="@dish.Name" />
-                                        <button type="button" class="rr-stepper__button" data-step="1" aria-label="One more @dish.Name">+</button>
-                                    </div>
+
+                                    @if (!isAvailable)
+                                    {
+                                        <input type="hidden" name="Input.Items[@i].Quantity" value="0" />
+                                        <div class="rr-stepper" data-stepper>
+                                            <button type="button" class="rr-stepper__button" disabled>&minus;</button>
+                                            <input type="number" class="rr-stepper__input" id="@quantityId" value="0" disabled />
+                                            <button type="button" class="rr-stepper__button" disabled>+</button>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div class="rr-stepper" data-stepper>
+                                            <button type="button" class="rr-stepper__button" data-step="-1" aria-label="One less @dish.Name">&minus;</button>
+                                            <input type="number" class="rr-stepper__input" id="@quantityId" name="Input.Items[@i].Quantity"
+                                                   value="@Model.Input.Items[i].Quantity" min="0" max="@OrderLineInput.MaxQuantity" step="1"
+                                                   data-price="@dish.Price.ToString(CultureInfo.InvariantCulture)" data-name="@dish.Name" />
+                                            <button type="button" class="rr-stepper__button" data-step="1" aria-label="One more @dish.Name">+</button>
+                                        </div>
+                                    }
                                 </li>
-                            }
-                        </ul>
-                    </fieldset>
+                                    }
+                                        </ul>
+                                    </fieldset>
+                                    }
                 </div>
 
                 <div class="col-lg-4 col-xl-5">

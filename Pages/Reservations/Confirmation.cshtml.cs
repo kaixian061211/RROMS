@@ -20,8 +20,12 @@ public class ConfirmationModel : PageModel
 
     public Reservation? Reservation { get; private set; }
 
+    /// <summary>Every restaurant table by id, for table numbers (and on forms, the tables to choose from).</summary>
+    public IReadOnlyDictionary<int, TableInfo> Tables { get; private set; } = new Dictionary<int, TableInfo>();
+
     public async Task<IActionResult> OnGetAsync(int id)
     {
+        Tables = await _reservations.GetTablesAsync();
         Reservation = await _reservations.GetByIdAsync(User.GetPaymentUserId(), id);
         return Page();
     }

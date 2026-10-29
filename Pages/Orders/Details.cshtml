@@ -29,7 +29,7 @@
         <article class="rr-docket rr-docket--narrow" aria-label="Order @OrderFormatter.Reference(order.OrderId)">
             <div class="rr-docket__head">
                 <div>
-                    <span class="rr-docket__title">@OrderFormatter.Table(order.TableId)</span>
+                    <span class="rr-docket__title">@OrderFormatter.Table(order.TableId, Model.Tables)</span>
                     <span class="rr-ref d-block">@OrderFormatter.Reference(order.OrderId)</span>
                     <span class="small text-muted">Placed @OrderFormatter.PlacedAt(order.CreatedAt)</span>
                 </div>
@@ -66,11 +66,17 @@
                 <span class="rr-money">@OrderFormatter.Money(order.Total)</span>
             </div>
 
-            @* A cancelled order has nothing to pay. TODO: also hide it once the order is paid (Session 10). *@
-            @if (order.Status != OrderStatus.Cancelled)
+            @* Payment until the order is paid; then its receipt. A cancelled order has neither. *@
+            @if (Model.Details.CanPay)
             {
                 <div class="rr-docket__actions">
                     <a asp-page="/Payments/CheckOut" asp-route-orderId="@order.OrderId" class="btn btn-primary">Go to payment</a>
+                </div>
+            }
+            else if (Model.Details.Payment is { HasReceipt: true } payment)
+            {
+                <div class="rr-docket__actions">
+                    <a asp-page="/Payments/Receipt" asp-route-id="@payment.PaymentId" class="btn btn-outline-secondary">Download receipt</a>
                 </div>
             }
         </article>

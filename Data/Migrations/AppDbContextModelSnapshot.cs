@@ -17,7 +17,7 @@ namespace RROMS.Web.Data.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.13")
+                .HasAnnotation("ProductVersion", "10.0.14")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
@@ -237,6 +237,230 @@ namespace RROMS.Web.Data.Migrations
                         });
                 });
 
+            modelBuilder.Entity("RROMS.Web.Models.Restaurant.DiningArea", b =>
+                {
+                    b.Property<int>("DiningAreaId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("DiningAreaId"));
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.HasKey("DiningAreaId");
+
+                    b.HasIndex("Name")
+                        .IsUnique();
+
+                    b.ToTable("DiningArea", (string)null);
+                });
+
+            modelBuilder.Entity("RROMS.Web.Models.Restaurant.MenuCategory", b =>
+                {
+                    b.Property<int>("MenuCategoryId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("MenuCategoryId"));
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<int>("DisplayOrder")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.HasKey("MenuCategoryId");
+
+                    b.HasIndex("Name")
+                        .IsUnique();
+
+                    b.ToTable("MenuCategory", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_MenuCategory_DisplayOrder", "[DisplayOrder] >= 0");
+                        });
+                });
+
+            modelBuilder.Entity("RROMS.Web.Models.Restaurant.MenuItem", b =>
+                {
+                    b.Property<int>("MenuItemId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("MenuItemId"));
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("ImagePath")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<bool>("IsAvailable")
+                        .HasColumnType("bit");
+
+                    b.Property<int?>("MenuCategoryId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<decimal>("Price")
+                        .HasPrecision(10, 2)
+                        .HasColumnType("decimal(10,2)");
+
+                    b.HasKey("MenuItemId");
+
+                    b.HasIndex("MenuCategoryId");
+
+                    b.ToTable("MenuItem", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_MenuItem_Price", "[Price] > 0");
+                        });
+                });
+
+            modelBuilder.Entity("RROMS.Web.Models.Restaurant.OperatingHour", b =>
+                {
+                    b.Property<int>("OperatingHourId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("OperatingHourId"));
+
+                    b.Property<TimeOnly?>("CloseTime")
+                        .HasColumnType("time");
+
+                    b.Property<int>("DayOfWeek")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsClosed")
+                        .HasColumnType("bit");
+
+                    b.Property<TimeOnly?>("OpenTime")
+                        .HasColumnType("time");
+
+                    b.HasKey("OperatingHourId");
+
+                    b.HasIndex("DayOfWeek")
+                        .IsUnique();
+
+                    b.ToTable("OperatingHour", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_OperatingHour_Times", "[IsClosed] = 1 OR ([OpenTime] IS NOT NULL AND [CloseTime] IS NOT NULL AND [CloseTime] > [OpenTime])");
+                        });
+                });
+
+            modelBuilder.Entity("RROMS.Web.Models.Restaurant.RestaurantInfo", b =>
+                {
+                    b.Property<int>("RestaurantInfoId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("RestaurantInfoId"));
+
+                    b.Property<string>("Address")
+                        .IsRequired()
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<bool>("IsAcceptingOrders")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsAcceptingReservations")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("LogoPath")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Phone")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<decimal>("ServiceChargePercent")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("decimal(5,2)");
+
+                    b.Property<decimal>("TaxPercent")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("decimal(5,2)");
+
+                    b.HasKey("RestaurantInfoId");
+
+                    b.ToTable("RestaurantInfo", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_RestaurantInfo_ServiceCharge", "[ServiceChargePercent] BETWEEN 0 AND 100");
+
+                            t.HasCheckConstraint("CK_RestaurantInfo_Tax", "[TaxPercent] BETWEEN 0 AND 100");
+                        });
+                });
+
+            modelBuilder.Entity("RROMS.Web.Models.Restaurant.RestaurantTable", b =>
+                {
+                    b.Property<int>("RestaurantTableId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("RestaurantTableId"));
+
+                    b.Property<int>("Capacity")
+                        .HasColumnType("int");
+
+                    b.Property<int>("DiningAreaId")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("TableNumber")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.HasKey("RestaurantTableId");
+
+                    b.HasIndex("DiningAreaId");
+
+                    b.HasIndex("TableNumber")
+                        .IsUnique();
+
+                    b.ToTable("RestaurantTable", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_RestaurantTable_Capacity", "[Capacity] BETWEEN 1 AND 20");
+                        });
+                });
+
             modelBuilder.Entity("RROMS.Web.Models.OrdersAndReservations.OrderItem", b =>
                 {
                     b.HasOne("RROMS.Web.Models.OrdersAndReservations.Order", "Order")
@@ -248,9 +472,40 @@ namespace RROMS.Web.Data.Migrations
                     b.Navigation("Order");
                 });
 
+            modelBuilder.Entity("RROMS.Web.Models.Restaurant.MenuItem", b =>
+                {
+                    b.HasOne("RROMS.Web.Models.Restaurant.MenuCategory", "MenuCategory")
+                        .WithMany("MenuItems")
+                        .HasForeignKey("MenuCategoryId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("MenuCategory");
+                });
+
+            modelBuilder.Entity("RROMS.Web.Models.Restaurant.RestaurantTable", b =>
+                {
+                    b.HasOne("RROMS.Web.Models.Restaurant.DiningArea", "DiningArea")
+                        .WithMany("Tables")
+                        .HasForeignKey("DiningAreaId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("DiningArea");
+                });
+
             modelBuilder.Entity("RROMS.Web.Models.OrdersAndReservations.Order", b =>
                 {
                     b.Navigation("Items");
+                });
+
+            modelBuilder.Entity("RROMS.Web.Models.Restaurant.DiningArea", b =>
+                {
+                    b.Navigation("Tables");
+                });
+
+            modelBuilder.Entity("RROMS.Web.Models.Restaurant.MenuCategory", b =>
+                {
+                    b.Navigation("MenuItems");
                 });
 #pragma warning restore 612, 618
         }
