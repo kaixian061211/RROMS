@@ -55,9 +55,40 @@ public static class TestDatabase
         await using var db = new AppDbContext(options);
         await db.Database.MigrateAsync();
         await EmptyAsync(db);
+        await AddNotificationRecipientsOnceAsync(db);
         await db.Set<OperatingHour>().ExecuteDeleteAsync();
         await db.Set<RestaurantInfo>().ExecuteDeleteAsync();
         await AddTablesOnceAsync(db);
+    }
+
+    // These IDs belong only to the isolated fixtures/Development test principals,
+    // not to application account registration. Give them real account rows so
+    // notifications obey the same FK as production, without remapping existing users.
+    private static async Task AddNotificationRecipientsOnceAsync(AppDbContext db)
+    {
+        await db.Database.OpenConnectionAsync();
+        CheckIsTestDatabase((SqlConnection)db.Database.GetDbConnection());
+        await db.Database.ExecuteSqlRawAsync("""
+            SET IDENTITY_INSERT [UserAccount] ON;
+            BEGIN TRY
+                INSERT INTO [UserAccount]
+                    ([UserId], [FullName], [Email], [Role], [PasswordHash], [IsActive], [ResetOtpAttempts])
+                SELECT fixture.[UserId], fixture.[Name], fixture.[Email], 'Customer',
+                       'not-used-for-authentication', 1, 0
+                FROM (VALUES
+                    (1, 'Fixture Customer A', 'fixture-customer-1@example.invalid'),
+                    (2, 'Fixture Customer B', 'fixture-customer-2@example.invalid'),
+                    (9001, 'Fixture Alice', 'fixture-customer-9001@example.invalid'),
+                    (9002, 'Fixture Bob', 'fixture-customer-9002@example.invalid')
+                ) fixture ([UserId], [Name], [Email])
+                WHERE NOT EXISTS (SELECT 1 FROM [UserAccount] u WHERE u.[UserId] = fixture.[UserId]);
+            END TRY
+            BEGIN CATCH
+                SET IDENTITY_INSERT [UserAccount] OFF;
+                THROW;
+            END CATCH;
+            SET IDENTITY_INSERT [UserAccount] OFF;
+            """);
     }
 
     /// <summary>
