@@ -1,0 +1,25 @@
+@* The fields shared by the Rate a visit and Edit feedback pages. Used as <partial name="_RatingFields" for="Input" />.
+   The rating is five choice tiles: radio buttons drawn as tiles (see /Dev/StyleGuide). *@
+@model FeedbackEditInput
+
+<fieldset class="mb-4">
+    <legend class="form-label fs-6">Rating</legend>
+    <div class="rr-tiles">
+        @for (var stars = 1; stars <= 5; stars++)
+        {
+            var tileId = $"{Html.IdFor(m => m.Rating)}_{stars}";
+            <input type="radio" class="btn-check" id="@tileId" name="@Html.NameFor(m => m.Rating)" value="@stars"
+                   checked="@(stars == Model.Rating)" required data-msg-required="Please choose a rating." />
+            <label class="rr-tile" for="@tileId">@stars ★</label>
+        }
+    </div>
+    <span asp-validation-for="Rating" class="text-danger"></span>
+    <div class="form-text">1 is poor, 5 is excellent.</div>
+</fieldset>
+
+<div>
+    <label asp-for="Comments" class="form-label"></label>
+    <textarea asp-for="Comments" class="form-control" rows="4" maxlength="1000"
+              placeholder="What went well, and what could be better?"></textarea>
+    <span asp-validation-for="Comments" class="text-danger"></span>
+</div>

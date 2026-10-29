@@ -1,0 +1,52 @@
+@page
+@model CreateModel
+@{
+    ViewData["Title"] = "Rate a visit";
+}
+
+<div class="rr-narrow">
+    <header class="rr-page-header">
+        <div>
+            <h1>Rate a visit</h1>
+            <p class="rr-lede">Tell the restaurant how it went. Each completed order or reservation can be rated once.</p>
+        </div>
+    </header>
+
+    @if (Model.Visits.Count == 0)
+    {
+        <div class="rr-empty">
+            <p class="rr-empty__title">You have no visits to rate.</p>
+            <p class="mb-0">Once an order or reservation is completed, you can rate it here.</p>
+            <a asp-page="Index" class="btn btn-outline-secondary">Back to my feedback</a>
+        </div>
+    }
+    else
+    {
+        <form method="post">
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+            <div class="rr-panel">
+                <div class="mb-4">
+                    <label asp-for="Input.Visit" class="form-label">Visit</label>
+                    <select asp-for="Input.Visit" class="form-select"
+                            required data-msg-required="Please choose the visit you are rating.">
+                        <option value="">Choose a visit</option>
+                        @foreach (var visit in Model.Visits)
+                        {
+                            <option value="@($"{visit.Kind}:{visit.Id}")">@visit.Label</option>
+                        }
+                    </select>
+                    <span asp-validation-for="Input.Visit" class="text-danger"></span>
+                </div>
+                <partial name="_RatingFields" for="Input" />
+            </div>
+            <div class="rr-actionbar">
+                <button type="submit" class="btn btn-primary">Send feedback</button>
+                <a asp-page="Index" class="btn btn-outline-secondary">Back<span class="d-none d-sm-inline"> to my feedback</span></a>
+            </div>
+        </form>
+    }
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

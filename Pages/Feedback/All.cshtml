@@ -1,0 +1,64 @@
+@page
+@model AllModel
+@{
+    ViewData["Title"] = "Customer feedback";
+}
+
+@* Customers read this in one narrow column; staff get the full width, as the design guide says. *@
+<div class="@(Model.IsStaffView ? null : "rr-narrow")">
+    <header class="rr-page-header">
+        <div>
+            <h1>Customer feedback</h1>
+            <p class="rr-lede">What customers say about their visits, newest first.</p>
+        </div>
+    </header>
+
+    <nav class="nav nav-pills mb-4" aria-label="Rating">
+        <a asp-page="All" class="nav-link @(Model.Stars is null ? "active" : null)"
+           aria-current="@(Model.Stars is null ? "page" : null)">All</a>
+        @for (var stars = 5; stars >= 1; stars--)
+        {
+            <a asp-page="All" asp-route-stars="@stars" class="nav-link @(stars == Model.Stars ? "active" : null)"
+               aria-current="@(stars == Model.Stars ? "page" : null)">@FeedbackFormatter.FilterLabel(stars)</a>
+        }
+    </nav>
+
+    @if (Model.Items.Count == 0)
+    {
+        <div class="rr-empty">
+            <p class="rr-empty__title">No feedback to show.</p>
+            <p class="mb-0">@(Model.Stars is null ? "Feedback appears here once customers rate their visits." : "No one has given this rating yet. Try another one.")</p>
+        </div>
+    }
+    else
+    {
+        <ul class="list-unstyled d-grid gap-3 mb-0">
+            @foreach (var f in Model.Items)
+            {
+                <li class="rr-slip">
+                    <div class="rr-slip__body">
+                        <div>
+                            <div class="rr-slip__title">
+                                <span aria-hidden="true">@FeedbackFormatter.Stars(f.Rating)</span>
+                                <span class="visually-hidden">@FeedbackFormatter.StarsLabel(f.Rating)</span>
+                            </div>
+                            <span class="small text-muted">@f.DisplayName · @FeedbackFormatter.When(f.CreatedAt)</span>
+                            @if (Model.IsStaffView)
+                            {
+                                <span class="rr-ref ms-2">@FeedbackFormatter.Visit(f.OrderId, f.ReservationId)</span>
+                            }
+                            @if (f.Comments is not null)
+                            {
+                                <p class="mt-2 mb-0">@f.Comments</p>
+                            }
+                            @if (f.AdminReply is not null)
+                            {
+                                <p class="small mt-2 mb-0"><strong>Reply from the restaurant:</strong> @f.AdminReply</p>
+                            }
+                        </div>
+                    </div>
+                </li>
+            }
+        </ul>
+    }
+</div>

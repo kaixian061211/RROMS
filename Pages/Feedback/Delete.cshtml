@@ -1,0 +1,45 @@
+@page "{id:int}"
+@model DeleteModel
+@{
+    ViewData["Title"] = "Delete feedback";
+}
+
+<div class="rr-narrow">
+    <header class="rr-page-header">
+        <div>
+            @if (Model.Existing is not null && Model.ErrorMessage is null)
+            {
+                <h1>Delete this feedback?</h1>
+                <p class="rr-lede">The restaurant will no longer see it. You can't undo this.</p>
+            }
+            else
+            {
+                <h1>Delete feedback</h1>
+            }
+        </div>
+    </header>
+
+    @if (Model.ErrorMessage is not null)
+    {
+        <div class="alert alert-warning" role="alert">@Model.ErrorMessage</div>
+        <a asp-page="Index" class="btn btn-outline-secondary">Back to my feedback</a>
+    }
+    else if (Model.Existing is not null)
+    {
+        <div class="rr-panel">
+            <div class="rr-slip__title">
+                <span aria-hidden="true">@FeedbackFormatter.Stars(Model.Existing.Rating)</span>
+                <span class="visually-hidden">@FeedbackFormatter.StarsLabel(Model.Existing.Rating)</span>
+            </div>
+            <span class="rr-ref">@FeedbackFormatter.Visit(Model.Existing.OrderId, Model.Existing.ReservationId)</span>
+            @if (Model.Existing.Comments is not null)
+            {
+                <p class="mt-2 mb-0">@Model.Existing.Comments</p>
+            }
+        </div>
+        <form method="post" class="d-flex flex-wrap gap-2 mt-4">
+            <button type="submit" class="btn btn-danger">Yes, delete it</button>
+            <a asp-page="Index" class="btn btn-outline-secondary">No, keep it</a>
+        </form>
+    }
+</div>

@@ -16,7 +16,7 @@ public static class DashboardCards
     {
         new("Register or log in", "Create an account or sign in.", 1, "Ooi", Customer, null),
         new("Reservations", "Book, change or cancel a table.", 5, "Cheah", Customer, "/Reservations"),
-        new("Feedback", "Tell the restaurant about your visit.", 7, "Vishalinii", Customer, null),
+        new("Feedback", "Tell the restaurant about your visit.", 7, "Vishalinii", Customer, "/Feedback"),
         new("Profile", "Update your details.", 8, "Ooi", Customer, null),
         new("Place orders", "Order food and drinks to your table.", 12, "Cheah", Customer, "/Orders"),
         new("Browse menu", "See what's on the menu.", 13, "Lim", Customer, null),

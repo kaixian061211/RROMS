@@ -1,0 +1,41 @@
+@page "{id:int}"
+@model EditModel
+@{
+    ViewData["Title"] = "Edit feedback";
+}
+
+<div class="rr-narrow">
+    <header class="rr-page-header">
+        <div>
+            @if (Model.Existing is not null)
+            {
+                <span class="rr-ref d-block mb-1">@FeedbackFormatter.Visit(Model.Existing.OrderId, Model.Existing.ReservationId)</span>
+            }
+            <h1>Edit feedback</h1>
+            <p class="rr-lede">Change your rating or your comment.</p>
+        </div>
+    </header>
+
+    @if (Model.ErrorMessage is not null)
+    {
+        <div class="alert alert-warning" role="alert">@Model.ErrorMessage</div>
+        <a asp-page="Index" class="btn btn-outline-secondary">Back to my feedback</a>
+    }
+    else
+    {
+        <form method="post">
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+            <div class="rr-panel">
+                <partial name="_RatingFields" for="Input" />
+            </div>
+            <div class="rr-actionbar">
+                <button type="submit" class="btn btn-primary">Save changes</button>
+                <a asp-page="Index" class="btn btn-outline-secondary">Back<span class="d-none d-sm-inline"> to my feedback</span></a>
+            </div>
+        </form>
+    }
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
