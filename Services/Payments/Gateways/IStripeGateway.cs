@@ -1,3 +1,4 @@
+using RROMS.Web.Models.Payments;
 using Stripe;
 using Payment = RROMS.Web.Models.Payments.Payment;
 
@@ -15,6 +16,8 @@ public interface IStripeGateway
         string customerEmail,
         string successUrl,
         string cancelUrl);
+
+    Task<OnlinePaymentConfirmation?> GetPaidConfirmationAsync(string sessionId);
 
     Task<bool> TryExpireSessionAsync(string sessionId);
 

@@ -459,6 +459,90 @@ public class PaymentService : IPaymentService
         return true;
     }
 
+    public async Task RefreshOnlineStatusAsync(
+        int paymentId,
+        int customerUserId)
+    {
+        if (paymentId <= 0 || customerUserId <= 0)
+        {
+            throw new PaymentException("Choose a valid payment.");
+        }
+
+        var payment = await _db.Payments
+            .AsNoTracking()
+            .SingleOrDefaultAsync(p => p.PaymentId == paymentId);
+
+        // Verify ownership before contacting Stripe.
+        if (payment is null || !await OwnsAsync(payment, customerUserId))
+        {
+            throw new PaymentException(
+                "We couldn't find that payment.");
+        }
+
+        if (payment.PaymentStatus is PaymentStatus.Paid or PaymentStatus.Refunded)
+        {
+            return;
+        }
+
+        if (payment.PaymentStatus is not (
+                PaymentStatus.Pending or PaymentStatus.Failed)
+            || payment.RecordedByStaffId is not null
+            || !PaymentMethod.IsOnline(payment.PaymentMethod))
+        {
+            throw new PaymentException(
+                "Counter payment status is recorded by restaurant staff.");
+        }
+
+        if (string.IsNullOrWhiteSpace(payment.TransactionRef))
+        {
+            throw new PaymentException(
+                "Checkout is still being confirmed. Please wait or contact the restaurant before paying again.",
+                true);
+        }
+
+        // Use the session reference stored by the server.
+        var confirmation = await _stripe.GetPaidConfirmationAsync(
+            payment.TransactionRef);
+
+        if (confirmation is null)
+        {
+            throw new PaymentException(
+                "Stripe has not confirmed payment yet. Please wait and check again.",
+                true);
+        }
+
+        if (confirmation.PaymentId != payment.PaymentId
+            || confirmation.OrderId != payment.OrderId
+            || confirmation.SessionId != payment.TransactionRef)
+        {
+            _logger.LogWarning(
+                "Stripe lookup did not match payment {PaymentId}",
+                paymentId);
+
+            throw new PaymentException(
+                "Stripe's confirmation does not match this payment. Contact the restaurant before paying again.",
+                true);
+        }
+
+        // Preserve existing validation, locking and duplicate protection.
+        await MarkPaidOnlineAsync(confirmation);
+
+        // False from MarkPaidOnlineAsync can also mean already processed.
+        // Read the saved status before deciding the result.
+        var status = await _db.Payments
+            .AsNoTracking()
+            .Where(p => p.PaymentId == paymentId)
+            .Select(p => p.PaymentStatus)
+            .SingleOrDefaultAsync();
+
+        if (status is not (PaymentStatus.Paid or PaymentStatus.Refunded))
+        {
+            throw new PaymentException(
+                "Stripe's payment details could not be matched to this attempt. Contact the restaurant before paying again.",
+                true);
+        }
+    }
+
     public async Task<bool> MarkFailedAsync(
         int paymentId,
         string? sessionId = null)

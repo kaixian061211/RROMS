@@ -1,4 +1,5 @@
 using System.Net;
+using RROMS.Web.Models.Payments;
 using System.Globalization;
 using Microsoft.Extensions.Options;
 using Stripe;
@@ -127,6 +128,72 @@ public class StripeGateway : IStripeGateway
             throw new PaymentException(
                 "The connection was interrupted. Your payment status is not confirmed yet. Please check it before trying again.",
                 paymentMayBeInProgress: true);
+        }
+    }
+
+    public async Task<OnlinePaymentConfirmation?> GetPaidConfirmationAsync(
+        string sessionId)
+    {
+        if (string.IsNullOrWhiteSpace(sessionId) || sessionId.Length > 100)
+        {
+            throw new PaymentException(
+                "The Stripe checkout reference is invalid.");
+        }
+
+        try
+        {
+            var session = await new SessionService(GetClient())
+                .GetAsync(sessionId);
+
+            if (session.Id != sessionId)
+            {
+                throw new PaymentException(
+                    "Stripe returned a different checkout reference. Check the payment before trying again.",
+                    true);
+            }
+
+            if (session.PaymentStatus != "paid")
+            {
+                return null;
+            }
+
+            if (!StripePaymentConfirmation.TryCreate(
+                    session,
+                    out var confirmation))
+            {
+                _logger.LogWarning(
+                    "Stripe session {SessionId} has inconsistent payment details",
+                    sessionId);
+
+                throw new PaymentException(
+                    "Stripe's checkout details could not be verified. Check the payment before trying again.",
+                    true);
+            }
+
+            return confirmation;
+        }
+        catch (StripeException ex)
+        {
+            _logger.LogWarning(
+                ex,
+                "Could not retrieve Stripe checkout {SessionId}",
+                sessionId);
+
+            throw new PaymentException(
+                "Stripe could not confirm the payment status. Please check again later.",
+                true);
+        }
+        catch (Exception ex)
+            when (ex is HttpRequestException or OperationCanceledException)
+        {
+            _logger.LogWarning(
+                ex,
+                "Stripe checkout lookup was interrupted for {SessionId}",
+                sessionId);
+
+            throw new PaymentException(
+                "The connection was interrupted while checking Stripe. Please check again before paying again.",
+                true);
         }
     }
 
