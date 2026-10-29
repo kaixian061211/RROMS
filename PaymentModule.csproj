@@ -10,6 +10,10 @@
     <Compile Remove="Tests/**/*.cs" />
     <Content Remove="Tests/**" />
     <None Remove="Tests/**" />
+    <Compile Remove="AnalyticsAndReportsModule/**" />
+    <Content Remove="AnalyticsAndReportsModule/**" />
+    <None Remove="AnalyticsAndReportsModule/**" />
+    <EmbeddedResource Remove="AnalyticsAndReportsModule/**" />
 
     <PackageReference Include="ClosedXML" Version="0.105.0" />
 
