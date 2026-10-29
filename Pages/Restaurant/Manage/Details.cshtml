@@ -68,32 +68,6 @@
         </div>
     </div>
 
-    <div class="rr-panel">
-        <h2 class="h3 mb-4">Settings</h2>
-
-        <div class="row g-3 mb-4">
-            <div class="col-md-6">
-                <label asp-for="Input.ServiceChargePercent" class="form-label">Service charge (%)</label>
-                <input asp-for="Input.ServiceChargePercent" type="number" step="0.01" min="0" max="100" class="form-control" />
-                <span asp-validation-for="Input.ServiceChargePercent" class="text-danger"></span>
-            </div>
-            <div class="col-md-6">
-                <label asp-for="Input.TaxPercent" class="form-label">Tax (%)</label>
-                <input asp-for="Input.TaxPercent" type="number" step="0.01" min="0" max="100" class="form-control" />
-                <span asp-validation-for="Input.TaxPercent" class="text-danger"></span>
-            </div>
-        </div>
-
-        <div class="form-check mb-2">
-            <input asp-for="Input.IsAcceptingOrders" class="form-check-input" />
-            <label asp-for="Input.IsAcceptingOrders" class="form-check-label">Accepting online orders</label>
-        </div>
-        <div class="form-check">
-            <input asp-for="Input.IsAcceptingReservations" class="form-check-input" />
-            <label asp-for="Input.IsAcceptingReservations" class="form-check-label">Accepting reservations</label>
-        </div>
-    </div>
-
     <div class="rr-actionbar">
         <button type="submit" class="btn btn-primary">Save changes</button>
     </div>
