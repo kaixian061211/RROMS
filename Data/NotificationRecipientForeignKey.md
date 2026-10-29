@@ -11,8 +11,11 @@ the notification service must still enforce ownership and customer targeting.
 ## Before applying to an application database
 
 Use the actual configured application connection, not a similarly named database.
-The LocalDB connection configured on this machine was unavailable during the
-review, so its historical rows have NOT been verified or migrated.
+On 29 October 2026, this machine's User Secrets connection was verified as
+`localhost/RROMS_Payment`. That database has no orphan notification recipients,
+and `AddNotificationUserForeignKey` is applied with its constraint present.
+The checked-in LocalDB connection is still a fallback for other machines; configure
+each developer's own connection in User Secrets. Re-run the audit for other databases.
 
 Run this read-only query first:
 
