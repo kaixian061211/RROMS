@@ -130,7 +130,8 @@ public abstract class PageTest : IClassFixture<TestWebApp>, IAsyncLifetime
 
     /// <summary>The page's own form, the one that posts, as opposed to a filter form.</summary>
     protected static IHtmlFormElement MainForm(IHtmlDocument page) =>
-        page.Forms.Single(f => f.Method.Equals("post", StringComparison.OrdinalIgnoreCase));
+        page.QuerySelectorAll<IHtmlFormElement>("main form")
+            .Single(f => f.Method.Equals("post", StringComparison.OrdinalIgnoreCase));
 
     /// <summary>The form behind one status button, such as Confirm on reservation 12. Null if it isn't offered.</summary>
     protected static IHtmlFormElement? StatusButton(IHtmlDocument page, int id, string buttonText) =>
