@@ -6,7 +6,11 @@ using RROMS.Web.Services.OrdersAndReservations;
 
 namespace RROMS.Web.Services.Restaurant;
 
-/// <summary>Reads the real MenuItem table for ordering. Replaces TemporaryMenuItemLookup.</summary>
+/// <summary>
+/// Reads the real MenuItem table for ordering. Replaces TemporaryMenuItemLookup.
+/// The price it returns is the price after any running promotion, so an order is charged what the
+/// customer saw on the menu. To charge the normal price instead, use item.Price in ToInfo.
+/// </summary>
 public class MenuItemLookup : IMenuItemLookup
 {
     private readonly AppDbContext _db;
@@ -20,12 +24,13 @@ public class MenuItemLookup : IMenuItemLookup
     {
         var items = await _db.Set<MenuItem>()
             .AsNoTracking()
-            .Include(m => m.MenuCategory)
             .OrderBy(m => m.MenuCategory != null ? m.MenuCategory.DisplayOrder : int.MaxValue)
             .ThenBy(m => m.Name)
             .ToListAsync();
 
-        return items.Select(ToInfo).ToList();
+        var promotions = await MenuPricing.LoadRunningAsync(_db);
+
+        return items.Select(item => ToInfo(item, promotions)).ToList();
     }
 
     public async Task<IReadOnlyDictionary<int, MenuItemInfo>> GetByIdsAsync(IEnumerable<int> menuItemIds)
@@ -34,20 +39,20 @@ public class MenuItemLookup : IMenuItemLookup
 
         var items = await _db.Set<MenuItem>()
             .AsNoTracking()
-            .Include(m => m.MenuCategory)
             .Where(m => ids.Contains(m.MenuItemId))
             .ToListAsync();
 
-        return items.ToDictionary(item => item.MenuItemId, ToInfo);
+        var promotions = await MenuPricing.LoadRunningAsync(_db);
+
+        return items.ToDictionary(item => item.MenuItemId, item => ToInfo(item, promotions));
     }
 
-    private static MenuItemInfo ToInfo(MenuItem item) =>
+    private static MenuItemInfo ToInfo(MenuItem item, IEnumerable<Promotion> promotions) =>
         new(
             item.MenuItemId,
             item.Name,
-            item.Price,
+            MenuPricing.BestPrice(item, promotions).Price,
             item.IsAvailable,
-            string.IsNullOrWhiteSpace(item.MenuCategory?.Name) ? "General" : item.MenuCategory.Name,
-            item.MenuCategory?.DisplayOrder ?? int.MaxValue
+            item.MenuCategory?.Name ?? "Uncategorized"
         );
 }

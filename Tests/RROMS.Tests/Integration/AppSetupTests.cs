@@ -23,7 +23,7 @@ public class AppSetupTests : PageTest
     }
 }
 
-/// <summary>Outside Development nobody can sign in until the login module exists, so every page refuses.</summary>
+/// <summary>Outside Development there is no test login: a visitor who is not signed in is sent to the real login page.</summary>
 [Trait("Type", "Integration")]
 public class OutsideDevelopmentTests : IClassFixture<ProductionWebApp>
 {
@@ -31,7 +31,7 @@ public class OutsideDevelopmentTests : IClassFixture<ProductionWebApp>
 
     public OutsideDevelopmentTests(ProductionWebApp app) => _client = app.CreateClient();
 
-    [Theory(DisplayName = "TC-00-04 Outside Development, every Orders & Reservations page refuses a visitor who isn't signed in (401)")]
+    [Theory(DisplayName = "TC-00-04 Outside Development, every Orders & Reservations page sends a visitor who isn't signed in to the login page")]
     [Trait("Technique", "Security")]
     [Trait("Story", "5")]
     [Trait("Story", "11")]
@@ -50,9 +50,9 @@ public class OutsideDevelopmentTests : IClassFixture<ProductionWebApp>
     [InlineData("/Orders/Queue")]
     public async Task PagesRefuseAVisitor(string url)
     {
-        var response = await _client.GetAsync(url);
+        var response = await _client.GetAsync(url);   // the client follows the redirect to the login page
 
-        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        Assert.Equal("/Account/Login", response.RequestMessage!.RequestUri!.AbsolutePath);
     }
 
     [Fact(DisplayName = "TC-00-05 Outside Development the test login doesn't exist: /Dev/SwitchUser answers like a made-up address, signs nobody in, and no page shows the test-login bar")]
@@ -70,7 +70,7 @@ public class OutsideDevelopmentTests : IClassFixture<ProductionWebApp>
         Assert.Equal(HttpStatusCode.NotFound, get.StatusCode);
         // The app answers a POST to any address it doesn't have with 405 (only GET is allowed there), so the same here.
         Assert.Equal(madeUpPost.StatusCode, post.StatusCode);
-        Assert.Equal(HttpStatusCode.Unauthorized, afterPost.StatusCode);   // the POST signed nobody in
+        Assert.Equal("/Account/Login", afterPost.RequestMessage!.RequestUri!.AbsolutePath);   // the POST signed nobody in
         Assert.DoesNotContain("test-user-bar", home);
     }
 }

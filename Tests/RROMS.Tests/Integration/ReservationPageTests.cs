@@ -3,6 +3,7 @@ using AngleSharp.Dom;
 using AngleSharp.Html.Dom;
 using Microsoft.EntityFrameworkCore;
 using RROMS.Web.Models.OrdersAndReservations;
+using RROMS.Web.Models.Notifications;
 
 namespace RROMS.Tests.Integration;
 
@@ -46,6 +47,11 @@ public class ReservationPageTests : PageTest
         Assert.Contains("Window seat please", shown);
         Assert.Contains("Pending", shown);
         Assert.Equal((TestCustomer, ReservationStatus.Pending), (saved.CustomerUserId, saved.Status));
+        var notification = await WithDatabaseAsync(db => db.Notifications.SingleAsync());
+        Assert.Equal(TestCustomer, notification.UserId);
+        Assert.Equal(NotificationTypes.Reservation, notification.Type);
+        Assert.Equal(saved.ReservationId, notification.ReservationId);
+        Assert.Equal("Reservation request received", notification.Title);
 
         Assert.Contains(reference, TextOf(await GetPageAsync("/Reservations")));
     }

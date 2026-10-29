@@ -1,6 +1,11 @@
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.AspNetCore.TestHost;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
+using RROMS.Web.Models.Notifications;
+using RROMS.Web.Services.Notifications;
 
 namespace RROMS.Tests.Integration;
 
@@ -19,6 +24,20 @@ public class TestWebApp : WebApplicationFactory<Program>
         // TestDatabase.ConnectionString throws unless it names RROMS_Tests, so the app can't start against
         // any other database.
         builder.UseSetting("ConnectionStrings:DefaultConnection", TestDatabase.ConnectionString);
+        builder.ConfigureTestServices(services =>
+        {
+            services.RemoveAll<INotificationDelivery>();
+            services.AddSingleton<INotificationDelivery, TestNotificationDelivery>();
+        });
+    }
+
+    private sealed class TestNotificationDelivery : INotificationDelivery
+    {
+        public Task DeliverAsync(
+            int notificationId,
+            bool sendEmail = false,
+            NotificationEmailRecipient? recipient = null,
+            CancellationToken ct = default) => Task.CompletedTask;
     }
 }
 
