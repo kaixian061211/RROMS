@@ -15,27 +15,15 @@ public interface IReservationService
 
     // Customer actions
 
-    Task<ReservationResult> CreateAsync(
-        int customerUserId,
-        ReservationInput input,
-        string? customerEmail = null);
+    Task<ReservationResult> CreateAsync(int customerUserId, ReservationInput input);
 
     /// <summary>
     /// rowVersion is the value the customer's page loaded, so a change saved by someone else in between is caught.
     /// If a confirmed booking's date, time, table or party size changes, it goes back to pending.
     /// </summary>
-    Task<ReservationResult> ModifyAsync(
-        int customerUserId,
-        int reservationId,
-        ReservationInput input,
-        byte[] rowVersion,
-        string? customerEmail = null);
+    Task<ReservationResult> ModifyAsync(int customerUserId, int reservationId, ReservationInput input, byte[] rowVersion);
 
-    Task<ReservationResult> CancelAsync(
-        int customerUserId,
-        int reservationId,
-        byte[] rowVersion,
-        string? customerEmail = null);
+    Task<ReservationResult> CancelAsync(int customerUserId, int reservationId, byte[] rowVersion);
 
     /// <summary>The customer's pending and confirmed reservations that haven't started yet, soonest first.</summary>
     Task<List<Reservation>> GetUpcomingAsync(int customerUserId);
@@ -73,7 +61,11 @@ public interface IReservationService
     /// Moves a reservation to another status. Only pending → confirmed → completed and
     /// pending/confirmed → cancelled are allowed, and completed only once the booking time has started.
     /// </summary>
-    Task<ReservationResult> ChangeStatusAsync(int reservationId, string newStatus, byte[] rowVersion);
+    // customerEmail must be resolved from the affected customer's trusted
+    // account record by the caller, never from a free-text browser field.
+    // Only confirmation sends email; existing callers can omit the address.
+    Task<ReservationResult> ChangeStatusAsync(
+        int reservationId, string newStatus, byte[] rowVersion, string? customerEmail = null);
 
     /// <summary>The statuses this reservation may move to right now, so pages only offer those actions.</summary>
     IReadOnlyList<string> GetAllowedStatusChanges(Reservation reservation);

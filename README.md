@@ -60,15 +60,30 @@ CVC:    Any three digits
 
 ## Order and reservation notifications
 
+Notification timestamps retain the database-local `SYSDATETIME()` convention used
+by orders and reservations. The inbox displays that recorded wall time unchanged;
+it does not label it UTC or convert it to the browser's timezone. Keep the database
+server timezone consistent across deployments.
+
+Notification delivery channels run concurrently with individual five-second
+cancellation deadlines. SMTP also has a total operation deadline configured by
+`Smtp:TimeoutSeconds` (default 5, bounded to 1–30 seconds), including when used by
+payment emails. Delivery is still awaited, with no background queue or retries.
+The saved inbox record remains available if a provider fails or times out.
+
+Tracking polls its authorized Razor `Status` handler every five seconds while the
+page is visible, independently of SignalR. It refreshes the existing cards when
+displayed details change; SignalR notifications also trigger an immediate check.
+
 Order placement and status changes create in-app notifications and are delivered
 in real time and through Web Push when the customer has a push subscription.
 Order notifications do not send email.
 
-Reservation requests and customer-triggered reservation status changes also send
-email to the signed-in customer's `ClaimTypes.Email` claim. Staff-triggered
-reservation status changes are in-app, real-time, and Web Push only; the app
-does not store customer email addresses on reservations. The authentication
-provider must issue an email claim for customer email notifications to work.
+Only reservation confirmation requests email, through the same single delivery
+call as its system and push notifications. The caller must supply the affected
+customer's trusted account email to `ChangeStatusAsync`; missing or invalid
+addresses are logged and skipped. Other reservation events keep email disabled.
+The staff pages still need the account module's email lookup to supply this address.
 
 3. Shared SMTP email configuration
 

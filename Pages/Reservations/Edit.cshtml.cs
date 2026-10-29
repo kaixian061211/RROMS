@@ -1,4 +1,3 @@
-using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -59,12 +58,7 @@ public class EditModel : PageModel
         if (!ModelState.IsValid)
             return Page();
 
-        var result = await _reservations.ModifyAsync(
-            User.GetPaymentUserId(),
-            Id,
-            Input,
-            RowVersion,
-            User.FindFirst(ClaimTypes.Email)?.Value);
+        var result = await _reservations.ModifyAsync(User.GetPaymentUserId(), Id, Input, RowVersion);
         if (!result.Succeeded)
         {
             ModelState.AddModelError(string.Empty, result.ErrorMessage!);
