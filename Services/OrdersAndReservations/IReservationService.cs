@@ -61,11 +61,7 @@ public interface IReservationService
     /// Moves a reservation to another status. Only pending → confirmed → completed and
     /// pending/confirmed → cancelled are allowed, and completed only once the booking time has started.
     /// </summary>
-    // customerEmail must be resolved from the affected customer's trusted
-    // account record by the caller, never from a free-text browser field.
-    // Only confirmation sends email; existing callers can omit the address.
-    Task<ReservationResult> ChangeStatusAsync(
-        int reservationId, string newStatus, byte[] rowVersion, string? customerEmail = null);
+    Task<ReservationResult> ChangeStatusAsync(int reservationId, string newStatus, byte[] rowVersion);
 
     /// <summary>The statuses this reservation may move to right now, so pages only offer those actions.</summary>
     IReadOnlyList<string> GetAllowedStatusChanges(Reservation reservation);

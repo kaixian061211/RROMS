@@ -3,6 +3,7 @@ using MimeKit;
 using RROMS.Web.Data;
 using RROMS.Web.Models.Notifications;
 using RROMS.Web.Models.Accounts;
+using System.ComponentModel.DataAnnotations;
 
 namespace RROMS.Web.Services.Notifications;
 
@@ -62,30 +63,6 @@ public sealed class NotificationDelivery : INotificationDelivery
                 return;
             }
 
-            // Resolve the affected customer, never the currently signed-in staff
-            // member. Explicit trusted recipients remain supported for callers.
-            if (sendEmail && (recipient is null || string.IsNullOrWhiteSpace(recipient.Email)))
-            {
-                recipient = await _db.Set<UserAccount>().AsNoTracking()
-                    .Where(u => u.UserId == notification.UserId && u.IsActive && u.Role == UserRoles.Customer)
-                    .Select(u => new NotificationEmailRecipient(u.UserId, u.Email))
-                    .SingleOrDefaultAsync(ct);
-            }
-
-            MailboxAddress? mailbox = null;
-            if (sendEmail && (recipient is null || recipient.UserId != notification.UserId
-                || !MailboxAddress.TryParse(recipient.Email, out mailbox)
-                || mailbox is null))
-            {
-                mailbox = null;
-                _logger.LogWarning(
-                    "Email skipped for notification {NotificationId}: " +
-                    "a valid recipient matching its owner is required.",
-                    notificationId);
-            }
-
-            // Providers are independent and do not use the DbContext. Start all
-            // eligible channels together, with a separate deadline for each.
             var deliveries = new List<Task>
             {
                 DeliverChannelAsync("SignalR", notificationId,
@@ -93,10 +70,10 @@ public sealed class NotificationDelivery : INotificationDelivery
                 DeliverChannelAsync("Web Push", notificationId,
                     token => _push.SendAsync(notification, token), ct)
             };
-            if (sendEmail && mailbox is not null)
+            if (sendEmail)
             {
                 deliveries.Add(DeliverChannelAsync("Email", notificationId,
-                    token => _email.SendAsync(mailbox, notification.Title, notification.Message, token), ct));
+                    token => DeliverEmailAsync(notification, recipient, token), ct));
             }
 
             await Task.WhenAll(deliveries);
@@ -112,12 +89,42 @@ public sealed class NotificationDelivery : INotificationDelivery
         }
     }
 
+    private async Task DeliverEmailAsync(
+        Notification notification, NotificationEmailRecipient? recipient, CancellationToken ct)
+    {
+        if (recipient is not null && recipient.UserId != notification.UserId)
+        {
+            _logger.LogWarning(
+                "Email skipped for notification {NotificationId}: recipient does not match its owner.",
+                notification.NotificationId);
+            return;
+        }
+
+        recipient ??= await _db.Set<UserAccount>().AsNoTracking()
+            .Where(u => u.UserId == notification.UserId && u.IsActive && u.Role == UserRoles.Customer)
+            .Select(u => new NotificationEmailRecipient(u.UserId, u.Email))
+            .SingleOrDefaultAsync(ct);
+
+        if (recipient is null
+            || !MailboxAddress.TryParse(recipient.Email, out var mailbox)
+            || mailbox is null
+            || !new EmailAddressAttribute().IsValid(mailbox.Address))
+        {
+            _logger.LogWarning(
+                "Email skipped for notification {NotificationId}: a valid customer email is required.",
+                notification.NotificationId);
+            return;
+        }
+
+        await _email.SendAsync(mailbox, notification.Title, notification.Message, ct);
+    }
+
     private async Task DeliverChannelAsync(
         string channel, int notificationId,
         Func<CancellationToken, Task> send, CancellationToken ct)
     {
         using var deadline = CancellationTokenSource.CreateLinkedTokenSource(ct);
-        deadline.CancelAfter(TimeSpan.FromSeconds(5));
+        deadline.CancelAfter(TimeSpan.FromSeconds(30));
         try
         {
             await send(deadline.Token);

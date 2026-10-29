@@ -203,8 +203,7 @@ public class ReservationService : IReservationService
     public async Task<ReservationResult> ModifyForStaffAsync(int reservationId, ReservationInput input, byte[] rowVersion) =>
         await ApplyChangesAsync(await Reservations.FindAsync(reservationId), input, rowVersion, byCustomer: false);
 
-    public async Task<ReservationResult> ChangeStatusAsync(
-        int reservationId, string newStatus, byte[] rowVersion, string? customerEmail = null)
+    public async Task<ReservationResult> ChangeStatusAsync(int reservationId, string newStatus, byte[] rowVersion)
     {
         var reservation = await Reservations.FindAsync(reservationId);
         if (reservation is null)
@@ -223,9 +222,7 @@ public class ReservationService : IReservationService
             await NotifyCustomerAsync(
                 reservation,
                 "Reservation status updated",
-                $"Your reservation {ReservationFormatter.Reference(reservation.ReservationId)} is now {ReservationFormatter.StatusLabel(newStatus).ToLowerInvariant()}.",
-                sendEmail: newStatus == ReservationStatus.Confirmed,
-                customerEmail: customerEmail);
+                $"Your reservation {ReservationFormatter.Reference(reservation.ReservationId)} is now {ReservationFormatter.StatusLabel(newStatus).ToLowerInvariant()}.");
         }
 
         return result;
@@ -286,9 +283,7 @@ public class ReservationService : IReservationService
     private async Task NotifyCustomerAsync(
         Reservation reservation,
         string title,
-        string message,
-        bool sendEmail = false,
-        string? customerEmail = null)
+        string message)
     {
         try
         {
@@ -302,14 +297,9 @@ public class ReservationService : IReservationService
             });
 
             await _db.SaveChangesAsync();
-            // One delivery call per event: confirmed reservations also request
-            // email, using only the customer address supplied by the caller.
             await _notificationDelivery.DeliverAsync(
                 notification.NotificationId,
-                sendEmail: sendEmail,
-                recipient: sendEmail
-                    ? new NotificationEmailRecipient(reservation.CustomerUserId, customerEmail ?? string.Empty)
-                    : null);
+                sendEmail: reservation.Status == ReservationStatus.Confirmed);
         }
         catch (Exception ex)
         {

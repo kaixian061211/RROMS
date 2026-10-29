@@ -65,9 +65,9 @@ by orders and reservations. The inbox displays that recorded wall time unchanged
 it does not label it UTC or convert it to the browser's timezone. Keep the database
 server timezone consistent across deployments.
 
-Notification delivery channels run concurrently with individual five-second
+Notification delivery channels run concurrently with individual 30-second
 cancellation deadlines. SMTP also has a total operation deadline configured by
-`Smtp:TimeoutSeconds` (default 5, bounded to 1–30 seconds), including when used by
+`Smtp:TimeoutSeconds` (default 30, bounded to 1–30 seconds), including when used by
 payment emails. Delivery is still awaited, with no background queue or retries.
 The saved inbox record remains available if a provider fails or times out.
 

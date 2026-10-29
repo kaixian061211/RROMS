@@ -8,7 +8,7 @@ public class SmtpSettings
     public string Host { get; set; } = string.Empty;
     public int Port { get; set; } = 587;
     // Total budget for connect, authentication, send and disconnect.
-    public int TimeoutSeconds { get; set; } = 5;
+    public int TimeoutSeconds { get; set; } = 30;
     public string UserName { get; set; } = string.Empty;
     public string Password { get; set; } = string.Empty;
     public string FromName { get; set; } = "RROMS Restaurant";
