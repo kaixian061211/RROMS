@@ -20,4 +20,6 @@ public class MenuItem
 
     /// <summary>False shows the dish as sold out and stops it being ordered.</summary>
     public bool IsAvailable { get; set; } = true;
+
+    public List<Promotion> Promotions { get; set; } = new();
 }
