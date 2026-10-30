@@ -1,0 +1,58 @@
+@page
+@model IndexModel
+@{
+    ViewData["Title"] = "Customer preferences";
+}
+
+<header class="rr-page-header">
+    <div>
+        <h1>Customer preferences</h1>
+        <p class="rr-lede">What customers have told us they like. You can read these but not change them.</p>
+    </div>
+    <form method="get" class="d-flex flex-wrap align-items-center gap-2" role="search" aria-label="Find a customer">
+        <label for="q" class="visually-hidden">Name or email</label>
+        <input id="q" name="q" type="search" class="form-control w-auto" value="@Model.Search" placeholder="Name or email" />
+        <button type="submit" class="btn btn-primary">Search</button>
+        @if (Model.Search is not null)
+        {
+            <a asp-page="Index" class="btn btn-link">Clear</a>
+        }
+    </form>
+</header>
+
+@if (Model.Customers.Count == 0)
+{
+    <div class="rr-empty">
+        <p class="rr-empty__title">@(Model.Search is null ? "No customers have registered yet." : "No customers match that search.")</p>
+        <p class="mb-0">@(Model.Search is null ? "Customers appear here once they have an account." : "Try a different name or email.")</p>
+    </div>
+}
+else
+{
+    <ul class="rr-list">
+        @foreach (var c in Model.Customers)
+        {
+            <li class="rr-list__item">
+                <div class="rr-list__main">
+                    <div class="fw-semibold">@c.FullName</div>
+                    <span class="small text-muted">@c.Email</span>
+                </div>
+                @if (c.HasPreferences)
+                {
+                    <span class="rr-status rr-status--good">Preferences saved</span>
+                }
+                else
+                {
+                    <span class="rr-status rr-status--off">None yet</span>
+                }
+                <div class="rr-list__actions">
+                    <a asp-page="Details" asp-route-id="@c.UserId" class="btn btn-sm btn-outline-secondary">View<span class="visually-hidden"> preferences of @c.FullName</span></a>
+                </div>
+            </li>
+        }
+    </ul>
+    @if (Model.IsCapped)
+    {
+        <p class="small text-muted mt-3">Showing the first @Model.Customers.Count customers. Search by name or email to find someone else.</p>
+    }
+}

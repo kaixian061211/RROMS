@@ -78,6 +78,9 @@
                             <li class="nav-item">
                                 <a class="nav-link @Active(currentPage == "/Orders/Queue")" aria-current="@Current(currentPage == "/Orders/Queue")" asp-area="" asp-page="/Orders/Queue">Order queue</a>
                             </li>
+                            <li class="nav-item">
+                                <a class="nav-link @Active(Under("/Feedback"))" aria-current="@Current(Under("/Feedback"))" asp-area="" asp-page="/Feedback/All">Customer feedback</a>
+                            </li>
                         }
                         @if (HostEnvironment.IsDevelopment())
                         {

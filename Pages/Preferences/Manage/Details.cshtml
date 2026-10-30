@@ -1,0 +1,44 @@
+@page "{id:int}"
+@model DetailsModel
+@{
+    var customer = Model.Customer;
+    var preference = customer.Preference;
+    var categories = CustomerHistoryFormatter.SplitCategories(preference?.FavouriteCategories);
+    ViewData["Title"] = customer.FullName + " · preferences";
+}
+
+<header class="rr-page-header">
+    <div>
+        <h1>@customer.FullName</h1>
+        <p class="rr-lede">@customer.Email</p>
+    </div>
+    <div class="rr-page-actions">
+        <a asp-page="Index" class="btn btn-outline-secondary">Back to customers</a>
+    </div>
+</header>
+
+@if (preference is null)
+{
+    <div class="rr-empty">
+        <p class="rr-empty__title">@customer.FullName hasn't saved any preferences.</p>
+        <p class="mb-0">They can add them from their own account.</p>
+    </div>
+}
+else
+{
+    <div class="rr-panel">
+        <dl class="mb-0">
+            <dt class="rr-label">Dietary needs and allergies</dt>
+            <dd class="mb-4">@CustomerHistoryFormatter.OrNotSet(preference.DietaryNeeds)</dd>
+
+            <dt class="rr-label">Favourite menu categories</dt>
+            <dd class="mb-4">@(categories.Count == 0 ? "Not set" : string.Join(", ", categories))</dd>
+
+            <dt class="rr-label">Where they like to sit</dt>
+            <dd class="mb-4">@(string.IsNullOrWhiteSpace(preference.SeatingPreferences) ? "No preference" : preference.SeatingPreferences)</dd>
+
+            <dt class="rr-label">Last updated</dt>
+            <dd class="mb-0">@CustomerHistoryFormatter.UpdatedAt(preference.UpdatedAt)</dd>
+        </dl>
+    </div>
+}

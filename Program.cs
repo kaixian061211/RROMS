@@ -109,6 +109,9 @@ builder.Services.AddHttpClient<IChatModelClient, GeminiChatClient>(client => cli
 builder.Services.AddScoped<IChatContextProvider, ChatContextProvider>();
 builder.Services.AddScoped<IChatbotService, ChatbotService>();
 
+builder.Services.AddScoped<ICustomerHistoryService, CustomerHistoryService>();
+builder.Services.AddScoped<ICustomerPreferenceService, CustomerPreferenceService>();
+
 var app = builder.Build();
 
 if (!app.Environment.IsDevelopment())

@@ -1,0 +1,149 @@
+@page
+@model IndexModel
+@{
+    ViewData["Title"] = "My history";
+    var history = Model.History;
+}
+
+<div class="rr-narrow">
+    <header class="rr-page-header">
+        <div>
+            <h1>My history</h1>
+            <p class="rr-lede">Your past reservations, orders and payments, newest first.</p>
+        </div>
+        <div class="rr-page-actions">
+            <a asp-page="/Preferences/Index" class="btn btn-outline-secondary">My preferences</a>
+        </div>
+    </header>
+
+    @* One list at a time: links, so one tap switches and the choice is in the address. *@
+    <nav class="nav nav-pills mb-3" aria-label="History">
+        <a class="nav-link @(Model.Tab == IndexModel.ReservationsTab ? "active" : null)" aria-current="@(Model.Tab == IndexModel.ReservationsTab ? "page" : null)"
+           asp-page="Index" asp-route-show="@IndexModel.ReservationsTab">Reservations <span class="rr-count">@history.Reservations.Count</span></a>
+        <a class="nav-link @(Model.Tab == IndexModel.OrdersTab ? "active" : null)" aria-current="@(Model.Tab == IndexModel.OrdersTab ? "page" : null)"
+           asp-page="Index" asp-route-show="@IndexModel.OrdersTab">Orders <span class="rr-count">@history.Orders.Count</span></a>
+        <a class="nav-link @(Model.Tab == IndexModel.PaymentsTab ? "active" : null)" aria-current="@(Model.Tab == IndexModel.PaymentsTab ? "page" : null)"
+           asp-page="Index" asp-route-show="@IndexModel.PaymentsTab">Payments <span class="rr-count">@history.Payments.Count</span></a>
+    </nav>
+
+    @if (Model.Tab == IndexModel.ReservationsTab)
+    {
+        if (history.Reservations.Count == 0)
+        {
+            <div class="rr-empty">
+                <p class="rr-empty__title">No past reservations yet.</p>
+                <p class="mb-0">Bookings that are completed, cancelled or in the past will show up here.</p>
+                <a asp-page="/Reservations/Create" class="btn btn-primary">Book a table</a>
+            </div>
+        }
+        else
+        {
+            <ul class="list-unstyled d-grid gap-3 mb-0">
+                @foreach (var r in history.Reservations)
+                {
+                    <li class="rr-slip">
+                        <partial name="/Pages/Reservations/_DateBlock.cshtml" model="r.ReservationDate" />
+                        <div class="rr-slip__body">
+                            <div>
+                                <div class="rr-slip__title">
+                                    @ReservationFormatter.Time(r.TimeSlot) · @ReservationFormatter.Table(r.TableId, history.Tables) · @ReservationFormatter.PartySize(r.PartySize)
+                                </div>
+                                <span class="rr-ref">@ReservationFormatter.Reference(r.ReservationId)</span>
+                                @if (r.SpecialRequest is not null)
+                                {
+                                    <p class="small text-muted mt-1 mb-0">@r.SpecialRequest</p>
+                                }
+                            </div>
+                            <div class="rr-slip__side">
+                                <span class="@ReservationFormatter.StatusBadge(r.Status)">@ReservationFormatter.StatusLabel(r.Status)</span>
+                            </div>
+                        </div>
+                    </li>
+                }
+            </ul>
+        }
+    }
+    else if (Model.Tab == IndexModel.OrdersTab)
+    {
+        if (history.Orders.Count == 0)
+        {
+            <div class="rr-empty">
+                <p class="rr-empty__title">You haven't placed any orders yet.</p>
+                <p class="mb-0">Order from your table and it will show up here.</p>
+                <a asp-page="/Orders/Create" class="btn btn-primary">Order food</a>
+            </div>
+        }
+        else
+        {
+            <ul class="list-unstyled d-grid gap-3 mb-0">
+                @foreach (var details in history.Orders)
+                {
+                    var o = details.Order;
+                    var reference = OrderFormatter.Reference(o.OrderId);
+                    <li class="rr-slip">
+                        <div class="rr-slip__body">
+                            <div>
+                                <div class="rr-slip__title">
+                                    @OrderFormatter.Table(o.TableId, history.Tables) · @OrderFormatter.ItemCount(o) · <span class="rr-money">@OrderFormatter.Money(o.Total)</span>
+                                </div>
+                                <span class="rr-ref">@reference</span>
+                                <span class="small text-muted">· @OrderFormatter.PlacedAt(o.CreatedAt)</span>
+                                @if (details.Lines.Count > 0)
+                                {
+                                    <p class="small text-muted mt-1 mb-0">@string.Join(", ", details.Lines.Select(l => $"{l.Item.Quantity} × {l.MenuItemName}"))</p>
+                                }
+                            </div>
+                            <div class="rr-slip__side">
+                                <span class="@OrderFormatter.StatusBadge(o.Status)">@OrderFormatter.StatusLabel(o.Status)</span>
+                                <div class="d-flex gap-2">
+                                    @if (details.Payment is { HasReceipt: true } payment)
+                                    {
+                                        <a asp-page="/Payments/Receipt" asp-route-id="@payment.PaymentId" class="btn btn-sm btn-outline-secondary">Receipt<span class="visually-hidden"> for @reference</span></a>
+                                    }
+                                    <a asp-page="/Orders/Details" asp-route-id="@o.OrderId" class="btn btn-sm btn-outline-secondary">View<span class="visually-hidden"> @reference</span></a>
+                                </div>
+                            </div>
+                        </div>
+                    </li>
+                }
+            </ul>
+        }
+    }
+    else
+    {
+        if (history.Payments.Count == 0)
+        {
+            <div class="rr-empty">
+                <p class="rr-empty__title">No payments yet.</p>
+                <p class="mb-0">Once you pay for an order, the payment will show up here.</p>
+            </div>
+        }
+        else
+        {
+            <ul class="list-unstyled d-grid gap-3 mb-0">
+                @foreach (var p in history.Payments)
+                {
+                    <li class="rr-slip">
+                        <div class="rr-slip__body">
+                            <div>
+                                <div class="rr-slip__title">
+                                    <span class="rr-money">@PaymentFormatter.Money(p.Amount)</span> · @PaymentFormatter.MethodLabel(p.Method)
+                                </div>
+                                <span class="rr-ref">@p.ReceiptNo</span>
+                                <span class="small text-muted">· for @OrderFormatter.Reference(p.OrderId)</span>
+                                <p class="small text-muted mt-1 mb-0">@CustomerHistoryFormatter.PaymentWhen(p)</p>
+                            </div>
+                            <div class="rr-slip__side">
+                                <span class="@CustomerHistoryFormatter.PaymentBadge(p.Status)">@PaymentFormatter.StatusLabel(p.Status)</span>
+                                @if (p.HasReceipt)
+                                {
+                                    <a asp-page="/Payments/Receipt" asp-route-id="@p.PaymentId" class="btn btn-sm btn-outline-secondary">Receipt<span class="visually-hidden"> @p.ReceiptNo</span></a>
+                                }
+                            </div>
+                        </div>
+                    </li>
+                }
+            </ul>
+        }
+    }
+</div>

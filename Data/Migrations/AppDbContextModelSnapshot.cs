@@ -98,6 +98,42 @@ namespace RROMS.Web.Data.Migrations
                         });
                 });
 
+            modelBuilder.Entity("RROMS.Web.Models.CustomerHistoryAndPreferences.CustomerPreference", b =>
+                {
+                    b.Property<int>("CustomerPreferenceId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("CustomerPreferenceId"));
+
+                    b.Property<int>("CustomerUserId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("DietaryNeeds")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("FavouriteCategories")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("SeatingPreferences")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("SYSDATETIME()");
+
+                    b.HasKey("CustomerPreferenceId");
+
+                    b.HasIndex("CustomerUserId")
+                        .IsUnique();
+
+                    b.ToTable("CustomerPreference", (string)null);
+                });
+
             modelBuilder.Entity("RROMS.Web.Models.CustomerSupportAndFeedback.ChatMessage", b =>
                 {
                     b.Property<int>("ChatMessageId")
