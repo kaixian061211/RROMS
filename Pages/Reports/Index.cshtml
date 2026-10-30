@@ -1,0 +1,298 @@
+@page
+@model RROMS.Web.Pages.Reports.IndexModel
+@using RROMS.Web.Models.Reports
+
+@{
+    ViewData["Title"] = "Reports";
+}
+
+<div class="report-page">
+    <header class="mb-4">
+        <h1 class="mb-2">Reports</h1>
+        <p class="text-body-secondary mb-0">
+            Review recorded sales, reservations and customer activity.
+        </p>
+    </header>
+
+    @if (!ViewData.ModelState.IsValid)
+    {
+        <div asp-validation-summary="All"
+             class="alert alert-danger"
+             role="alert">
+        </div>
+    }
+
+    <section class="card mb-4" aria-labelledby="report-filter-heading">
+        <div class="card-body">
+            <h2 id="report-filter-heading" class="h5 mb-3">
+                Report period
+            </h2>
+
+            <form method="get" asp-page="/Reports/Index">
+                <div class="row g-3 align-items-end">
+                    <div class="col-md-3">
+                        <label asp-for="Period" class="form-label">
+                            Period
+                        </label>
+
+                        <select asp-for="Period"
+                                asp-items="Html.GetEnumSelectList<ReportPeriod>()"
+                                class="form-select">
+                        </select>
+
+                        <span asp-validation-for="Period"
+                              class="text-danger small">
+                        </span>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label asp-for="ReferenceDate" class="form-label">
+                            Reference date
+                        </label>
+
+                        <input asp-for="ReferenceDate"
+                               type="date" min="2000-01-01" max="2100-12-31"
+                               class="form-control"
+                               required />
+
+                        <span asp-validation-for="ReferenceDate"
+                              class="text-danger small">
+                        </span>
+                    </div>
+
+                    <div class="col-md-5">
+                        <div class="d-flex flex-wrap gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                Update
+                            </button>
+
+                            <a asp-page="/Reports/Index"
+                               class="btn btn-outline-secondary">
+                                Reset
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <p class="form-text mb-0 mt-3">
+                    The reference date selects its day, Monday–Sunday week,
+                    calendar month or calendar year.
+                </p>
+            </form>
+        </div>
+    </section>
+
+    @if (Model.Report is { } report)
+    {
+        var cards = new (string Label, string Value, string Hint)[]
+        {
+            (
+                "Gross collections",
+                Model.Money(report.Sales.GrossCollections),
+                "Payments received during the period."
+            ),
+            (
+                "Confirmed refunds",
+                Model.Money(report.Sales.ConfirmedRefunds),
+                "Refunds recorded during the period."
+            ),
+            (
+                "Net collections",
+                Model.Money(report.Sales.NetCollections),
+                "Gross collections less confirmed refunds."
+            ),
+            (
+                "Payments",
+                Model.Count(report.Sales.PaymentCount),
+                "Collections, including payments later refunded."
+            ),
+            (
+                "Average payment",
+                Model.Money(report.Sales.AveragePayment),
+                "Gross collections divided by payment count."
+            ),
+            (
+                "Orders placed",
+                Model.Count(report.Orders.OrdersPlaced),
+                "Orders created during the period."
+            ),
+            (
+                "Scheduled reservations",
+                Model.Count(report.Reservations.ScheduledReservations),
+                "Reservations scheduled during the period."
+            ),
+            (
+                "Cancellation percentage",
+                Model.Percentage(report.Reservations.CancellationPercent),
+                "Currently cancelled / all scheduled reservations."
+            ),
+            (
+                "Booked-slot utilization",
+                Model.Percentage(report.Utilization.UtilizationPercent),
+                "Estimate using current tables and opening hours."
+            ),
+            (
+                "Active customers",
+                Model.Count(report.Customers.ActiveCustomers),
+                "Accounts with recorded activity during the period."
+            )
+        };
+
+        <section class="card mb-4" aria-label="Report information">
+            <div class="card-body">
+                <dl class="report-meta">
+                    <div>
+                        <dt>Selected period</dt>
+                        <dd>@report.PeriodLabel</dd>
+                    </div>
+
+                    <div>
+                        <dt>Generated</dt>
+                        <dd>@Model.Timestamp(report.GeneratedAt)</dd>
+                    </div>
+
+                    <div>
+                        <dt>Currency</dt>
+                        <dd>@DashboardReport.Currency</dd>
+                    </div>
+
+                    <div>
+                        <dt>Time zone</dt>
+                        <dd>Malaysia — UTC+8</dd>
+                    </div>
+                </dl>
+            </div>
+        </section>
+
+        @if (!Model.HasActivity)
+        {
+            <div class="alert alert-info" role="status">
+                No data for this period.
+            </div>
+        }
+
+        <section class="card mb-4" aria-labelledby="report-download-heading">
+            <div class="card-body">
+                <h2 id="report-download-heading" class="h5">Download report</h2>
+                <p class="small text-body-secondary">
+                    Downloads include all records for @report.PeriodLabel.
+                    Select Update after changing the period or date.
+                    Figures are refreshed when you download.
+                </p>
+                <div class="d-flex flex-wrap gap-2">
+                    <a class="btn btn-outline-primary" asp-page="/Reports/Index"
+                       asp-page-handler="ExportPdf" asp-route-Period="@Model.Period"
+                       asp-route-ReferenceDate="@Model.ReferenceDate.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture)">
+                        Download PDF
+                    </a>
+                    <a class="btn btn-outline-primary" asp-page="/Reports/Index"
+                       asp-page-handler="ExportExcel" asp-route-Period="@Model.Period"
+                       asp-route-ReferenceDate="@Model.ReferenceDate.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture)">
+                        Download Excel
+                    </a>
+                    <a class="btn btn-outline-primary" asp-page="/Reports/Index"
+                       asp-page-handler="ExportCsv" asp-route-Period="@Model.Period"
+                       asp-route-ReferenceDate="@Model.ReferenceDate.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture)">
+                        Download CSV
+                    </a>
+                </div>
+                <p class="small text-body-secondary mt-3 mb-0">
+                    Excel has separate worksheets. CSV includes every section in one table,
+                    with section, record, field and value columns. Percentage values use a 0–100 scale.
+                </p>
+            </div>
+        </section>
+
+        <section class="report-summary mb-4"
+                 aria-labelledby="report-summary-heading">
+            <h2 id="report-summary-heading" class="h4 mb-3">
+                Period summary
+            </h2>
+
+            <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 row-cols-xxl-5 g-3">
+                @foreach (var card in cards)
+                {
+                    <div class="col">
+                        <article class="card h-100">
+                            <div class="card-body">
+                                <h3 class="h6 text-body-secondary">
+                                    @card.Label
+                                </h3>
+
+                                <p class="report-value mb-2">
+                                    @card.Value
+                                </p>
+
+                                <p class="small text-body-secondary mb-0">
+                                    @card.Hint
+                                </p>
+                            </div>
+                        </article>
+                    </div>
+                }
+            </div>
+        </section>
+
+        <partial name="_Sales" model="Model" />
+        <partial name="_Orders" model="Model" />
+        <partial name="_Reservations" model="Model" />
+        <partial name="_Utilization" model="Model" />
+        <partial name="_PopularMenu" model="Model" />
+        <partial name="_Customers" model="Model" />
+
+        <details class="card report-basis mb-4">
+            <summary class="card-body">
+                How these figures are calculated
+            </summary>
+
+            <div class="card-body pt-0">
+                <dl class="mb-0">
+                    <dt>Sales</dt>
+                    <dd>@report.Sales.Basis</dd>
+
+                    <dt>Orders</dt>
+                    <dd>@report.Orders.Basis</dd>
+
+                    <dt>Reservations</dt>
+                    <dd>@report.Reservations.Basis</dd>
+
+                    <dt>Table utilization</dt>
+                    <dd>@report.Utilization.Basis</dd>
+
+                    <dt>Popular menu items</dt>
+                    <dd>@report.Menu.Basis</dd>
+
+                    <dt>Customer activity</dt>
+                    <dd class="mb-0">@report.Customers.Basis</dd>
+                </dl>
+            </div>
+        </details>
+
+        <section aria-labelledby="report-notes-heading">
+            <h2 id="report-notes-heading" class="h6">
+                Report notes
+            </h2>
+
+            <ul class="small text-body-secondary mb-0">
+                @foreach (var note in report.Notes)
+                {
+                    <li>@note</li>
+                }
+            </ul>
+        </section>
+    }
+</div>
+
+@section Scripts
+{
+    @if (Model.Report is not null)
+    {
+        <script type="application/json" id="report-data">@Html.Raw(Model.ChartJson)</script>
+
+        <script src="~/lib/chartjs/chart.umd.min.js"
+                asp-append-version="true"></script>
+
+        <script src="~/js/reports.js"
+                asp-append-version="true"></script>
+    }
+}

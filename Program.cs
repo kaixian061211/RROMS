@@ -70,6 +70,7 @@ builder.Services.AddScoped<IReservationService, ReservationService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
 builder.Services.AddScoped<IMenuItemLookup, MenuItemLookup>();
 builder.Services.AddScoped<IReportService, ReportService>();
+builder.Services.AddScoped<ReportExportService>();
 builder.Services.AddScoped<IPaymentOrderProvider, PaymentOrderProvider>();
 builder.Services.AddHttpContextAccessor();
 

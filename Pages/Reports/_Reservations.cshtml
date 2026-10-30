@@ -1,0 +1,373 @@
+@model RROMS.Web.Pages.Reports.IndexModel
+@using RROMS.Web.Pages.Reports
+
+@if (Model.Report is { } report)
+{
+    var reservations = report.Reservations;
+
+    var hasPeakData = reservations.PeakSlots
+        .Any(slot => slot.Reservations > 0);
+
+    <section id="reservations"
+             class="mb-5"
+             aria-labelledby="reservations-heading">
+
+        <h2 id="reservations-heading" class="h4 mb-3">
+            Reservation analytics
+        </h2>
+
+        <div class="card mb-4">
+            <div class="card-body">
+                <dl class="row row-cols-1 row-cols-sm-2 row-cols-xl-5 g-3 mb-0">
+                    <div class="col">
+                        <dt class="small text-body-secondary">
+                            Scheduled reservations
+                        </dt>
+                        <dd class="h5 mb-1">
+                            @Model.Count(reservations.ScheduledReservations)
+                        </dd>
+                        <p class="small text-body-secondary mb-0">
+                            Includes all current statuses.
+                        </p>
+                    </div>
+
+                    <div class="col">
+                        <dt class="small text-body-secondary">
+                            Scheduled guests
+                        </dt>
+                        <dd class="h5 mb-1">
+                            @Model.Count(reservations.ScheduledGuests)
+                        </dd>
+                        <p class="small text-body-secondary mb-0">
+                            Non-cancelled reservations.
+                        </p>
+                    </div>
+
+                    <div class="col">
+                        <dt class="small text-body-secondary">
+                            New bookings
+                        </dt>
+                        <dd class="h5 mb-1">
+                            @Model.Count(reservations.NewBookingsCreated)
+                        </dd>
+                        <p class="small text-body-secondary mb-0">
+                            Created during this period.
+                        </p>
+                    </div>
+
+                    <div class="col">
+                        <dt class="small text-body-secondary">
+                            Cancelled scheduled
+                        </dt>
+                        <dd class="h5 mb-1">
+                            @Model.Count(reservations.CancelledScheduled)
+                        </dd>
+                        <p class="small text-body-secondary mb-0">
+                            Current status is cancelled.
+                        </p>
+                    </div>
+
+                    <div class="col">
+                        <dt class="small text-body-secondary">
+                            Cancellation percentage
+                        </dt>
+                        <dd class="h5 mb-1">
+                            @Model.Percentage(reservations.CancellationPercent)
+                        </dd>
+                        <p class="small text-body-secondary mb-0">
+                            Cancelled / all scheduled reservations.
+                        </p>
+                    </div>
+                </dl>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-body">
+                <h3 class="h5">Scheduled reservation trend</h3>
+
+                <p class="small text-body-secondary">
+                    Cancelled reservations are included in scheduled totals.
+                    Cancellation figures reflect current statuses.
+                </p>
+
+                @if (reservations.ScheduledReservations > 0)
+                {
+                    <div class="report-chart">
+                        <canvas id="reservations-trend-chart"
+                                role="img"
+                                aria-label="Scheduled reservations and currently cancelled reservations by dining date">
+                            Exact values appear in the trend table below.
+                        </canvas>
+                    </div>
+                }
+                else
+                {
+                    <p class="text-body-secondary">
+                        No scheduled reservations for this period.
+                    </p>
+                }
+
+                <details class="mt-3">
+                    <summary>View trend data</summary>
+
+                    <div class="table-responsive mt-3">
+                        <table class="table table-sm align-middle mb-0">
+                            <caption class="visually-hidden">
+                                Scheduled reservation trend for @report.PeriodLabel
+                            </caption>
+
+                            <thead>
+                                <tr>
+                                    <th scope="col">Interval</th>
+                                    <th scope="col" class="text-end">Scheduled</th>
+                                    <th scope="col" class="text-end">Currently cancelled</th>
+                                </tr>
+                            </thead>
+
+                            <tbody>
+                                @foreach (var point in reservations.Trend)
+                                {
+                                    <tr>
+                                        <th scope="row" class="fw-normal text-nowrap">
+                                            @point.Label
+                                        </th>
+                                        <td class="text-end">
+                                            @Model.Count(point.Scheduled)
+                                        </td>
+                                        <td class="text-end">
+                                            @Model.Count(point.Cancelled)
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </details>
+            </div>
+        </div>
+
+        <div class="row g-4 mb-4">
+            <div class="col-xl-6">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h3 class="h5">Current reservation statuses</h3>
+
+                        @if (reservations.ScheduledReservations > 0)
+                        {
+                            <div class="report-chart">
+                                <canvas id="reservations-status-chart"
+                                        role="img"
+                                        aria-label="Scheduled reservations grouped by current status">
+                                    Exact counts appear in the status table below.
+                                </canvas>
+                            </div>
+                        }
+                        else
+                        {
+                            <p class="text-body-secondary">
+                                No scheduled reservations for this period.
+                            </p>
+                        }
+
+                        <div class="table-responsive mt-3">
+                            <table class="table table-sm align-middle mb-0">
+                                <caption class="visually-hidden">
+                                    Reservation statuses for @report.PeriodLabel
+                                </caption>
+
+                                <thead>
+                                    <tr>
+                                        <th scope="col">Status</th>
+                                        <th scope="col" class="text-end">Reservations</th>
+                                    </tr>
+                                </thead>
+
+                                <tbody>
+                                    @foreach (var status in reservations.StatusBreakdown)
+                                    {
+                                        <tr>
+                                            <th scope="row" class="fw-normal">
+                                                @Model.ReservationStatusLabel(status.Status)
+                                            </th>
+                                            <td class="text-end">
+                                                @Model.Count(status.Count)
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-6">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h3 class="h5">Peak reserved dining times</h3>
+
+                        <p class="small text-body-secondary">
+                            Counts non-cancelled reservations at each full seating time.
+                        </p>
+
+                        @if (hasPeakData)
+                        {
+                            <div class="report-chart">
+                                <canvas id="reservations-peak-chart"
+                                        role="img"
+                                        aria-label="Non-cancelled reservation counts by reserved dining time">
+                                    Exact counts and peak labels appear in the table below.
+                                </canvas>
+                            </div>
+                        }
+                        else
+                        {
+                            <p class="text-body-secondary">
+                                No non-cancelled reservations for this period.
+                            </p>
+                        }
+
+                        <div class="table-responsive mt-3">
+                            <table class="table table-sm align-middle mb-0">
+                                <caption class="visually-hidden">
+                                    Reserved dining times for @report.PeriodLabel
+                                </caption>
+
+                                <thead>
+                                    <tr>
+                                        <th scope="col">Dining time</th>
+                                        <th scope="col" class="text-end">Reservations</th>
+                                        <th scope="col" class="text-end">Guests</th>
+                                        <th scope="col">Peak</th>
+                                    </tr>
+                                </thead>
+
+                                <tbody>
+                                    @foreach (var slot in reservations.PeakSlots)
+                                    {
+                                        <tr>
+                                            <th scope="row" class="fw-normal">
+                                                @Model.TimeLabel(slot.TimeSlot)
+                                            </th>
+                                            <td class="text-end">
+                                                @Model.Count(slot.Reservations)
+                                            </td>
+                                            <td class="text-end">
+                                                @Model.Count(slot.Guests)
+                                            </td>
+                                            <td>
+                                                @if (slot.IsPeak)
+                                                {
+                                                    <span class="badge text-bg-primary">
+                                                        Peak
+                                                    </span>
+                                                }
+                                                else
+                                                {
+                                                    <span>—</span>
+                                                }
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-body">
+                <h3 class="h5">Scheduled reservation records</h3>
+
+                @if (reservations.Reservations.Count == 0)
+                {
+                    <p class="text-body-secondary mb-0">
+                        No scheduled reservations for this period.
+                    </p>
+                }
+                else
+                {
+                    @if (reservations.Reservations.Count > IndexModel.DetailRowLimit)
+                    {
+                        <p class="small text-body-secondary">
+                            Showing the first @IndexModel.DetailRowLimit
+                            of @Model.Count(reservations.Reservations.Count)
+                            reservations.
+                        </p>
+                    }
+
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <caption class="visually-hidden">
+                                Reservations scheduled during @report.PeriodLabel
+                            </caption>
+
+                            <thead>
+                                <tr>
+                                    <th scope="col">Reservation</th>
+                                    <th scope="col">Dining date / time</th>
+                                    <th scope="col">Table / area</th>
+                                    <th scope="col">Customer</th>
+                                    <th scope="col" class="text-end">Guests</th>
+                                    <th scope="col">Status</th>
+                                    <th scope="col">Booking created</th>
+                                    <th scope="col">Special request</th>
+                                </tr>
+                            </thead>
+
+                            <tbody>
+                                @foreach (var reservation in reservations.Reservations.Take(IndexModel.DetailRowLimit))
+                                {
+                                    <tr>
+                                        <td>@reservation.ReservationId</td>
+
+                                        <td class="text-nowrap">
+                                            @Model.DateLabel(reservation.Date)
+
+                                            <span class="d-block small text-body-secondary">
+                                                @Model.TimeLabel(reservation.TimeSlot)
+                                            </span>
+                                        </td>
+
+                                        <td>
+                                            @reservation.Table
+
+                                            <span class="d-block small text-body-secondary">
+                                                @reservation.Area
+                                            </span>
+                                        </td>
+
+                                        <td class="text-nowrap">
+                                            @Model.CustomerLabel(reservation.CustomerUserId)
+                                        </td>
+
+                                        <td class="text-end">
+                                            @Model.Count(reservation.PartySize)
+                                        </td>
+
+                                        <td class="text-nowrap">
+                                            @Model.ReservationStatusLabel(reservation.Status)
+                                        </td>
+
+                                        <td class="text-nowrap">
+                                            @Model.Timestamp(reservation.CreatedAt)
+                                        </td>
+
+                                        <td class="report-reservation-note">@(reservation.SpecialRequest ?? "—")</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <p class="small text-body-secondary mt-3 mb-0">
+            @reservations.Basis
+        </p>
+    </section>
+}
