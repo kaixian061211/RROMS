@@ -1,0 +1,97 @@
+@page
+@model RROMS.Web.Pages.Menu.IndexModel
+@using RROMS.Web.Models.Payments
+@using RROMS.Web.Models.Restaurant
+@{
+    ViewData["Title"] = "Menu";
+}
+
+<div class="rr-narrow">
+    <header class="rr-page-header">
+        <div>
+            <h1>Menu</h1>
+            <p class="rr-lede">What we serve, what it costs, and what is available today.</p>
+        </div>
+    </header>
+
+    @if (Model.Promotions.Any())
+    {
+        <section class="mb-5" aria-label="Promotions running now">
+            <h2 class="rr-group-title">Running now <span class="rr-count">@Model.Promotions.Count</span></h2>
+            <div class="d-grid gap-3">
+                @foreach (var promotion in Model.Promotions)
+                {
+                    <div class="rr-feature">
+                        <h3 class="rr-feature__title">@promotion.Title · @RestaurantFormatter.DiscountLabel(promotion)</h3>
+                        <p class="text-muted mb-0">@promotion.Description</p>
+                        <div class="rr-feature__meta">Until @RestaurantFormatter.Date(promotion.EndDate)</div>
+                    </div>
+                }
+            </div>
+        </section>
+    }
+
+    <nav class="nav nav-pills mb-4" aria-label="Category">
+        <a class="nav-link @(Model.CategoryId is null ? "active" : null)" aria-current="@(Model.CategoryId is null ? "page" : null)"
+           asp-page="/Menu/Index">All</a>
+        @foreach (var category in Model.Categories)
+        {
+            var current = Model.CategoryId == category.MenuCategoryId;
+            <a class="nav-link @(current ? "active" : null)" aria-current="@(current ? "page" : null)"
+               asp-page="/Menu/Index" asp-route-categoryId="@category.MenuCategoryId">@category.Name</a>
+        }
+    </nav>
+
+    @if (Model.Groups.Any())
+    {
+        @foreach (var group in Model.Groups)
+        {
+            <section class="mb-5" aria-label="@group.Title">
+                <h2 class="rr-group-title">@group.Title <span class="rr-count">@group.Items.Count</span></h2>
+                <ul class="list-unstyled d-grid gap-3 mb-0">
+                    @foreach (var item in group.Items)
+                    {
+                        var price = Model.PriceOf(item);
+                        var availability = RestaurantFormatter.Availability(item.IsAvailable);
+                        <li class="rr-slip">
+                            <div class="rr-slip__body">
+                                <div class="d-flex gap-3">
+                                    @if (!string.IsNullOrEmpty(item.ImagePath))
+                                    {
+                                        <img class="thumb" src="@item.ImagePath" alt="" />
+                                    }
+                                    <div>
+                                        <div class="rr-slip__title">@item.Name</div>
+                                        <p class="small text-muted mb-0">@item.Description</p>
+                                    </div>
+                                </div>
+                                <div class="rr-slip__side">
+                                    <div class="text-end">
+                                        @if (price.Promotion is not null)
+                                        {
+                                            <span class="rr-money text-decoration-line-through text-muted">@PaymentFormatter.Money(item.Price)</span>
+                                            <span class="rr-money fw-semibold">@PaymentFormatter.Money(price.Price)</span>
+                                            <span class="rr-label d-block">@RestaurantFormatter.DiscountLabel(price.Promotion)</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="rr-money fw-semibold">@PaymentFormatter.Money(item.Price)</span>
+                                        }
+                                    </div>
+                                    <span class="rr-status @availability.Css">@availability.Label</span>
+                                </div>
+                            </div>
+                        </li>
+                    }
+                </ul>
+            </section>
+        }
+    }
+    else
+    {
+        <div class="rr-empty">
+            <p class="rr-empty__title">Nothing on the menu here yet</p>
+            <p class="mb-0">Dishes will appear here once the restaurant adds them. Try another category or check back later.</p>
+        </div>
+    }
+</div>

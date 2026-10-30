@@ -1,0 +1,107 @@
+@page
+@model RROMS.Web.Pages.Restaurant.IndexModel
+@using RROMS.Web.Models.Restaurant
+@{
+    ViewData["Title"] = Model.Info?.Name ?? "Restaurant";
+}
+
+<div class="rr-narrow">
+    @if (Model.Info is null)
+    {
+        <header class="rr-page-header">
+            <div><h1>Restaurant</h1></div>
+        </header>
+        <div class="rr-empty">
+            <p class="rr-empty__title">Restaurant details are not available yet</p>
+            <p class="mb-0">The address, phone number and opening hours will appear here once the restaurant adds them.</p>
+        </div>
+    }
+    else
+    {
+        <header class="rr-page-header">
+            <div class="d-flex align-items-center gap-3">
+                @if (!string.IsNullOrEmpty(Model.Info.LogoPath))
+                {
+                    <img class="logo" src="@Model.Info.LogoPath" alt="" />
+                }
+                <div>
+                    <h1>@Model.Info.Name</h1>
+                    @if (!string.IsNullOrEmpty(Model.Info.Description))
+                    {
+                        <p class="rr-lede">@Model.Info.Description</p>
+                    }
+                </div>
+            </div>
+            <div class="rr-page-actions">
+                <a asp-page="/Menu/Index" class="btn btn-primary">See the menu</a>
+            </div>
+        </header>
+
+        @foreach (var announcement in Model.Announcements)
+        {
+            <div class="alert alert-warning" role="status">
+                <strong>@announcement.Title</strong><br />
+                @announcement.Message
+            </div>
+        }
+
+        <section class="rr-panel mb-4" aria-labelledby="contact-title">
+            <h2 class="h3 mb-3" id="contact-title">Find us</h2>
+            <p class="mb-1">@Model.Info.Address</p>
+            <p class="mb-1">@Model.Info.Phone</p>
+            <p class="mb-0">@Model.Info.Email</p>
+        </section>
+
+        <section class="rr-panel mb-4" aria-labelledby="hours-title">
+            <h2 class="h3 mb-3" id="hours-title">Opening hours</h2>
+            @if (Model.Hours.Any())
+            {
+                <table class="table align-middle mb-0">
+                    <tbody>
+                        @foreach (var hour in Model.Hours)
+                        {
+                            <tr>
+                                <th scope="row">@hour.DayOfWeek</th>
+                                <td class="text-end">
+                                    @if (hour.IsClosed || hour.OpenTime is null || hour.CloseTime is null)
+                                    {
+                                        <span class="text-muted">Closed</span>
+                                    }
+                                    else
+                                    {
+                                        @:@RestaurantFormatter.Time(hour.OpenTime.Value) to @RestaurantFormatter.Time(hour.CloseTime.Value)
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+            else
+            {
+                <p class="text-muted mb-0">The opening hours have not been added yet.</p>
+            }
+        </section>
+
+        @if (Model.Promotions.Any())
+        {
+            <section class="mb-4" aria-label="Promotions running now">
+                <h2 class="rr-group-title">Running now <span class="rr-count">@Model.Promotions.Count</span></h2>
+                <div class="d-grid gap-3">
+                    @foreach (var promotion in Model.Promotions)
+                    {
+                        <div class="rr-feature">
+                            @if (!string.IsNullOrEmpty(promotion.BannerPath))
+                            {
+                                <img class="banner mb-3" src="@promotion.BannerPath" alt="" />
+                            }
+                            <h3 class="rr-feature__title">@promotion.Title · @RestaurantFormatter.DiscountLabel(promotion)</h3>
+                            <p class="text-muted mb-0">@promotion.Description</p>
+                            <div class="rr-feature__meta">Until @RestaurantFormatter.Date(promotion.EndDate)</div>
+                        </div>
+                    }
+                </div>
+            </section>
+        }
+    }
+</div>
