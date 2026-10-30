@@ -125,6 +125,27 @@ public class PaymentService : IPaymentService
         }
         else
         {
+            // The customer may return through their orders instead of Stripe's
+            // success URL. Reconcile the stored attempt before replacing it.
+            if (existing.PaymentStatus is PaymentStatus.Pending or PaymentStatus.Failed
+                && existing.RecordedByStaffId is null
+                && PaymentMethod.IsOnline(existing.PaymentMethod)
+                && !string.IsNullOrWhiteSpace(existing.TransactionRef))
+            {
+                var confirmation = await _stripe.GetPaidConfirmationAsync(
+                    existing.TransactionRef);
+
+                if (confirmation is not null)
+                {
+                    return new PaymentResult
+                    {
+                        Payment = await RecordOnlineConfirmationAsync(
+                            existing,
+                            confirmation)
+                    };
+                }
+            }
+
             payment = await ReopenAsync(
                 existing,
                 order,
@@ -244,7 +265,8 @@ public class PaymentService : IPaymentService
                     existing.TransactionRef))
             {
                 throw new PaymentException(
-                    "Your previous payment is still being processed. Please wait a moment and refresh.");
+                    "Your previous payment could not be closed. Use Check payment status before paying again.",
+                    paymentMayBeInProgress: true);
             }
 
             await _db.Payments
@@ -511,13 +533,20 @@ public class PaymentService : IPaymentService
                 true);
         }
 
+        await RecordOnlineConfirmationAsync(payment, confirmation);
+    }
+
+    private async Task<Payment> RecordOnlineConfirmationAsync(
+        Payment payment,
+        OnlinePaymentConfirmation confirmation)
+    {
         if (confirmation.PaymentId != payment.PaymentId
             || confirmation.OrderId != payment.OrderId
             || confirmation.SessionId != payment.TransactionRef)
         {
             _logger.LogWarning(
                 "Stripe lookup did not match payment {PaymentId}",
-                paymentId);
+                payment.PaymentId);
 
             throw new PaymentException(
                 "Stripe's confirmation does not match this payment. Contact the restaurant before paying again.",
@@ -529,18 +558,18 @@ public class PaymentService : IPaymentService
 
         // False from MarkPaidOnlineAsync can also mean already processed.
         // Read the saved status before deciding the result.
-        var status = await _db.Payments
+        var saved = await _db.Payments
             .AsNoTracking()
-            .Where(p => p.PaymentId == paymentId)
-            .Select(p => p.PaymentStatus)
-            .SingleOrDefaultAsync();
+            .SingleOrDefaultAsync(p => p.PaymentId == payment.PaymentId);
 
-        if (status is not (PaymentStatus.Paid or PaymentStatus.Refunded))
+        if (saved?.PaymentStatus is not (PaymentStatus.Paid or PaymentStatus.Refunded))
         {
             throw new PaymentException(
                 "Stripe's payment details could not be matched to this attempt. Contact the restaurant before paying again.",
                 true);
         }
+
+        return saved;
     }
 
     public async Task<bool> MarkFailedAsync(

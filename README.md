@@ -12,42 +12,48 @@ dotnet add package ClosedXML --version 0.105.0
 dotnet add package System.Security.Cryptography.Pkcs --version 10.0.13
 
 
-2. Stripe setup (no CLI required)
+2. Stripe setup
 
-Packages are already declared in the project; use `dotnet restore`.
-Each computer still needs the existing .NET 10 SDK/database setup and a Stripe
-sandbox API key through user secrets or the `Stripe__SecretKey` environment variable.
-User secrets do not travel with the repository. Do not commit API keys.
+Run this command once per computer, inside the project folder:
 
 ```powershell
 dotnet user-secrets set "Stripe:SecretKey" "sk_test_REPLACE_WITH_YOUR_KEY"
+```
+
+Replace the placeholder with your actual Stripe sandbox secret key. If the key
+is already configured on that computer, skip this step. User Secrets are stored
+locally and are not copied with the project. Do not commit the key.
+
+No Stripe CLI, `stripe listen`, webhook secret or extra package is needed for
+this return-page payment flow.
+
+## Run the app
+
+```powershell
 dotnet run --launch-profile https
 ```
 
-No Stripe CLI, listener, new package or database migration is required for return
-verification. This project has no automatic local listener to disable.
+## Test a Stripe payment
 
-Sign in as a customer, create an order and choose card payment. In sandbox use
-4242 4242 4242 4242, any future expiry and any three-digit CVC. Return to the app
-and check Payment received, paid history and receipt download. Refresh several
-times: the payment record and PaidAt should stay the same without duplicate
-notifications. Counter payments must still require staff recording.
+Sign in as a customer, create an order and choose online card payment.
+Use these sandbox card details:
 
-The success page verifies the stored Checkout Session with Stripe on entry and
-manual recheck. Automatic polling only reads the database. Use Check payment
-status before attempting another payment when confirmation is uncertain.
-Without webhooks, leaving before returning or a delayed payment can leave the
-local record pending until the customer revisits the status page and checks again.
-Production should retain webhooks for unattended confirmation.
-
-Optional local webhook testing uses Stripe CLI:
-
-```powershell
-stripe listen --events "checkout.session.completed,checkout.session.async_payment_succeeded,checkout.session.async_payment_failed,checkout.session.expired" --forward-to https://localhost:7116/webhooks/stripe --skip-verify
-dotnet user-secrets set "Stripe:WebhookSecret" "whsec_REPLACE_WITH_LISTENER_SECRET"
+```text
+Card:   4242 4242 4242 4242
+Expiry: Any future date
+CVC:    Any three digits
 ```
 
-Restart the app after configuring the webhook secret.
+Complete checkout and return to the app. Confirm that the page shows
+**Payment received**, payment history shows **Paid**, and the receipt downloads.
+
+The app checks the payment with Stripe when you return or click
+**Check payment status**. Internet access is required. If payment is still
+unconfirmed, use that button before attempting another payment.
+
+Without webhooks, closing the browser before returning or a delayed payment can
+leave the local record pending until you revisit the payment status page and
+check again.
 
 ## Order and reservation notifications
 
