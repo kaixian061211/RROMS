@@ -11,7 +11,7 @@ public class StripeSettings
     /// <summary>Stripe__WebhookSecret: signing secret for an optional webhook endpoint.</summary>
     public string WebhookSecret { get; set; } = string.Empty;
 
-    public string Currency { get; set; } = "myr";
+    public string Currency { get; set; } = "MYR";
 
     /// <summary>How long a Checkout page stays open. Stripe allows 30 minutes to 24 hours.</summary>
     public int CheckoutExpiryMinutes { get; set; } = 35;

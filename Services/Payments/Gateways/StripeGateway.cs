@@ -243,18 +243,10 @@ public class StripeGateway : IStripeGateway
             idempotencyKey);
     }
 
-    public Task<string> RecheckRefundAsync(
-        string paymentIntentId,
-        decimal amount) =>
-        ProcessRefundAsync(
-            paymentIntentId,
-            amount,
-            idempotencyKey: null);
-
     private async Task<string> ProcessRefundAsync(
         string paymentIntentId,
         decimal amount,
-        string? idempotencyKey)
+        string idempotencyKey)
     {
         if (string.IsNullOrWhiteSpace(paymentIntentId))
         {
@@ -332,19 +324,13 @@ public class StripeGateway : IStripeGateway
                     return existing.Id;
                 }
 
-                if (existing.Status is not ("failed" or "canceled") ||
-                    idempotencyKey is null)
+                if (existing.Status is not ("failed" or "canceled"))
                 {
                     return RequireSucceededRefund(existing);
                 }
 
                 // Concurrent clicks and interrupted retries use the same key.
                 idempotencyKey += "-after-" + existing.Id;
-            }
-            else if (idempotencyKey is null)
-            {
-                throw new PaymentException(
-                    "No Stripe refund was found for this payment. Use Refund / retry in full to request one.");
             }
 
             var created = await service.CreateAsync(
@@ -439,12 +425,12 @@ public class StripeGateway : IStripeGateway
 
             "pending" or "requires_action" =>
                 throw new PaymentException(
-                    "The Stripe refund is awaiting confirmation. The payment remains marked paid. Use Recheck refund to check it again.",
+                    "The Stripe refund is awaiting confirmation. The payment remains marked paid. This will be confirmed automatically on the next payment refresh.",
                     paymentMayBeInProgress: true),
 
             "failed" or "canceled" =>
                 throw new PaymentException(
-                    "The Stripe refund failed or was cancelled. The payment remains marked paid. Use Refund / retry in full to request another attempt."),
+                    "The Stripe refund failed or was cancelled. The payment remains marked paid. The system will retry automatically when a new refund is needed."),
 
             _ => throw new PaymentException(
                 "Stripe has not confirmed the refund. Check its status in Stripe before trying again.",

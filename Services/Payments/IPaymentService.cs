@@ -65,11 +65,4 @@ public interface IPaymentService
         int staffUserId,
         string? reason = null);
 
-    /// <summary>
-    /// Checks an existing Stripe refund without submitting another request.
-    /// </summary>
-    Task RecheckRefundAsync(
-        int paymentId,
-        int staffUserId,
-        string? reason = null);
 }

@@ -73,23 +73,6 @@
                             : "Refund in full")
                     </button>
 
-                    @if (onlinePayment &&
-                         !string.IsNullOrWhiteSpace(
-                             payment.StripePaymentIntentId))
-                    {
-                        <button type="submit"
-                                asp-page-handler="RecheckRefund"
-                                asp-route-id="@payment.PaymentId"
-                                class="btn btn-outline-secondary">
-                            Recheck refund
-                        </button>
-
-                        <div class="small text-muted mt-2">
-                            Recheck pending refunds. A new refund is created
-                            only when no refund exists or the previous attempt
-                            is confirmed failed/cancelled.
-                        </div>
-                    }
                 </form>
             }
 

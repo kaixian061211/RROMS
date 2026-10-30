@@ -775,24 +775,12 @@ public class PaymentService : IPaymentService
         RefundCoreAsync(
             paymentId,
             staffUserId,
-            reason,
-            recheckOnly: false);
-
-    public Task RecheckRefundAsync(
-        int paymentId,
-        int staffUserId,
-        string? reason = null) =>
-        RefundCoreAsync(
-            paymentId,
-            staffUserId,
-            reason,
-            recheckOnly: true);
+            reason);
 
     private async Task RefundCoreAsync(
         int paymentId,
         int staffUserId,
-        string? reason,
-        bool recheckOnly)
+        string? reason)
     {
         if (paymentId <= 0 || staffUserId <= 0)
         {
@@ -834,12 +822,6 @@ public class PaymentService : IPaymentService
             payment.RecordedByStaffId is null &&
             PaymentMethod.IsOnline(payment.PaymentMethod);
 
-        if (recheckOnly && !onlinePayment)
-        {
-            throw new PaymentException(
-                "Only online payments have a Stripe refund to recheck.");
-        }
-
         if (onlinePayment)
         {
             if (string.IsNullOrWhiteSpace(
@@ -849,19 +831,10 @@ public class PaymentService : IPaymentService
                     "This online payment has no Stripe PaymentIntent reference. Check it in Stripe before refunding.");
             }
 
-            if (recheckOnly)
-            {
-                await _stripe.RecheckRefundAsync(
-                    payment.StripePaymentIntentId,
-                    payment.Amount);
-            }
-            else
-            {
-                await _stripe.RefundAsync(
-                    payment.StripePaymentIntentId,
-                    payment.Amount,
-                    $"refund-payment-{payment.PaymentId}");
-            }
+            await _stripe.RefundAsync(
+                payment.StripePaymentIntentId,
+                payment.Amount,
+                $"refund-payment-{payment.PaymentId}");
         }
         else if (
             payment.RecordedByStaffId is not > 0 ||
