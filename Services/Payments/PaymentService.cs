@@ -68,7 +68,7 @@ public class PaymentService : IPaymentService
         PaymentOrderInfo? order;
         Payment payment;
 
-        // Expire Stripe sessions outside the transaction, then revalidate this
+        // Verify and expire Stripe sessions outside the transaction, then revalidate this
         // exact attempt under the order lock before reopening it.
         var checkoutOrder = await _orders.GetOrderAsync(orderId);
         if (checkoutOrder is null || checkoutOrder.CustomerUserId != customerUserId)
@@ -78,12 +78,31 @@ public class PaymentService : IPaymentService
 
         var previous = await _db.Payments.AsNoTracking()
             .SingleOrDefaultAsync(p => p.OrderId == orderId);
+        // A completed Checkout Session cannot be expired. Record a verified
+        // payment before opening the transaction used to claim another attempt.
+        // MarkPaidOnlineAsync owns its transaction and notification delivery.
+        if (previous is { PaymentStatus: PaymentStatus.Pending or PaymentStatus.Failed, RecordedByStaffId: null }
+            && PaymentMethod.IsOnline(previous.PaymentMethod)
+            && !string.IsNullOrWhiteSpace(previous.TransactionRef))
+        {
+            var confirmation = await _stripe.GetPaidConfirmationAsync(previous.TransactionRef);
+            if (confirmation is not null)
+            {
+                return new PaymentResult
+                {
+                    Payment = await RecordOnlineConfirmationAsync(previous, confirmation)
+                };
+            }
+        }
+
         if (previous is { PaymentStatus: PaymentStatus.Pending }
             && previous.PaymentMethod != PaymentMethod.PayAtCounter
             && !string.IsNullOrEmpty(previous.TransactionRef)
             && !await _stripe.TryExpireSessionAsync(previous.TransactionRef))
         {
-            throw new PaymentException("Your previous payment is still being processed. Please wait a moment and refresh.");
+            throw new PaymentException(
+                "Your previous payment could not be closed. Use Check payment status before paying again.",
+                paymentMayBeInProgress: true);
         }
 
         await using (var transaction = await _db.Database.BeginTransactionAsync())
