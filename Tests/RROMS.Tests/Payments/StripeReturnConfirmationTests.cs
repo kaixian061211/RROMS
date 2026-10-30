@@ -25,7 +25,7 @@ public class StripeReturnConfirmationTests
     private static Session PaidSession() => new()
     {
         Id = "cs_test_stored", Mode = "payment", PaymentStatus = "paid",
-        AmountTotal = 8550, Currency = "myr", ClientReferenceId = "7",
+        AmountTotal = 8550, Currency = "MYR", ClientReferenceId = "7",
         PaymentIntentId = "pi_test_paid",
         Metadata = new() { ["payment_id"] = "7", ["order_id"] = "12", ["attempt_ticks"] = "123" }
     };
