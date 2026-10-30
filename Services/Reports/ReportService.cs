@@ -7,11 +7,6 @@ using RROMS.Web.Services.OrdersAndReservations;
 
 namespace RROMS.Web.Services.Reports;
 
-/// <summary>
-/// Builds reports from saved RROMS records.
-/// Queries run sequentially on one DbContext.
-/// This service never changes records or calls Stripe.
-/// </summary>
 public class ReportService : IReportService
 {
     private const string SalesBasis =
