@@ -12,6 +12,16 @@
         <h1 class="h3 mb-1">Pay for order #@order.OrderId</h1>
         <p class="text-muted">Choose how you'd like to pay.</p>
 
+        @if (Model.CanCheckOnlineStatus)
+        {
+            <div class="alert alert-info">
+                Your previous online payment is not confirmed. Check its status before paying again.
+                <a asp-page="Success"
+                   asp-route-paymentId="@(Model.ExistingPayment!.PaymentId)"
+                   class="alert-link">Check payment status</a>
+            </div>
+        }
+
         <form method="post">
             <div asp-validation-summary="All"
                 class="text-danger mb-3"

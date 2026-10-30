@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using RROMS.Web.Models.Payments;
 using RROMS.Web.Services.Payments;
 
 namespace RROMS.Web.Pages.Payments;
@@ -49,7 +50,10 @@ public class MyOrdersModel : PageModel
                 PaymentId = payment?.PaymentId,
                 Status = payment?.Status,
                 IsAwaitingCounter =
-                    payment?.IsAwaitingCounter ?? false
+                    payment?.IsAwaitingCounter ?? false,
+                CanCheckOnlineStatus =
+                    payment is { Status: PaymentStatus.Pending or PaymentStatus.Failed, RecordedByStaffId: null }
+                    && PaymentMethod.IsOnline(payment.Method)
             };
         }).ToList();
     }
@@ -62,5 +66,6 @@ public class MyOrdersModel : PageModel
         public int? PaymentId { get; set; }
         public string? Status { get; set; }
         public bool IsAwaitingCounter { get; set; }
+        public bool CanCheckOnlineStatus { get; set; }
     }
 }

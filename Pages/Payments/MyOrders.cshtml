@@ -68,6 +68,15 @@ else
                             }
                         </td>
                         <td class="text-end">
+                            @if (order.CanCheckOnlineStatus)
+                            {
+                                <a class="btn btn-sm btn-outline-primary"
+                                   asp-page="Success"
+                                   asp-route-paymentId="@order.PaymentId">
+                                    Check payment status
+                                </a>
+                            }
+
                             @if (order.Status is PaymentStatus.Paid or PaymentStatus.Refunded &&
                                  order.PaymentId is not null)
                             {

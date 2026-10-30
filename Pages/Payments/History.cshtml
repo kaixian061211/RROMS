@@ -51,6 +51,17 @@ else
                                 payment.PaidAt ?? payment.CreatedAt)
                         </td>
                         <td class="text-end">
+                            @if (payment.Status is PaymentStatus.Pending or PaymentStatus.Failed
+                                 && payment.RecordedByStaffId is null
+                                 && PaymentMethod.IsOnline(payment.Method))
+                            {
+                                <a class="btn btn-sm btn-outline-primary"
+                                   asp-page="Success"
+                                   asp-route-paymentId="@payment.PaymentId">
+                                    Check payment status
+                                </a>
+                            }
+
                             @if (payment.HasReceipt)
                             {
                                 <a class="btn btn-sm btn-outline-secondary"
