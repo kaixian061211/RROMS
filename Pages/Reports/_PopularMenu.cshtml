@@ -1,0 +1,146 @@
+@model RROMS.Web.Pages.Reports.IndexModel
+@using RROMS.Web.Models.Reports
+@using RROMS.Web.Pages.Reports
+
+@if (Model.Report is { } report)
+{
+    var menu = report.Menu;
+
+    <section id="popular-menu"
+             class="mb-5"
+             aria-labelledby="popular-menu-heading">
+
+        <h2 id="popular-menu-heading" class="h4 mb-3">
+            Popular menu items
+        </h2>
+
+        <div class="card mb-4">
+            <div class="card-body">
+                <dl class="row g-3 mb-0">
+                    <div class="col-sm-6">
+                        <dt class="small text-body-secondary">Items purchased</dt>
+                        <dd class="h5 mb-0">
+                            @Model.Count(menu.TotalQuantity)
+                        </dd>
+                    </div>
+
+                    <div class="col-sm-6">
+                        <dt class="small text-body-secondary">Purchased item amount</dt>
+                        <dd class="h5 mb-0">
+                            @Model.Money(menu.TotalAmount)
+                        </dd>
+                    </div>
+                </dl>
+
+                <p class="small text-body-secondary mt-3 mb-0">
+                    Includes purchases whose payment is currently paid, using
+                    the original payment date. Fully refunded purchases are
+                    excluded, including from their original payment period.
+                    A later refund can change a historical ranking.
+                </p>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-body">
+                <h3 class="h5">Top @PopularMenuReport.ChartCount by quantity</h3>
+
+                @if (menu.Items.Count > 0)
+                {
+                    <p class="small text-body-secondary">
+                        Shows up to @PopularMenuReport.ChartCount items ranked
+                        by purchased quantity. Hover over a bar to see the full
+                        item name. Exact quantities appear in the table below.
+                    </p>
+
+                    <div class="report-chart">
+                        <canvas id="menu-quantity-chart"
+                                role="img"
+                                aria-label="Top purchased menu items ranked by quantity">
+                            Item names and purchased quantities appear in the ranked table below.
+                        </canvas>
+                    </div>
+                }
+                else
+                {
+                    <p class="text-body-secondary mb-0">
+                        No eligible purchased menu items for this period.
+                    </p>
+                }
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-body">
+                <h3 class="h5">Purchased menu-item rankings</h3>
+
+                @if (menu.Items.Count == 0)
+                {
+                    <p class="text-body-secondary mb-0">
+                        No eligible purchased menu items for this period.
+                    </p>
+                }
+                else
+                {
+                    @if (menu.Items.Count > IndexModel.DetailRowLimit)
+                    {
+                        <p class="small text-body-secondary">
+                            Showing the first @IndexModel.DetailRowLimit
+                            of @Model.Count(menu.Items.Count) menu items.
+                            Summary totals and amount shares include all items.
+                        </p>
+                    }
+
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <caption class="visually-hidden">
+                                Purchased menu-item rankings for @report.PeriodLabel
+                            </caption>
+
+                            <thead>
+                                <tr>
+                                    <th scope="col" class="text-end">Rank</th>
+                                    <th scope="col">Menu item</th>
+                                    <th scope="col">Category</th>
+                                    <th scope="col" class="text-end">Quantity</th>
+                                    <th scope="col" class="text-end">Item amount</th>
+                                    <th scope="col" class="text-end">Amount share</th>
+                                </tr>
+                            </thead>
+
+                            <tbody>
+                                @foreach (var item in menu.Items.Take(IndexModel.DetailRowLimit))
+                                {
+                                    <tr>
+                                        <td class="text-end">@Model.Count(item.Rank)</td>
+                                        <th scope="row" class="fw-normal report-menu-name">
+                                            @item.Name
+                                        </th>
+                                        <td>@item.Category</td>
+                                        <td class="text-end">@Model.Count(item.Quantity)</td>
+                                        <td class="text-end text-nowrap">
+                                            @Model.Money(item.Amount)
+                                        </td>
+                                        <td class="text-end text-nowrap">
+                                            @Model.Percentage(item.SharePercent)
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <p class="small text-body-secondary mb-0">
+                        Item amounts use the saved order-item prices.
+                        Amount share is the item's share of the total purchased
+                        item amount, while rankings use quantity.
+                    </p>
+                }
+            </div>
+        </div>
+
+        <p class="small text-body-secondary mt-3 mb-0">
+            @menu.Basis
+        </p>
+    </section>
+}

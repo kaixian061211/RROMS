@@ -1,0 +1,269 @@
+@model RROMS.Web.Pages.Reports.IndexModel
+@using RROMS.Web.Models.Reports
+@using RROMS.Web.Pages.Reports
+
+@if (Model.Report is { } report)
+{
+    var sales = report.Sales;
+
+    <section id="sales" class="mb-5" aria-labelledby="sales-heading">
+        <h2 id="sales-heading" class="h4 mb-3">
+            Sales
+        </h2>
+
+        <div id="report-chart-status"
+             class="alert alert-warning"
+             role="status"
+             hidden>
+        </div>
+
+        <noscript>
+            <p class="alert alert-info">
+                Charts require JavaScript. The tables below contain the figures.
+            </p>
+        </noscript>
+
+        <div class="row g-4 mb-4">
+            <div class="col-xl-8">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h3 class="h5">Collections and refunds</h3>
+
+                        <p class="small text-body-secondary">
+                            Select a chart legend item to show or hide a series.
+                        </p>
+
+                        @if (sales.PaymentCount > 0 || sales.RefundCount > 0)
+                        {
+                            <div class="report-chart">
+                                <canvas id="sales-trend-chart"
+                                        role="img"
+                                        aria-label="Collections, refunds and net collections by reporting interval">
+                                    Exact values are available in the trend table below.
+                                </canvas>
+                            </div>
+                        }
+                        else
+                        {
+                            <p class="text-body-secondary">
+                                No data for this period.
+                            </p>
+                        }
+
+                        <details class="mt-3">
+                            <summary>View trend data</summary>
+
+                            <div class="table-responsive mt-3">
+                                <table class="table table-sm align-middle">
+                                    <caption class="visually-hidden">
+                                        Sales trend for @report.PeriodLabel
+                                    </caption>
+
+                                    <thead>
+                                        <tr>
+                                            <th scope="col">Interval</th>
+                                            <th scope="col" class="text-end">Collections</th>
+                                            <th scope="col" class="text-end">Payments</th>
+                                            <th scope="col" class="text-end">Refunds</th>
+                                            <th scope="col" class="text-end">Net</th>
+                                        </tr>
+                                    </thead>
+
+                                    <tbody>
+                                        @foreach (var point in sales.Trend)
+                                        {
+                                            <tr>
+                                                <th scope="row" class="fw-normal text-nowrap">
+                                                    @point.Label
+                                                </th>
+                                                <td class="text-end text-nowrap">
+                                                    @Model.Money(point.Collections)
+                                                </td>
+                                                <td class="text-end">
+                                                    @Model.Count(point.PaymentCount)
+                                                </td>
+                                                <td class="text-end text-nowrap">
+                                                    @Model.Money(point.Refunds)
+                                                </td>
+                                                <td class="text-end text-nowrap">
+                                                    @Model.Money(point.Net)
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        </details>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-4">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h3 class="h5">Collections by payment method</h3>
+
+                        @if (sales.GrossCollections > 0)
+                        {
+                            <div class="report-chart report-method-chart">
+                                <canvas id="sales-method-chart"
+                                        role="img"
+                                        aria-label="Gross collections grouped by payment method">
+                                    Exact values are available in the payment-method table below.
+                                </canvas>
+                            </div>
+                        }
+                        else
+                        {
+                            <p class="text-body-secondary">
+                                No collections for this period.
+                            </p>
+                        }
+
+                        @if (sales.Methods.Count > 0)
+                        {
+                            <div class="table-responsive mt-3">
+                                <table class="table table-sm align-middle">
+                                    <caption class="visually-hidden">
+                                        Payment-method breakdown for @report.PeriodLabel
+                                    </caption>
+
+                                    <thead>
+                                        <tr>
+                                            <th scope="col">Method</th>
+                                            <th scope="col" class="text-end">Payments</th>
+                                            <th scope="col" class="text-end">Collections</th>
+                                            <th scope="col" class="text-end">Refunds</th>
+                                            <th scope="col" class="text-end">Net</th>
+                                            <th scope="col" class="text-end">Share</th>
+                                        </tr>
+                                    </thead>
+
+                                    <tbody>
+                                        @foreach (var method in sales.Methods)
+                                        {
+                                            <tr>
+                                                <th scope="row" class="fw-normal text-nowrap">
+                                                    @Model.PaymentMethodLabel(method.Method)
+                                                </th>
+                                                <td class="text-end">
+                                                    @Model.Count(method.PaymentCount)
+                                                </td>
+                                                <td class="text-end text-nowrap">
+                                                    @Model.Money(method.Amount)
+                                                </td>
+                                                <td class="text-end text-nowrap">
+                                                    @Model.Money(method.Refunds)
+                                                </td>
+                                                <td class="text-end text-nowrap">
+                                                    @Model.Money(method.Net)
+                                                </td>
+                                                <td class="text-end text-nowrap">
+                                                    @Model.Percentage(method.SharePercent)
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        }
+                        else
+                        {
+                            <p class="small text-body-secondary mb-0">
+                                No payment-method data for this period.
+                            </p>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-body">
+                <h3 class="h5">Transaction ledger</h3>
+
+                @if (sales.Transactions.Count == 0)
+                {
+                    <p class="text-body-secondary mb-0">
+                        No transactions for this period.
+                    </p>
+                }
+                else
+                {
+                    @if (sales.Transactions.Count > IndexModel.DetailRowLimit)
+                    {
+                        <p class="small text-body-secondary">
+                            Showing the first @IndexModel.DetailRowLimit
+                            of @Model.Count(sales.Transactions.Count) transactions.
+                        </p>
+                    }
+
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <caption class="visually-hidden">
+                                Collections and refunds for @report.PeriodLabel
+                            </caption>
+
+                            <thead>
+                                <tr>
+                                    <th scope="col">Date and time</th>
+                                    <th scope="col">Movement</th>
+                                    <th scope="col">Payment</th>
+                                    <th scope="col">Order</th>
+                                    <th scope="col">Customer</th>
+                                    <th scope="col">Method</th>
+                                    <th scope="col" class="text-end">Amount</th>
+                                    <th scope="col">Reference</th>
+                                    <th scope="col">Note</th>
+                                </tr>
+                            </thead>
+
+                            <tbody>
+                                @foreach (var transaction in sales.Transactions.Take(IndexModel.DetailRowLimit))
+                                {
+                                    var isRefund =
+                                        transaction.Type == SalesTransactionType.Refund;
+
+                                    <tr>
+                                        <td class="text-nowrap">
+                                            @Model.Timestamp(transaction.At)
+                                        </td>
+
+                                        <td>
+                                            <span class="badge @(isRefund ? "text-bg-warning" : "text-bg-success")">
+                                                @(isRefund ? "Refund" : "Collection")
+                                            </span>
+                                        </td>
+
+                                        <td>@transaction.PaymentId</td>
+                                        <td>@transaction.OrderId</td>
+
+                                        <td class="text-nowrap">
+                                            @Model.CustomerLabel(transaction.CustomerUserId)
+                                        </td>
+
+                                        <td class="text-nowrap">
+                                            @Model.PaymentMethodLabel(transaction.Method)
+                                        </td>
+
+                                        <td class="text-end text-nowrap">
+                                            @Model.Money(transaction.Amount)
+                                        </td>
+
+                                        <td>@(transaction.Reference ?? "—")</td>
+
+                                        <td class="report-ledger-note">@(transaction.Note ?? "—")</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <p class="small text-body-secondary mt-3 mb-0">
+            @sales.Basis
+        </p>
+    </section>
+}
