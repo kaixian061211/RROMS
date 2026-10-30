@@ -11,6 +11,10 @@
     <Content Remove="Tests/**" />
     <None Remove="Tests/**" />
 
+    <!-- Private local configuration must never enter build or publish output. -->
+    <Content Remove="secrets.shared.json;secrets.local.json" />
+    <None Remove="secrets.shared.json;secrets.local.json" />
+
     <PackageReference Include="ClosedXML" Version="0.105.0" />
 
     <PackageReference Include="MailKit" Version="4.18.2" />

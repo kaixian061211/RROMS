@@ -473,7 +473,7 @@ public class StripeGateway : IStripeGateway
         if (string.IsNullOrWhiteSpace(_settings.SecretKey))
         {
             throw new PaymentException(
-                "Online payments are not set up yet. Add the Stripe test keys (Stripe:SecretKey in user-secrets) or pay at the counter.");
+                "Online payments are not set up yet. Configure the Stripe__SecretKey environment variable or pay at the counter.");
         }
 
         return _client ??= new StripeClient(_settings.SecretKey);
