@@ -1,0 +1,263 @@
+@model RROMS.Web.Pages.Reports.IndexModel
+@using RROMS.Web.Pages.Reports
+
+@if (Model.Report is { } report)
+{
+    var orders = report.Orders;
+
+    <section id="orders" class="mb-5" aria-labelledby="orders-heading">
+        <h2 id="orders-heading" class="h4 mb-3">
+            Order activity
+        </h2>
+
+        <div class="card mb-4">
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <div class="col-sm-6 col-xl-3 mb-3 mb-xl-0">
+                        <dt class="small text-body-secondary">Orders placed</dt>
+                        <dd class="h5 mb-0">
+                            @Model.Count(orders.OrdersPlaced)
+                        </dd>
+                    </div>
+
+                    <div class="col-sm-6 col-xl-3 mb-3 mb-xl-0">
+                        <dt class="small text-body-secondary">Cancelled orders</dt>
+                        <dd class="h5 mb-0">
+                            @Model.Count(orders.CancelledOrders)
+                        </dd>
+                    </div>
+
+                    <div class="col-sm-6 col-xl-3 mb-3 mb-sm-0">
+                        <dt class="small text-body-secondary">Order value</dt>
+                        <dd class="h5 mb-0">
+                            @Model.Money(orders.OrderValue)
+                        </dd>
+                    </div>
+
+                    <div class="col-sm-6 col-xl-3">
+                        <dt class="small text-body-secondary">Average order value</dt>
+                        <dd class="h5 mb-0">
+                            @Model.Money(orders.AverageOrderValue)
+                        </dd>
+                    </div>
+                </dl>
+
+                <p class="small text-body-secondary mt-3 mb-0">
+                    Order value and its average exclude cancelled orders.
+                </p>
+            </div>
+        </div>
+
+        <div class="row g-4 mb-4">
+            <div class="col-xl-4">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h3 class="h5">Current order statuses</h3>
+
+                        @if (orders.OrdersPlaced > 0)
+                        {
+                            <div class="report-chart">
+                                <canvas id="orders-status-chart"
+                                        role="img"
+                                        aria-label="Order counts grouped by current status">
+                                    Exact counts appear in the status table below.
+                                </canvas>
+                            </div>
+                        }
+                        else
+                        {
+                            <p class="text-body-secondary">
+                                No orders for this period.
+                            </p>
+                        }
+
+                        <div class="table-responsive mt-3">
+                            <table class="table table-sm align-middle mb-0">
+                                <caption class="visually-hidden">
+                                    Order statuses for @report.PeriodLabel
+                                </caption>
+
+                                <thead>
+                                    <tr>
+                                        <th scope="col">Status</th>
+                                        <th scope="col" class="text-end">Orders</th>
+                                    </tr>
+                                </thead>
+
+                                <tbody>
+                                    @foreach (var status in orders.StatusBreakdown)
+                                    {
+                                        <tr>
+                                            <th scope="row" class="fw-normal">
+                                                @Model.OrderStatusLabel(status.Status)
+                                            </th>
+                                            <td class="text-end">
+                                                @Model.Count(status.Count)
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-8">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h3 class="h5">Orders and order value</h3>
+
+                        <p class="small text-body-secondary">
+                            Order counts use the left axis.
+                            Order value uses the right axis.
+                            Select a legend item to show or hide a series.
+                        </p>
+
+                        @if (orders.OrdersPlaced > 0)
+                        {
+                            <div class="report-chart">
+                                <canvas id="orders-trend-chart"
+                                        role="img"
+                                        aria-label="Orders placed and non-cancelled order value by reporting interval">
+                                    Exact values appear in the trend table below.
+                                </canvas>
+                            </div>
+                        }
+                        else
+                        {
+                            <p class="text-body-secondary">
+                                No orders for this period.
+                            </p>
+                        }
+
+                        <details class="mt-3">
+                            <summary>View trend data</summary>
+
+                            <div class="table-responsive mt-3">
+                                <table class="table table-sm align-middle mb-0">
+                                    <caption class="visually-hidden">
+                                        Order trend for @report.PeriodLabel
+                                    </caption>
+
+                                    <thead>
+                                        <tr>
+                                            <th scope="col">Interval</th>
+                                            <th scope="col" class="text-end">Orders placed</th>
+                                            <th scope="col" class="text-end">Order value</th>
+                                        </tr>
+                                    </thead>
+
+                                    <tbody>
+                                        @foreach (var point in orders.Trend)
+                                        {
+                                            <tr>
+                                                <th scope="row" class="fw-normal text-nowrap">
+                                                    @point.Label
+                                                </th>
+                                                <td class="text-end">
+                                                    @Model.Count(point.OrdersPlaced)
+                                                </td>
+                                                <td class="text-end text-nowrap">
+                                                    @Model.Money(point.OrderValue)
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        </details>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-body">
+                <h3 class="h5">Order records</h3>
+
+                @if (orders.Orders.Count == 0)
+                {
+                    <p class="text-body-secondary mb-0">
+                        No orders for this period.
+                    </p>
+                }
+                else
+                {
+                    @if (orders.Orders.Count > IndexModel.DetailRowLimit)
+                    {
+                        <p class="small text-body-secondary">
+                            Showing the first @IndexModel.DetailRowLimit
+                            of @Model.Count(orders.Orders.Count) orders.
+                        </p>
+                    }
+
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <caption class="visually-hidden">
+                                Orders placed during @report.PeriodLabel
+                            </caption>
+
+                            <thead>
+                                <tr>
+                                    <th scope="col">Order</th>
+                                    <th scope="col">Placed</th>
+                                    <th scope="col">Customer</th>
+                                    <th scope="col">Table</th>
+                                    <th scope="col">Status</th>
+                                    <th scope="col" class="text-end">Item quantity</th>
+                                    <th scope="col" class="text-end">Saved total</th>
+                                    <th scope="col">Payment status</th>
+                                </tr>
+                            </thead>
+
+                            <tbody>
+                                @foreach (var order in orders.Orders.Take(IndexModel.DetailRowLimit))
+                                {
+                                    <tr>
+                                        <td>@order.OrderId</td>
+
+                                        <td class="text-nowrap">
+                                            @Model.Timestamp(order.PlacedAt)
+                                        </td>
+
+                                        <td class="text-nowrap">
+                                            @Model.CustomerLabel(order.CustomerUserId)
+                                        </td>
+
+                                        <td>@order.Table</td>
+
+                                        <td>
+                                            @Model.OrderStatusLabel(order.Status)
+                                        </td>
+
+                                        <td class="text-end">
+                                            @Model.Count(order.ItemCount)
+                                        </td>
+
+                                        <td class="text-end text-nowrap">
+                                            @Model.Money(order.Total)
+                                        </td>
+
+                                        <td class="text-nowrap">
+                                            @Model.PaymentStatusLabel(order.PaymentStatus)
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <p class="small text-body-secondary mb-0">
+                        Saved totals are shown for every listed order.
+                        Cancelled orders are excluded from the order-value summary.
+                    </p>
+                }
+            </div>
+        </div>
+
+        <p class="small text-body-secondary mt-3 mb-0">
+            @orders.Basis
+        </p>
+    </section>
+}

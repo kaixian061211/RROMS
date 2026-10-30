@@ -70,6 +70,12 @@ public class CheckoutModel : PageModel
 
     public PaymentOrderInfo Order { get; private set; } = null!;
 
+    public PaymentDetails? ExistingPayment { get; private set; }
+
+    public bool CanCheckOnlineStatus =>
+        ExistingPayment is { Status: PaymentStatus.Pending or PaymentStatus.Failed, RecordedByStaffId: null }
+        && PaymentMethod.IsOnline(ExistingPayment.Method);
+
     public async Task<IActionResult> OnGetAsync()
     {
         if (!User.TryGetPaymentUserId(out var customerId) ||
@@ -94,6 +100,8 @@ public class CheckoutModel : PageModel
 
             Order = order;
 
+            await LoadExistingPaymentAsync(customerId);
+
             if (order.OrderStatus ==
                 RROMS.Web.Models.OrdersAndReservations.OrderStatus.Cancelled)
             {
@@ -103,9 +111,7 @@ public class CheckoutModel : PageModel
                 return RedirectToPage("MyOrders");
             }
 
-            var existing = await _queries.GetByOrderAsync(OrderId);
-
-            if (existing?.Status is
+            if (ExistingPayment?.Status is
                 PaymentStatus.Paid or PaymentStatus.Refunded)
             {
                 TempData["Info"] =
@@ -153,6 +159,8 @@ public class CheckoutModel : PageModel
             }
 
             Order = order;
+
+            await LoadExistingPaymentAsync(customerId);
 
             if (order.OrderStatus ==
                 RROMS.Web.Models.OrdersAndReservations.OrderStatus.Cancelled)
@@ -203,6 +211,8 @@ public class CheckoutModel : PageModel
                 return BadRequest(ex.Message);
             }
 
+            await ReloadPaymentAfterFailureAsync(customerId);
+
             ModelState.AddModelError(
                 string.Empty,
                 ex.Message);
@@ -226,6 +236,8 @@ public class CheckoutModel : PageModel
                     message);
             }
 
+            await ReloadPaymentAfterFailureAsync(customerId);
+
             Response.StatusCode =
                 StatusCodes.Status500InternalServerError;
 
@@ -234,6 +246,24 @@ public class CheckoutModel : PageModel
                 message);
 
             return Page();
+        }
+    }
+
+    private async Task LoadExistingPaymentAsync(int customerId)
+    {
+        var payment = await _queries.GetByOrderAsync(OrderId);
+        ExistingPayment = payment?.CustomerId == customerId ? payment : null;
+    }
+
+    private async Task ReloadPaymentAfterFailureAsync(int customerId)
+    {
+        try
+        {
+            await LoadExistingPaymentAsync(customerId);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Could not reload payment for order {OrderId}", OrderId);
         }
     }
 

@@ -1,29 +1,41 @@
-// Payment status page: Stripe tells our server the result by webhook. Ask the server every
-// 3 seconds until the status changes, then reload to show the final state.
+// Poll saved payment status.
+// Stripe lookups happen on page entry or manual recheck.
 (function () {
     var poll = document.getElementById('poll');
     if (!poll) { return; }
 
     var url = poll.dataset.url;
     var attempts = 0;
-    var maxAttempts = 40; // about 2 minutes
+    var maxAttempts = 40;
 
     var timer = setInterval(async function () {
         attempts++;
+
         try {
             var response = await fetch(url);
-            var data = await response.json();
-            if (data.status !== 'pending') {
-                clearInterval(timer);
-                location.reload();
-                return;
+
+            if (response.ok) {
+                var data = await response.json();
+
+                if (data.status && data.status !== 'pending') {
+                    clearInterval(timer);
+                    location.reload();
+                    return;
+                }
             }
-        } catch (e) { /* try again on the next tick */ }
+        } catch (e) {
+            // Retry a temporary connection failure on the next tick.
+        }
 
         if (attempts >= maxAttempts) {
             clearInterval(timer);
-            document.getElementById('poll-note').textContent =
-                'This is taking longer than usual. Check your payment history in a moment - you will not be charged twice.';
+
+            var note = document.getElementById('poll-note');
+
+            if (note) {
+                note.textContent =
+                    'Payment is still unconfirmed. Use Check payment status or contact the restaurant before paying again.';
+            }
         }
     }, 3000);
 })();

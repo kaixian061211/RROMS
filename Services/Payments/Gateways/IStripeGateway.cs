@@ -1,3 +1,4 @@
+using RROMS.Web.Models.Payments;
 using Stripe;
 using Payment = RROMS.Web.Models.Payments.Payment;
 
@@ -16,19 +17,14 @@ public interface IStripeGateway
         string successUrl,
         string cancelUrl);
 
+    Task<OnlinePaymentConfirmation?> GetPaidConfirmationAsync(string sessionId);
+
     Task<bool> TryExpireSessionAsync(string sessionId);
 
     Task<string> RefundAsync(
         string paymentIntentId,
         decimal amount,
         string idempotencyKey);
-
-    /// <summary>
-    /// Checks an existing Stripe refund without creating another refund.
-    /// </summary>
-    Task<string> RecheckRefundAsync(
-        string paymentIntentId,
-        decimal amount);
 
     Event ConstructWebhookEvent(
         string json,

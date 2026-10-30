@@ -1,0 +1,138 @@
+@model RROMS.Web.Pages.Reports.IndexModel
+@using RROMS.Web.Pages.Reports
+
+@if (Model.Report is { } report)
+{
+    var customers = report.Customers;
+
+    <section id="customers"
+             class="mb-5"
+             aria-labelledby="customers-heading">
+
+        <h2 id="customers-heading" class="h4 mb-3">
+            Customer activity
+        </h2>
+
+        <div class="card mb-4">
+            <div class="card-body">
+                <dl class="row g-3 mb-0">
+                    <div class="col-sm-6">
+                        <dt class="small text-body-secondary">Active customers</dt>
+                        <dd class="h5 mb-0">
+                            @Model.Count(customers.ActiveCustomers)
+                        </dd>
+                    </div>
+
+                    <div class="col-sm-6">
+                        <dt class="small text-body-secondary">Returning customers (estimate)</dt>
+                        <dd class="h5 mb-0">
+                            @Model.Count(customers.ReturningCustomers)
+                        </dd>
+                    </div>
+                </dl>
+
+                <p class="small text-body-secondary mt-3 mb-0">
+                    Active customers have recorded bookings, orders, collections
+                    or refunds in the selected period. Returning customers are
+                    estimated from distinct order dates; actual visits are not recorded.
+                </p>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-body">
+                <h3 class="h5">Activity and spending by account</h3>
+
+                @if (customers.Customers.Count == 0)
+                {
+                    <p class="text-body-secondary mb-0">
+                        No recorded customer activity for this period.
+                    </p>
+                }
+                else
+                {
+                    @if (customers.Customers.Count > IndexModel.DetailRowLimit)
+                    {
+                        <p class="small text-body-secondary">
+                            Showing the first @IndexModel.DetailRowLimit
+                            of @Model.Count(customers.Customers.Count) customers.
+                            Summary figures include all customers.
+                        </p>
+                    }
+
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <caption class="visually-hidden">
+                                Customer activity, spending and returning estimates
+                                for @report.PeriodLabel
+                            </caption>
+
+                            <thead>
+                                <tr>
+                                    <th scope="col">Customer account</th>
+                                    <th scope="col" class="text-end">Bookings made</th>
+                                    <th scope="col" class="text-end">Orders placed</th>
+                                    <th scope="col" class="text-end">Paid orders</th>
+                                    <th scope="col" class="text-end">Gross spending</th>
+                                    <th scope="col" class="text-end">Refunds received</th>
+                                    <th scope="col" class="text-end">Net spending</th>
+                                    <th scope="col" class="text-end">Estimated dining days</th>
+                                    <th scope="col">Returning (estimate)</th>
+                                </tr>
+                            </thead>
+
+                            <tbody>
+                                @foreach (var customer in customers.Customers.Take(IndexModel.DetailRowLimit))
+                                {
+                                    <tr>
+                                        <th scope="row" class="fw-normal">
+                                            @customer.DisplayName
+                                            <span class="d-block small text-body-secondary">
+                                                Account ID: @customer.CustomerUserId
+                                            </span>
+                                        </th>
+                                        <td class="text-end">
+                                            @Model.Count(customer.ReservationsMade)
+                                        </td>
+                                        <td class="text-end">
+                                            @Model.Count(customer.OrdersPlaced)
+                                        </td>
+                                        <td class="text-end">
+                                            @Model.Count(customer.PaidOrders)
+                                        </td>
+                                        <td class="text-end text-nowrap">
+                                            @Model.Money(customer.GrossSpending)
+                                        </td>
+                                        <td class="text-end text-nowrap">
+                                            @Model.Money(customer.RefundsReceived)
+                                        </td>
+                                        <td class="text-end text-nowrap">
+                                            @Model.Money(customer.NetSpending)
+                                        </td>
+                                        <td class="text-end">
+                                            @Model.Count(customer.EstimatedDiningDays)
+                                        </td>
+                                        <td>
+                                            @(customer.IsReturning ? "Yes" : "No")
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <p class="small text-body-secondary mb-0">
+                        Bookings and orders use their creation dates. Paid orders
+                        and gross spending use collection dates, including payments
+                        later refunded. Refunds use their own refund dates, so net
+                        spending can be negative in a refund-only period.
+                    </p>
+                }
+            </div>
+        </div>
+
+        <p class="small text-body-secondary mt-3 mb-0">
+            @customers.Basis
+        </p>
+    </section>
+}

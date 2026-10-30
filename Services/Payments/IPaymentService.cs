@@ -26,6 +26,9 @@ public interface IPaymentService
     Task<bool> MarkPaidOnlineAsync(
         OnlinePaymentConfirmation confirmation);
 
+    /// <summary>Verifies the customer's stored session with Stripe.</summary>
+    Task RefreshOnlineStatusAsync(int paymentId, int customerUserId);
+
     /// <summary>
     /// Marks an online attempt failed or expired.
     /// A supplied Session ID must match the current attempt.
@@ -62,11 +65,4 @@ public interface IPaymentService
         int staffUserId,
         string? reason = null);
 
-    /// <summary>
-    /// Checks an existing Stripe refund without submitting another request.
-    /// </summary>
-    Task RecheckRefundAsync(
-        int paymentId,
-        int staffUserId,
-        string? reason = null);
 }
