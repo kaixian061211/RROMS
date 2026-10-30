@@ -14,7 +14,7 @@ public enum WebhookOutcome
 
 /// <summary>
 /// Turns Stripe events into payment status changes.
-/// The webhook is the source of truth for online payment confirmation.
+/// Signed webhooks and server-side lookups share payment confirmation validation.
 /// </summary>
 public class StripeWebhookHandler
 {
@@ -112,71 +112,17 @@ public class StripeWebhookHandler
         int paymentId,
         out OnlinePaymentConfirmation? confirmation)
     {
+        if (StripePaymentConfirmation.TryCreate(session, out confirmation)
+            && confirmation!.PaymentId == paymentId)
+        {
+            return true;
+        }
+
+        _logger.LogWarning(
+            "Stripe session {SessionId} has incomplete or inconsistent payment details",
+            session.Id);
+
         confirmation = null;
-
-        if (session.Mode != "payment"
-            || session.AmountTotal is not long amountTotal
-            || string.IsNullOrWhiteSpace(session.Currency)
-            || session.Metadata is null
-            || !session.Metadata.TryGetValue(
-                "payment_id",
-                out var paymentReference)
-            || !int.TryParse(
-                paymentReference,
-                NumberStyles.None,
-                CultureInfo.InvariantCulture,
-                out var metadataPaymentId)
-            || metadataPaymentId != paymentId
-            || !session.Metadata.TryGetValue(
-                "order_id",
-                out var orderReference)
-            || !int.TryParse(
-                orderReference,
-                NumberStyles.None,
-                CultureInfo.InvariantCulture,
-                out var orderId)
-            || orderId <= 0)
-        {
-            _logger.LogWarning(
-                "Stripe session {SessionId} has incomplete or inconsistent payment details",
-                session.Id);
-
-            return false;
-        }
-
-        long? attemptTicks = null;
-
-        if (session.Metadata.TryGetValue(
-                "attempt_ticks",
-                out var attemptReference))
-        {
-            if (!long.TryParse(
-                    attemptReference,
-                    NumberStyles.None,
-                    CultureInfo.InvariantCulture,
-                    out var parsedTicks)
-                || parsedTicks <= 0
-                || parsedTicks > DateTime.MaxValue.Ticks)
-            {
-                _logger.LogWarning(
-                    "Stripe session {SessionId} has an invalid checkout attempt",
-                    session.Id);
-
-                return false;
-            }
-
-            attemptTicks = parsedTicks;
-        }
-
-        confirmation = new OnlinePaymentConfirmation(
-            paymentId,
-            orderId,
-            session.Id,
-            session.PaymentIntentId,
-            amountTotal,
-            session.Currency,
-            attemptTicks);
-
-        return true;
+        return false;
     }
 }

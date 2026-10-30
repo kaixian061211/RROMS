@@ -14,49 +14,46 @@ dotnet add package System.Security.Cryptography.Pkcs --version 10.0.13
 
 2. Stripe setup
 
-- Download: https://github.com/stripe/stripe-cli/releases/latest
-- Extract stripe.exe and add its folder to PATH.
-- Restart VS Code/Visual Studio if necessary.
-- Check installation:
+Run this command once per computer, inside the project folder:
 
-powershell:
-stripe version
+```powershell
+dotnet user-secrets set "Stripe:SecretKey" "sk_test_REPLACE_WITH_YOUR_KEY"
+```
 
-dotnet add package Stripe.net --version 53.0.0
+Replace the placeholder with your actual Stripe sandbox secret key. If the key
+is already configured on that computer, skip this step. User Secrets are stored
+locally and are not copied with the project. Do not commit the key.
 
-$paymentStripeKey = "sk_test_REPLACE_WITH_YOUR_KEY"
+No Stripe CLI, `stripe listen`, webhook secret or extra package is needed for
+this return-page payment flow.
 
-dotnet user-secrets set "Stripe:SecretKey" $paymentStripeKey
-dotnet user-secrets set "Stripe:Currency" "myr"
+## Run the app
 
-
-## start listener
-
-powershell:
-stripe listen --api-key $paymentStripeKey --events "checkout.session.completed,checkout.session.async_payment_succeeded,checkout.session.async_payment_failed,checkout.session.expired" --forward-to https://localhost:7116/webhooks/stripe --skip-verify
-
-
-## project folder
-
-powershell:
-dotnet user-secrets set "Stripe:WebhookSecret" "whsec_REPLACE_WITH_SECRET_FROM_TERMINAL_A"
-
+```powershell
 dotnet run --launch-profile https
+```
 
+## Test a Stripe payment
 
-## Open the payment page
+Sign in as a customer, create an order and choose online card payment.
+Use these sandbox card details:
 
-powershell
-Start-Process "https://localhost:7116/Payments/Demo"
-
-
-## Test card
-
-text
+```text
 Card:   4242 4242 4242 4242
 Expiry: Any future date
 CVC:    Any three digits
+```
 
+Complete checkout and return to the app. Confirm that the page shows
+**Payment received**, payment history shows **Paid**, and the receipt downloads.
+
+The app checks the payment with Stripe when you return or click
+**Check payment status**. Internet access is required. If payment is still
+unconfirmed, use that button before attempting another payment.
+
+Without webhooks, closing the browser before returning or a delayed payment can
+leave the local record pending until you revisit the payment status page and
+check again.
 
 ## Order and reservation notifications
 

@@ -123,10 +123,10 @@ if (app.Environment.IsDevelopment())
     await scope.ServiceProvider.GetRequiredService<AppDbContext>().Database.MigrateAsync();
 
     // The first administrator, so someone can log in and create the other accounts.
-    // Override with DefaultAdmin:Email / DefaultAdmin:Password in user-secrets, and change the password after the first login.
+    // Configure DefaultAdmin:Password through user-secrets or an environment variable.
     await scope.ServiceProvider.GetRequiredService<IAccountService>().EnsureDefaultAdminAsync(
         builder.Configuration["DefaultAdmin:Email"] ?? "admin@gmail.com",
-        builder.Configuration["DefaultAdmin:Password"] ?? "admin123");
+        builder.Configuration["DefaultAdmin:Password"] ?? string.Empty);
 }
 
 app.Run();
