@@ -1,42 +1,57 @@
-1. Install packages
+# RROMS
 
-powershell:
+## Restore packages
 
-dotnet add package Stripe.net --version 53.0.0
-dotnet add package QuestPDF --version 2026.2.4
-dotnet add package MailKit --version 4.18.1
-dotnet add package Microsoft.EntityFrameworkCore --version 10.0.13
-dotnet add package Microsoft.EntityFrameworkCore.SqlServer --version 10.0.13
-dotnet add package Microsoft.EntityFrameworkCore.Design --version 10.0.13
-dotnet add package ClosedXML --version 0.105.0
-dotnet add package System.Security.Cryptography.Pkcs --version 10.0.13
-
-
-2. Stripe setup
-
-Run this command once per computer, inside the project folder:
+Run from the project folder:
 
 ```powershell
-dotnet user-secrets set "Stripe:SecretKey" "sk_test_REPLACE_WITH_YOUR_KEY"
+dotnet restore
 ```
 
-Replace the placeholder with your actual Stripe sandbox secret key. If the key
-is already configured on that computer, skip this step. User Secrets are stored
-locally and are not copied with the project. Do not commit the key.
+## Configure a local development environment
 
-No Stripe CLI, `stripe listen`, webhook secret or extra package is needed for
-this return-page payment flow.
-
-## Run the app
+The local launcher reads two private JSON files beside `PaymentModule.csproj`.
+Create them from the blank templates:
 
 ```powershell
-dotnet run --launch-profile https
+Copy-Item secrets.shared.example.json secrets.shared.json
+Copy-Item secrets.local.example.json secrets.local.json
 ```
 
-## Test a Stripe payment
+In `secrets.shared.json`, configure the shared Stripe sandbox key, SMTP
+credentials and optional OneSignal settings. Keep this file private and share it
+only through your team's private credential-sharing channel. Leave SMTP host
+empty to disable email. `Stripe__WebhookSecret` is only needed when using
+webhooks; the return-page payment flow does not require a Stripe CLI listener.
 
-Sign in as a customer, create an order and choose online card payment.
-Use these sandbox card details:
+In `secrets.local.json`, set `ConnectionStrings__DefaultConnection` to your own
+SQL Server database. Each teammate should use their own connection. For a new
+Development database, also set `DefaultAdmin__Email` and
+`DefaultAdmin__Password` to create the initial administrator. Existing
+accounts are not changed. Change the bootstrap password after the first login
+and remove it from the file.
+
+Start the app with:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\Start-Local.ps1
+```
+
+To validate the files without starting the app or connecting to the database:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\Start-Local.ps1 -Check
+```
+
+The launcher loads the shared and local files as process environment variables;
+local values take precedence. It does not change Windows user environment
+variables. Plain `dotnet run` does not read these files; it uses environment
+variables and Development User Secrets instead.
+
+## Test an online payment
+
+Sign in as a customer, create an order and choose online card payment. Use these
+Stripe sandbox card details:
 
 ```text
 Card:   4242 4242 4242 4242
@@ -44,74 +59,31 @@ Expiry: Any future date
 CVC:    Any three digits
 ```
 
-Complete checkout and return to the app. Confirm that the page shows
-**Payment received**, payment history shows **Paid**, and the receipt downloads.
+Complete checkout and return to the app. Check for **Payment received**, a
+**Paid** status in payment history, and a downloadable receipt. If the payment
+is not yet confirmed, use **Check payment status** before attempting another
+payment. Internet access is required. Without webhooks, a payment may remain
+pending until the customer returns and checks its status.
 
-The app checks the payment with Stripe when you return or click
-**Check payment status**. Internet access is required. If payment is still
-unconfirmed, use that button before attempting another payment.
+## Notifications and order tracking
 
-Without webhooks, closing the browser before returning or a delayed payment can
-leave the local record pending until you revisit the payment status page and
-check again.
+Order and reservation events create in-app notifications. Notifications can
+also be delivered in real time and through Web Push when the customer has a
+push subscription. Email delivery depends on the event and on SMTP being
+configured. Failed delivery does not remove the saved inbox notification.
 
-## Order and reservation notifications
+Order and reservation tracking pages refresh status while open and can also
+update immediately when a real-time notification arrives.
 
-Notification timestamps retain the database-local `SYSDATETIME()` convention used
-by orders and reservations. The inbox displays that recorded wall time unchanged;
-it does not label it UTC or convert it to the browser's timezone. Keep the database
-server timezone consistent across deployments.
+## Keep private configuration out of Git
 
-Notification delivery channels run concurrently with individual 30-second
-cancellation deadlines. SMTP also has a total operation deadline configured by
-`Smtp:TimeoutSeconds` (default 30, bounded to 1–30 seconds), including when used by
-payment emails. Delivery is still awaited, with no background queue or retries.
-The saved inbox record remains available if a provider fails or times out.
+`secrets.shared.json` and `secrets.local.json` are private and ignored by Git.
+Only the blank `.example.json` templates belong in the repository. These files
+are not encrypted. For deployment, configure the same setting names in the
+hosting provider's secret environment settings. ASP.NET Core maps `__` to `:`;
+see Microsoft's
+[configuration guidance](https://learn.microsoft.com/en-us/aspnet/core/fundamentals/configuration/).
 
-Tracking polls its authorized Razor `Status` handler every five seconds while the
-page is visible, independently of SignalR. It refreshes the existing cards when
-displayed details change; SignalR notifications also trigger an immediate check.
-
-Order placement and status changes create in-app notifications and are delivered
-in real time and through Web Push when the customer has a push subscription.
-Order notifications do not send email.
-
-Only reservation confirmation requests email, through the same single delivery
-call as its system and push notifications. When the caller omits the address,
-delivery looks up the affected customer's active `UserAccount` record using the
-notification owner's ID. Explicit trusted recipients remain supported; missing
-or invalid addresses are logged and skipped. Other reservation events keep email
-disabled. Payment receipt emails keep their existing separate notifier.
-
-New or newly activated promotions and announcements publish system/push notices
-through `NotificationPublisher`. Promotions target active Customer accounts with
-at least one order or reservation; announcements still target all active Customer
-accounts. Ordinary edits do
-not rebroadcast. Scheduled promotions are announced when published, including
-their dates; there is no background watcher or automatic second announcement on
-the start date. Drafts, expired records, staff and inactive accounts are excluded.
-Long text is shortened for the inbox without changing the original record.
-Publishing uses one notification per recipient; delivery failures are logged
-without undoing the business save or automatically retrying the broadcast.
-
-3. Shared SMTP email configuration
-
-The `Smtp` section in `appsettings.json` holds the shared sender configuration:
-`Host`, `Port`, `UserName`, `Password`, `FromName` and `FromEmail`.
-`UserName` and the Google app password in `Password` must belong to the same
-SMTP account.
-
-The shared login and sender are `p24016577@student.newinti.edu.my`. Enter that
-account's matching app password in `Smtp.Password` locally before distributing
-the configured project to other computers.
-
-Once these shared values are configured and copied with the project, other
-computers don't need to set SMTP User Secrets. Start the app normally:
-
-```powershell
-dotnet run --launch-profile https
-```
-
-Existing `Smtp:*` User Secrets in Development and `Smtp__*` environment variables
-still override values in `appsettings.json`. Computers with older local SMTP
-overrides must use matching values or remove those overrides.
+An SMTP app password was previously committed to this repository. Rotate it
+before using or sharing the account. Removing a secret from the current source
+does not remove it from Git history.

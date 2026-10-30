@@ -1,0 +1,188 @@
+@model RROMS.Web.Pages.Reports.IndexModel
+@using RROMS.Web.Pages.Reports
+
+@if (Model.Report is { } report)
+{
+    var utilization = report.Utilization;
+
+    <section id="utilization"
+             class="mb-5"
+             aria-labelledby="utilization-heading">
+
+        <h2 id="utilization-heading" class="h4 mb-3">
+            Estimated table utilization
+        </h2>
+
+        <p class="text-body-secondary">
+            Measures reserved table-slots using current active tables and
+            opening hours. This is a reservation-based estimate.
+        </p>
+
+        <div class="card mb-4">
+            <div class="card-body">
+                <dl class="row g-3 mb-0">
+                    <div class="col-sm-4">
+                        <dt class="small text-body-secondary">
+                            Available table-slots
+                        </dt>
+                        <dd class="h5 mb-0">
+                            @Model.Count(utilization.AvailableSlots)
+                        </dd>
+                    </div>
+
+                    <div class="col-sm-4">
+                        <dt class="small text-body-secondary">
+                            Booked table-slots
+                        </dt>
+                        <dd class="h5 mb-0">
+                            @Model.Count(utilization.BookedSlots)
+                        </dd>
+                    </div>
+
+                    <div class="col-sm-4">
+                        <dt class="small text-body-secondary">
+                            Estimated utilization
+                        </dt>
+                        <dd class="h5 mb-0">
+                            @Model.Percentage(utilization.UtilizationPercent)
+                        </dd>
+                    </div>
+                </dl>
+
+                <p class="small text-body-secondary mt-3 mb-0">
+                    One table-slot is one table on one date at one seating time.
+                    Pending, confirmed and completed reservations hold slots.
+                    Cancelled reservations release them.
+                </p>
+            </div>
+        </div>
+
+        @if (utilization.AvailableSlots == 0)
+        {
+            <p class="alert alert-info" role="status">
+                No table-slots are available under the current configuration
+                for this period. Estimated utilization is N/A.
+            </p>
+        }
+
+        <div class="row g-3 mb-4">
+            <div class="col-md-6">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h3 class="h6 text-body-secondary">
+                            Additional duplicate reservations
+                        </h3>
+
+                        <p class="h5 mb-2">
+                            @Model.Count(utilization.DuplicateBookings)
+                        </p>
+
+                        <p class="small text-body-secondary mb-0">
+                            Additional non-cancelled reservations repeating
+                            the same table, date and seating time.
+                            Each distinct slot is counted once in utilization.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h3 class="h6 text-body-secondary">
+                            Booked slots outside current availability
+                        </h3>
+
+                        <p class="h5 mb-2">
+                            @Model.Count(utilization.UnmatchedBookings)
+                        </p>
+
+                        <p class="small text-body-secondary mb-0">
+                            Distinct booked slots that do not match current
+                            active tables and allowed seating times.
+                            These are excluded from booked table-slots above.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-body">
+                <h3 class="h5">Utilization by table</h3>
+
+                @if (utilization.Tables.Count == 0)
+                {
+                    <p class="text-body-secondary mb-0">
+                        No active tables are available under the current
+                        restaurant configuration.
+                    </p>
+                }
+                else
+                {
+                    @if (utilization.Tables.Count > IndexModel.DetailRowLimit)
+                    {
+                        <p class="small text-body-secondary">
+                            Showing the first @IndexModel.DetailRowLimit
+                            of @Model.Count(utilization.Tables.Count) tables.
+                            Overall figures include all tables.
+                        </p>
+                    }
+
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <caption class="visually-hidden">
+                                Estimated booked-slot utilization by table
+                                for @report.PeriodLabel
+                            </caption>
+
+                            <thead>
+                                <tr>
+                                    <th scope="col">Table</th>
+                                    <th scope="col">Dining area</th>
+                                    <th scope="col" class="text-end">Seats</th>
+                                    <th scope="col" class="text-end">Available slots</th>
+                                    <th scope="col" class="text-end">Booked slots</th>
+                                    <th scope="col" class="text-end">Estimated utilization</th>
+                                </tr>
+                            </thead>
+
+                            <tbody>
+                                @foreach (var table in utilization.Tables.Take(IndexModel.DetailRowLimit))
+                                {
+                                    <tr>
+                                        <th scope="row" class="fw-normal">
+                                            @table.TableNumber
+                                        </th>
+                                        <td>@table.Area</td>
+                                        <td class="text-end">
+                                            @Model.Count(table.Capacity)
+                                        </td>
+                                        <td class="text-end">
+                                            @Model.Count(table.AvailableSlots)
+                                        </td>
+                                        <td class="text-end">
+                                            @Model.Count(table.BookedSlots)
+                                        </td>
+                                        <td class="text-end text-nowrap">
+                                            @Model.Percentage(table.UtilizationPercent)
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <p class="small text-body-secondary mb-0">
+                        Seat capacity is shown for reference.
+                        Party size does not affect booked-slot utilization.
+                    </p>
+                }
+            </div>
+        </div>
+
+        <p class="small text-body-secondary mt-3 mb-0">
+            @utilization.Basis
+        </p>
+    </section>
+}

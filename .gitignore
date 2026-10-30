@@ -487,6 +487,11 @@ wwwroot/images/menu/
 wwwroot/images/promotions
 wwwroot/images/restaurant
 
-# Local project exports and diagnostic handoffs
-/*.zip
-/Notification-Review-*.md
+# Local credentials and environment overrides
+.env.*
+!.env.example
+appsettings.Local.json
+appsettings.*.local.json
+secrets.json
+/secrets.shared.json
+/secrets.local.json

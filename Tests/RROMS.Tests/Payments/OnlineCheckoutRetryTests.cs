@@ -226,7 +226,7 @@ public class OnlineCheckoutRetryTests : IAsyncLifetime
 
     private OnlinePaymentConfirmation Confirm(Payment payment) => new(
         payment.PaymentId, payment.OrderId, _sessionId, $"pi_test_retry_{_orderId}",
-        2580, "myr", payment.CreatedAt.Ticks);
+        2580, "MYR", payment.CreatedAt.Ticks);
 
     private async Task AssertPendingAttemptUnchangedAsync(
         AppDbContext db,
@@ -257,7 +257,7 @@ public class OnlineCheckoutRetryTests : IAsyncLifetime
             new PaymentQueries(db, orders),
             [],
             NullLogger<PaymentService>.Instance,
-            Options.Create(new StripeSettings { Currency = "myr" }));
+            Options.Create(new StripeSettings { Currency = "MYR" }));
     }
 
     private sealed class NoopRealtime : INotificationRealtime
@@ -297,8 +297,6 @@ public class OnlineCheckoutRetryTests : IAsyncLifetime
         }
 
         public Task<string> RefundAsync(string paymentIntentId, decimal amount, string idempotencyKey) =>
-            throw new NotSupportedException();
-        public Task<string> RecheckRefundAsync(string paymentIntentId, decimal amount) =>
             throw new NotSupportedException();
         public Event ConstructWebhookEvent(string json, string signatureHeader) =>
             throw new NotSupportedException();

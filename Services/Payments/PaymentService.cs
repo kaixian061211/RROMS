@@ -78,32 +78,8 @@ public class PaymentService : IPaymentService
 
         var previous = await _db.Payments.AsNoTracking()
             .SingleOrDefaultAsync(p => p.OrderId == orderId);
-        if (previous is
-            {
-                PaymentStatus: PaymentStatus.Pending or PaymentStatus.Failed,
-                RecordedByStaffId: null
-            }
-            && PaymentMethod.IsOnline(previous.PaymentMethod)
-            && !string.IsNullOrEmpty(previous.TransactionRef))
-        {
-            var confirmation = await _stripe.GetPaidConfirmationAsync(
-                previous.TransactionRef);
-
-            if (confirmation is not null)
-            {
-                payment = await RecordOnlineConfirmationAsync(
-                    previous,
-                    confirmation);
-
-                return new PaymentResult
-                {
-                    Payment = payment
-                };
-            }
-        }
-
         if (previous is { PaymentStatus: PaymentStatus.Pending }
-            && PaymentMethod.IsOnline(previous.PaymentMethod)
+            && previous.PaymentMethod != PaymentMethod.PayAtCounter
             && !string.IsNullOrEmpty(previous.TransactionRef)
             && !await _stripe.TryExpireSessionAsync(previous.TransactionRef))
         {
@@ -171,15 +147,12 @@ public class PaymentService : IPaymentService
             }
             else
             {
-                if (previous is null
-                    || existing.CreatedAt != previous.CreatedAt
+                if (previous is null || existing.CreatedAt != previous.CreatedAt
                     || existing.TransactionRef != previous.TransactionRef
                     || existing.PaymentStatus != previous.PaymentStatus)
                 {
-                    throw new PaymentException(
-                        "The payment changed while checkout was starting. Please refresh before trying again.");
+                    throw new PaymentException("The payment changed while checkout was starting. Please refresh before trying again.");
                 }
-
                 payment = await ReopenAsync(
                     existing,
                     order,
@@ -819,24 +792,12 @@ public class PaymentService : IPaymentService
         RefundCoreAsync(
             paymentId,
             staffUserId,
-            reason,
-            recheckOnly: false);
-
-    public Task RecheckRefundAsync(
-        int paymentId,
-        int staffUserId,
-        string? reason = null) =>
-        RefundCoreAsync(
-            paymentId,
-            staffUserId,
-            reason,
-            recheckOnly: true);
+            reason);
 
     private async Task RefundCoreAsync(
         int paymentId,
         int staffUserId,
-        string? reason,
-        bool recheckOnly)
+        string? reason)
     {
         if (paymentId <= 0 || staffUserId <= 0)
         {
@@ -878,12 +839,6 @@ public class PaymentService : IPaymentService
             payment.RecordedByStaffId is null &&
             PaymentMethod.IsOnline(payment.PaymentMethod);
 
-        if (recheckOnly && !onlinePayment)
-        {
-            throw new PaymentException(
-                "Only online payments have a Stripe refund to recheck.");
-        }
-
         if (onlinePayment)
         {
             if (string.IsNullOrWhiteSpace(
@@ -893,19 +848,10 @@ public class PaymentService : IPaymentService
                     "This online payment has no Stripe PaymentIntent reference. Check it in Stripe before refunding.");
             }
 
-            if (recheckOnly)
-            {
-                await _stripe.RecheckRefundAsync(
-                    payment.StripePaymentIntentId,
-                    payment.Amount);
-            }
-            else
-            {
-                await _stripe.RefundAsync(
-                    payment.StripePaymentIntentId,
-                    payment.Amount,
-                    $"refund-payment-{payment.PaymentId}");
-            }
+            await _stripe.RefundAsync(
+                payment.StripePaymentIntentId,
+                payment.Amount,
+                $"refund-payment-{payment.PaymentId}");
         }
         else if (
             payment.RecordedByStaffId is not > 0 ||
