@@ -10,7 +10,7 @@
              class="mb-5"
              aria-labelledby="popular-menu-heading">
 
-        <h2 id="popular-menu-heading" class="h4 mb-3">
+        <h2 id="popular-menu-heading" class="mb-3">
             Popular menu items
         </h2>
 
@@ -43,7 +43,7 @@
 
         <div class="card mb-4">
             <div class="card-body">
-                <h3 class="h5">Top @PopularMenuReport.ChartCount by quantity</h3>
+                <h3 class="">Top @PopularMenuReport.ChartCount by quantity</h3>
 
                 @if (menu.Items.Count > 0)
                 {
@@ -63,22 +63,20 @@
                 }
                 else
                 {
-                    <p class="text-body-secondary mb-0">
-                        No eligible purchased menu items for this period.
-                    </p>
+                    <div class="rr-empty"><p class="rr-empty__title">No eligible purchased menu items for this period.
+                    </p></div>
                 }
             </div>
         </div>
 
         <div class="card">
             <div class="card-body">
-                <h3 class="h5">Purchased menu-item rankings</h3>
+                <h3 class="">Purchased menu-item rankings</h3>
 
                 @if (menu.Items.Count == 0)
                 {
-                    <p class="text-body-secondary mb-0">
-                        No eligible purchased menu items for this period.
-                    </p>
+                    <div class="rr-empty"><p class="rr-empty__title">No eligible purchased menu items for this period.
+                    </p></div>
                 }
                 else
                 {

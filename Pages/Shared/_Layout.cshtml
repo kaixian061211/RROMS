@@ -46,6 +46,12 @@
                 </button>
                 <div class="collapse navbar-collapse" id="rr-nav">
                     <ul class="navbar-nav ms-xl-3 gap-xl-1">
+                        <li class="nav-item">
+        <a class="nav-link @Active(currentPage == "/Menu/Index")" aria-current="@Current(currentPage == "/Menu/Index")" asp-page="/Menu/Index">Menu</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link @Active(currentPage == "/Restaurant/Index")" aria-current="@Current(currentPage == "/Restaurant/Index")" asp-page="/Restaurant/Index">Restaurant</a>
+    </li>
                         @if (signedIn)
                         {
                             <li class="nav-item">
@@ -67,6 +73,7 @@
                                 <a class="nav-link @Active(Under("/Menu/Manage"))" aria-current="@Current(Under("/Menu/Manage"))" asp-page="/Menu/Manage/Index">Manage menu</a>
                             </li>
                             <li class="nav-item">
+                                <a class="nav-link @Active(Under("/Restaurant/Manage") || Under("/Promotions/Manage"))" aria-current="@Current(Under("/Restaurant/Manage") || Under("/Promotions/Manage"))" asp-page="/Restaurant/Manage/Index">Restaurant setup</a>
                                 <a class="nav-link @Active(Under("/Reports"))" aria-current="@Current(Under("/Reports"))" asp-page="/Reports/Index">Reports</a>
                             </li>
                             <li class="nav-item">

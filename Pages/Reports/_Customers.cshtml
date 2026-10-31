@@ -9,7 +9,7 @@
              class="mb-5"
              aria-labelledby="customers-heading">
 
-        <h2 id="customers-heading" class="h4 mb-3">
+        <h2 id="customers-heading" class="mb-3">
             Customer activity
         </h2>
 
@@ -41,13 +41,12 @@
 
         <div class="card">
             <div class="card-body">
-                <h3 class="h5">Activity and spending by account</h3>
+                <h3 class="">Activity and spending by account</h3>
 
                 @if (customers.Customers.Count == 0)
                 {
-                    <p class="text-body-secondary mb-0">
-                        No recorded customer activity for this period.
-                    </p>
+                    <div class="rr-empty"><p class="rr-empty__title">No recorded customer activity for this period.
+                    </p></div>
                 }
                 else
                 {

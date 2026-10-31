@@ -121,9 +121,9 @@ public class ReportExportPageTests : PageTest
         var customers = page.QuerySelector("#customers")!;
         Assert.Equal(new[] { "1", "1" }, customers.QuerySelectorAll("dl dd").Select(TextOf));
         var cells = customers.QuerySelectorAll(".table-hover tbody tr td");
-        Assert.Equal("MYR 37.00", TextOf(cells[3]));
-        Assert.Equal("MYR 25.00", TextOf(cells[4]));
-        Assert.Equal("MYR 12.00", TextOf(cells[5]));
+        Assert.Equal("RM 37.00", TextOf(cells[3]));
+        Assert.Equal("RM 25.00", TextOf(cells[4]));
+        Assert.Equal("RM 12.00", TextOf(cells[5]));
         Assert.Equal("2", TextOf(cells[6]));
         Assert.Equal("Yes", TextOf(cells[7]));
         using var chart = JsonDocument.Parse(page.QuerySelector("#report-data")!.TextContent);

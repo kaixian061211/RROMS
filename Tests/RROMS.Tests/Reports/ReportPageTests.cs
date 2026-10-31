@@ -27,7 +27,7 @@ public class ReportPageTests : PageTest
 
         Assert.Equal(label, TextOf(page.QuerySelector(".report-meta dd")!));
         Assert.Contains("No data for this period.", TextOf(page));
-        Assert.Equal(10, page.QuerySelectorAll(".report-summary article").Length);
+        Assert.Equal(6, page.QuerySelectorAll(".report-summary article").Length);
         Assert.NotNull(page.QuerySelector("a[href='/Reports'].active"));
         Assert.NotNull(page.QuerySelector("a[href='/Admin/Accounts']"));
         var date = page.QuerySelector("input[name='ReferenceDate']")!;
@@ -96,11 +96,11 @@ public class ReportPageTests : PageTest
         Assert.True(response.Headers.CacheControl?.NoStore == true);
         Assert.True(response.Headers.CacheControl?.NoCache == true);
         var page = await GetPageAsync("/Reports?Period=Daily&ReferenceDate=2026-10-29");
-        Assert.Contains("MYR 123.45", TextOf(page.QuerySelector(".report-summary")!));
+        Assert.Contains("RM 123.45", TextOf(page.QuerySelector(".report-summary")!));
         Assert.DoesNotContain("No data for this period.", TextOf(page));
         Assert.NotNull(page.QuerySelector("#sales-trend-chart"));
         Assert.NotNull(page.QuerySelector("#sales-method-chart"));
-        Assert.Contains("MYR 123.45", TextOf(page.QuerySelector("#sales")!));
+        Assert.Contains("RM 123.45", TextOf(page.QuerySelector("#sales")!));
         using var json = JsonDocument.Parse(page.QuerySelector("#report-data")!.TextContent);
         var sales = json.RootElement.GetProperty("sales");
         Assert.Equal(123.45m, sales.GetProperty("trend").GetProperty("collections")[12].GetDecimal());
@@ -133,7 +133,7 @@ public class ReportPageTests : PageTest
         Assert.NotNull(section.QuerySelector("#sales-trend-chart"));
         Assert.Null(section.QuerySelector("#sales-method-chart"));
         Assert.Contains("No collections for this period.", TextOf(section));
-        Assert.Contains("MYR -25.00", TextOf(section));
+        Assert.Contains("RM -25.00", TextOf(section));
         Assert.Contains(note, section.QuerySelector(".report-ledger-note")!.TextContent);
         Assert.Empty(section.QuerySelectorAll("script"));
         using var json = JsonDocument.Parse(page.QuerySelector("#report-data")!.TextContent);
@@ -221,11 +221,11 @@ public class ReportPageTests : PageTest
         Assert.NotNull(orders.QuerySelector("#orders-status-chart"));
         Assert.NotNull(orders.QuerySelector("#orders-trend-chart"));
         var summary = orders.QuerySelectorAll("dl dd").Select(TextOf).ToArray();
-        Assert.Equal(new[] { "3", "1", "MYR 30.00", "MYR 15.00" }, summary);
+        Assert.Equal(new[] { "3", "1", "RM 30.00", "RM 15.00" }, summary);
         var rows = orders.QuerySelectorAll(".table-hover tbody tr");
         Assert.Equal(3, rows.Length);
-        Assert.Contains(rows, row => TextOf(row).Contains("Cancelled") && TextOf(row).Contains("MYR 9.00"));
-        Assert.All(rows, row => Assert.Contains("29 Oct 2026, 12:30", TextOf(row)));
+        Assert.Contains(rows, row => TextOf(row).Contains("Cancelled") && TextOf(row).Contains("RM 9.00"));
+        Assert.All(rows, row => Assert.Contains("29 Oct 2026, 12:30 PM", TextOf(row)));
         Assert.All(rows, row => Assert.Contains("Not recorded", TextOf(row)));
 
         using var json = JsonDocument.Parse(page.QuerySelector("#report-data")!.TextContent);

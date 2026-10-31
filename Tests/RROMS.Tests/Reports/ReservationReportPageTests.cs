@@ -88,13 +88,13 @@ public class ReservationReportPageTests : PageTest
         var section = page.QuerySelector("#reservations")!;
         var slotRows = Table(section, "Reserved dining times").QuerySelectorAll("tbody tr");
         Assert.Equal(
-            new[] { "12:00", "13:30", "18:00", "19:30", "21:00" },
+            new[] { "12:00 PM", "1:30 PM", "6:00 PM", "7:30 PM", "9:00 PM" },
             slotRows.Select(row => TextOf(row.QuerySelector("th")!)));
-        Assert.Equal(2, slotRows.Count(row => row.QuerySelector(".badge") is not null));
+        Assert.Equal(2, slotRows.Count(row => row.QuerySelector(".rr-status--good") is not null));
         Assert.All(slotRows.Take(2), row => Assert.Contains("Peak", TextOf(row)));
         using var json = JsonDocument.Parse(page.QuerySelector("#report-data")!.TextContent);
         var peak = json.RootElement.GetProperty("reservations").GetProperty("peak");
-        Assert.Equal("13:30", peak.GetProperty("labels")[1].GetString());
+        Assert.Equal("1:30 PM", peak.GetProperty("labels")[1].GetString());
         Assert.Equal(new[] { 2, 2, 0, 0, 0 }, peak.GetProperty("counts").EnumerateArray().Select(v => v.GetInt32()));
         Assert.Equal(new[] { true, true, false, false, false }, peak.GetProperty("isPeak").EnumerateArray().Select(v => v.GetBoolean()));
     }
@@ -136,7 +136,7 @@ public class ReservationReportPageTests : PageTest
             section.QuerySelectorAll("dl dd").Select(TextOf));
         Assert.Single(Table(section, "Scheduled reservation trend").QuerySelectorAll("tbody tr"));
         Assert.Equal(5, Table(section, "Reserved dining times").QuerySelectorAll("tbody tr").Length);
-        Assert.Empty(section.QuerySelectorAll(".badge"));
+        Assert.Empty(section.QuerySelectorAll(".rr-status--good"));
         using var json = JsonDocument.Parse(page.QuerySelector("#report-data")!.TextContent);
         var data = json.RootElement.GetProperty("reservations");
         Assert.Equal(1, data.GetProperty("trend").GetProperty("labels").GetArrayLength());
@@ -162,12 +162,12 @@ public class ReservationReportPageTests : PageTest
             section.QuerySelectorAll("dl dd").Select(TextOf));
         var row = Assert.Single(section.QuerySelectorAll(".table-hover tbody tr"));
         Assert.Contains("29 Oct 2026", TextOf(row));
-        Assert.Contains("13:30", TextOf(row));
+        Assert.Contains("1:30 PM", TextOf(row));
         var createdAtText = TextOf(row.QuerySelectorAll("td")[6]);
         Assert.True(DateTime.TryParseExact(
             createdAtText,
-            "d MMM yyyy, HH:mm",
-            CultureInfo.GetCultureInfo("en-MY"),
+            "d MMM yyyy, h:mm tt",
+            CultureInfo.InvariantCulture,
             DateTimeStyles.None,
             out var createdAt), $"Unexpected booking creation timestamp: {createdAtText}");
         Assert.Equal(new DateTime(2026, 9, 30, 12, 30, 0), createdAt);

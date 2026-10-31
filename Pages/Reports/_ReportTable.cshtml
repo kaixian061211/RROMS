@@ -1,0 +1,63 @@
+@model RROMS.Web.Pages.Reports.ReportTableModel
+@using System.Linq
+
+@{
+    var rows = Model.Rows.ToArray();
+    var visibleRows = Model.Limit.HasValue
+        ? rows.Take(Model.Limit.Value).ToArray()
+        : rows;
+}
+
+@if (rows.Length == 0)
+{
+    <div class="rr-empty">
+        <p class="rr-empty__title">@Model.EmptyMessage</p>
+        <p>Recorded activity will appear here. Choose another reporting period to view earlier records.</p>
+    </div>
+}
+else
+{
+    @if (visibleRows.Length < rows.Length)
+    {
+        <p class="report-help">
+            Showing the first @visibleRows.Length of @rows.Length records.
+        </p>
+    }
+
+    <div class="report-table-wrap">
+        <table class="table table-hover report-table" role="table">
+            <caption class="visually-hidden">@Model.Caption</caption>
+
+            <thead role="rowgroup">
+                <tr role="row">
+                    @foreach (var heading in Model.Headers)
+                    {
+                        <th scope="col" role="columnheader">@heading</th>
+                    }
+                </tr>
+            </thead>
+
+            <tbody role="rowgroup">
+                @foreach (var row in visibleRows)
+                {
+                    <tr role="row">
+                        @for (var index = 0; index < row.Length; index++)
+                        {
+                            var cell = row[index];
+
+                            <td role="cell"
+                                class="@(cell.Numeric ? "report-number" : null)">
+                                <span class="report-mobile-label" aria-hidden="true">
+                                    @Model.Headers[index]
+                                </span>
+                                <span class="report-cell-value @cell.CssClass">
+                                    @cell.Text
+                                </span>
+                            </td>
+                        }
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

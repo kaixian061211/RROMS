@@ -1,0 +1,68 @@
+@page
+@model RROMS.Web.Pages.Restaurant.Manage.IndexModel
+@{
+    ViewData["Title"] = "Restaurant setup";
+}
+
+<header class="rr-page-header">
+    <div>
+        <h1>Restaurant setup</h1>
+        <p class="rr-lede">Details, seating, menu and offers in one place.</p>
+    </div>
+</header>
+
+<h2 class="rr-group-title">The restaurant</h2>
+<div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-3 mb-5">
+    <div class="col">
+        <div class="rr-feature">
+            <h2 class="rr-feature__title"><a asp-page="/Restaurant/Manage/Details">Restaurant details</a></h2>
+            <p class="text-muted mb-0">Name, contact details, logo and settings.</p>
+        </div>
+    </div>
+    <div class="col">
+        <div class="rr-feature">
+            <h2 class="rr-feature__title"><a asp-page="/Restaurant/Manage/Hours">Opening hours</a></h2>
+            <p class="text-muted mb-0">When the restaurant is open each day.</p>
+        </div>
+    </div>
+    <div class="col">
+        <div class="rr-feature">
+            <h2 class="rr-feature__title"><a asp-page="/Restaurant/Manage/DiningAreas">Dining areas</a></h2>
+            <p class="text-muted mb-0">Indoor, outdoor, private rooms and other sections.</p>
+        </div>
+    </div>
+    <div class="col">
+        <div class="rr-feature">
+            <h2 class="rr-feature__title"><a asp-page="/Restaurant/Manage/Tables">Tables</a></h2>
+            <p class="text-muted mb-0">Table numbers, seats and the area each one is in.</p>
+        </div>
+    </div>
+    <div class="col">
+        <div class="rr-feature">
+            <h2 class="rr-feature__title"><a asp-page="/Restaurant/Manage/Announcements">Announcements</a></h2>
+            <p class="text-muted mb-0">Messages customers see on the restaurant page.</p>
+        </div>
+    </div>
+</div>
+
+<h2 class="rr-group-title">Menu and offers</h2>
+<div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-3">
+    <div class="col">
+        <div class="rr-feature">
+            <h2 class="rr-feature__title"><a asp-page="/Menu/Manage/Index">Menu items</a></h2>
+            <p class="text-muted mb-0">Dishes, prices and what is sold out.</p>
+        </div>
+    </div>
+    <div class="col">
+        <div class="rr-feature">
+            <h2 class="rr-feature__title"><a asp-page="/Menu/Manage/Categories">Menu categories</a></h2>
+            <p class="text-muted mb-0">Group the menu and set the order it appears in.</p>
+        </div>
+    </div>
+    <div class="col">
+        <div class="rr-feature">
+            <h2 class="rr-feature__title"><a asp-page="/Promotions/Manage/Index">Promotions</a></h2>
+            <p class="text-muted mb-0">Discounts on dishes, with start and end dates.</p>
+        </div>
+    </div>
+</div>
