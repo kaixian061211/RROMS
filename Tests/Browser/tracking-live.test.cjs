@@ -6,10 +6,13 @@ const path = require('node:path');
 const script = fs.readFileSync(path.join(__dirname, '../../wwwroot/js/tracking-live.js'), 'utf8');
 const settle = async () => { for (let i = 0; i < 10; i++) await new Promise(setImmediate); };
 
-function fixture(url = 'https://restaurant.test/Tracking?orderId=7') {
-    const initial = { orderId: 7, orderStatus: 'pending', reservationId: null,
+function fixture(url = 'https://restaurant.test/Tracking?orderId=7', overview = false) {
+    const initial = overview ? { overview: true, orderId: null, reservationId: null,
+        orders: [{ orderId: 7, status: 'pending' }], reservations: [] }
+        : { orderId: 7, orderStatus: 'pending', reservationId: null,
         reservationStatus: null, paymentId: 3, paymentStatus: 'pending', paymentAmount: 10 };
-    const content = { dataset: { orderId: '7', reservationId: '', snapshot: JSON.stringify(initial) },
+    const content = { dataset: { orderId: overview ? '' : '7', reservationId: '',
+        trackingOverview: String(overview), snapshot: JSON.stringify(initial) },
         renders: 0, replaceChildren() { this.renders++; } };
     const banner = { hidden: true };
     const listeners = {};
@@ -30,13 +33,13 @@ function fixture(url = 'https://restaurant.test/Tracking?orderId=7') {
         clearTimeout(id) { timers.delete(id); },
         fetch: async (href) => {
             state.requests.push(href);
-            const json = new URL(href).searchParams.get('handler') === 'Status';
+            const json = ['Status', 'OverviewStatus'].includes(new URL(href).searchParams.get('handler'));
             return { ok: !(json && state.failStatus), redirected: false, url: href,
                 headers: { get: () => json ? 'application/json' : 'text/html' },
                 json: async () => state.snapshot, text: async () => 'authorized HTML' };
         },
         DOMParser: class { parseFromString() { return { getElementById() {
-            return { dataset: { ...content.dataset, orderId: state.wrongHtml ? '999' : '7',
+            return { dataset: { ...content.dataset, orderId: state.wrongHtml ? '999' : content.dataset.orderId,
                 snapshot: JSON.stringify(state.renderedSnapshot ?? state.snapshot) }, childNodes: [] };
         } }; } }
     };
@@ -106,4 +109,12 @@ test('hidden pages pause polling and resume when visible', async () => {
     assert.equal(state.requests.length, before);
     state.document.hidden = false; state.listeners.visibilitychange(); await settle();
     assert.ok(state.requests.length > before);
+});
+
+test('overview polling refreshes changed owned records without a selected record', async () => {
+    const state = fixture('https://restaurant.test/Tracking', true); await settle();
+    assert.equal(new URL(state.requests[0]).searchParams.get('handler'), 'OverviewStatus');
+    state.snapshot = { ...state.snapshot, orders: [{ orderId: 7, status: 'ready' }] };
+    await state.poll();
+    assert.equal(state.content.renders, 2);
 });

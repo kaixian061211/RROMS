@@ -27,11 +27,24 @@ public class IndexModel : PageModel
     public Order? TrackedOrder { get; private set; }
     public Reservation? TrackedReservation { get; private set; }
     public Payment? TrackedPayment { get; private set; }
+    public bool IsOverview { get; private set; }
+    public IReadOnlyList<Order> RecentOrders { get; private set; } = Array.Empty<Order>();
+    public IReadOnlyList<Reservation> RecentReservations { get; private set; } = Array.Empty<Reservation>();
     public IReadOnlyDictionary<int, TableInfo> Tables { get; private set; } =
         new Dictionary<int, TableInfo>();
 
     // Both initial HTML and polling use the same authorized data and snapshot.
-    public string Snapshot => JsonSerializer.Serialize(new
+    public string Snapshot => IsOverview ? JsonSerializer.Serialize(new
+    {
+        overview = true,
+        orderId = (int?)null,
+        reservationId = (int?)null,
+        orders = RecentOrders.Select(o => new { o.OrderId, o.Status, o.TableId, o.CreatedAt }),
+        reservations = RecentReservations.Select(r => new
+        {
+            r.ReservationId, r.Status, r.TableId, r.ReservationDate, r.TimeSlot, r.PartySize
+        })
+    }, JsonSerializerOptions.Web) : JsonSerializer.Serialize(new
     {
         orderId = TrackedOrder?.OrderId,
         orderStatus = TrackedOrder?.Status,
@@ -71,11 +84,40 @@ public class IndexModel : PageModel
             : result;
     }
 
-    public Task<IActionResult> OnGetAsync(
+    public async Task<IActionResult> OnGetAsync(
         int? orderId,
         int? reservationId,
         int? paymentId,
-        CancellationToken ct) => LoadAsync(orderId, reservationId, paymentId, ct, includeTables: true);
+        CancellationToken ct)
+    {
+        if (!ModelState.IsValid) return BadRequest();
+        return orderId is null && reservationId is null && paymentId is null
+            ? await LoadOverviewAsync(ct, includeTables: true)
+            : await LoadAsync(orderId, reservationId, paymentId, ct, includeTables: true);
+    }
+
+    public async Task<IActionResult> OnGetOverviewStatusAsync(
+        int? orderId, int? reservationId, int? paymentId, CancellationToken ct)
+    {
+        if (!ModelState.IsValid || orderId.HasValue || reservationId.HasValue || paymentId.HasValue)
+            return BadRequest();
+        var result = await LoadOverviewAsync(ct, includeTables: false);
+        return result is PageResult ? Content(Snapshot, "application/json") : result;
+    }
+
+    private async Task<IActionResult> LoadOverviewAsync(CancellationToken ct, bool includeTables)
+    {
+        if (!User.TryGetPaymentUserId(out var userId) || userId <= 0) return Forbid();
+        IsOverview = true;
+        RecentOrders = await _db.Set<Order>().AsNoTracking()
+            .Where(o => o.CustomerUserId == userId)
+            .OrderByDescending(o => o.OrderId).Take(20).ToListAsync(ct);
+        RecentReservations = await _db.Set<Reservation>().AsNoTracking()
+            .Where(r => r.CustomerUserId == userId)
+            .OrderByDescending(r => r.ReservationId).Take(20).ToListAsync(ct);
+        if (includeTables) Tables = await _restaurant.GetTablesAsync();
+        return Page();
+    }
 
     private async Task<IActionResult> LoadAsync(
         int? orderId,

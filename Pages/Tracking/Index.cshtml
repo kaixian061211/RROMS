@@ -11,8 +11,8 @@
 <div class="rr-narrow tracking-page">
     <header class="rr-page-header">
         <div>
-            <h1>@(Model.TrackedReservation is not null ? "Track your booking" : "Track your order")</h1>
-            <p class="rr-lede">Your current status and the details you need.</p>
+            <h1>@(Model.IsOverview ? "Live tracking" : Model.TrackedReservation is not null ? "Track your booking" : "Track your order")</h1>
+            <p class="rr-lede">@(Model.IsOverview ? "Choose an order or booking to follow its latest status." : "Your current status and the details you need.")</p>
         </div>
     </header>
 
@@ -25,9 +25,55 @@
     </div>
 
     <div id="tracking-content"
+         data-tracking-overview="@Model.IsOverview.ToString().ToLowerInvariant()"
          data-order-id="@Model.TrackedOrder?.OrderId"
          data-reservation-id="@Model.TrackedReservation?.ReservationId"
          data-snapshot="@Model.Snapshot" aria-live="polite" aria-atomic="true">
+        @if (Model.IsOverview)
+        {
+            <section class="tracking-overview-group" aria-labelledby="tracking-orders-title">
+                <div class="tracking-overview-heading">
+                    <h2 id="tracking-orders-title">Recent orders</h2>
+                    <a asp-page="/Orders/Index">View all orders</a>
+                </div>
+                @if (Model.RecentOrders.Count == 0)
+                {
+                    <div class="rr-empty"><h3 class="rr-empty__title">No orders to track yet</h3><p>Your orders will appear here after you place them.</p></div>
+                }
+                @foreach (var recentOrder in Model.RecentOrders)
+                {
+                    <article class="rr-slip tracking-overview-item">
+                        <div>
+                            <span class="rr-ref">@OrderFormatter.Reference(recentOrder.OrderId)</span>
+                            <p>@OrderFormatter.Table(recentOrder.TableId, Model.Tables)</p>
+                            <span class="@OrderFormatter.StatusBadge(recentOrder.Status)">@OrderFormatter.StatusLabel(recentOrder.Status)</span>
+                        </div>
+                        <a class="btn btn-outline-secondary" asp-page="./Index" asp-route-orderId="@recentOrder.OrderId">Track order <span class="visually-hidden">@OrderFormatter.Reference(recentOrder.OrderId)</span></a>
+                    </article>
+                }
+            </section>
+            <section class="tracking-overview-group" aria-labelledby="tracking-bookings-title">
+                <div class="tracking-overview-heading">
+                    <h2 id="tracking-bookings-title">Recent bookings</h2>
+                    <a asp-page="/Reservations/Index">View all bookings</a>
+                </div>
+                @if (Model.RecentReservations.Count == 0)
+                {
+                    <div class="rr-empty"><h3 class="rr-empty__title">No bookings to track yet</h3><p>Your table bookings will appear here once requested.</p></div>
+                }
+                @foreach (var recentBooking in Model.RecentReservations)
+                {
+                    <article class="rr-slip tracking-overview-item">
+                        <div>
+                            <span class="rr-ref">@ReservationFormatter.Reference(recentBooking.ReservationId)</span>
+                            <p>@ReservationFormatter.When(recentBooking.ReservationDate, recentBooking.TimeSlot)</p>
+                            <span class="@ReservationFormatter.StatusBadge(recentBooking.Status)">@ReservationFormatter.StatusLabel(recentBooking.Status)</span>
+                        </div>
+                        <a class="btn btn-outline-secondary" asp-page="./Index" asp-route-reservationId="@recentBooking.ReservationId">Track booking <span class="visually-hidden">@ReservationFormatter.Reference(recentBooking.ReservationId)</span></a>
+                    </article>
+                }
+            </section>
+        }
         @if (Model.TrackedOrder is { } order)
         {
             <section class="rr-docket" aria-labelledby="tracked-order-title">

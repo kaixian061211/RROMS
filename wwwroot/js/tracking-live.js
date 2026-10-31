@@ -10,17 +10,19 @@
 
         const reservationId = content.dataset.reservationId
             ? Number(content.dataset.reservationId) : null;
+        const overview = content.dataset.trackingOverview === "true";
 
         const pageUrl = new URL(window.location.href);
         pageUrl.hash = "";
         pageUrl.searchParams.delete("handler");
         const statusUrl = new URL(pageUrl);
-        statusUrl.searchParams.set("handler", "Status");
+        statusUrl.searchParams.set("handler", overview ? "OverviewStatus" : "Status");
 
         button?.addEventListener("click", () => window.location.reload());
 
         function snapshotKey(snapshot) {
             if (!snapshot
+                || (snapshot.overview === true) !== overview
                 || snapshot.orderId !== orderId
                 || snapshot.reservationId !== reservationId) {
                 throw new Error("The tracking record is unavailable.");
@@ -95,6 +97,7 @@
                     .getElementById("tracking-content");
 
                 if (!incoming
+                    || incoming.dataset.trackingOverview !== content.dataset.trackingOverview
                     || incoming.dataset.orderId !== content.dataset.orderId
                     || incoming.dataset.reservationId !== content.dataset.reservationId) {
                     throw new Error("The tracking page does not match this record.");

@@ -70,7 +70,29 @@
     margin-top: 1.5rem;
 }
 
+.tracking-overview-group { margin-bottom: 2rem; }
+.tracking-overview-heading {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+.tracking-overview-heading h2 { margin: 0; }
+.tracking-overview-item {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 0.75rem;
+    padding: 1.25rem;
+}
+.tracking-overview-item p { margin-block: 0.25rem 0.75rem; }
+
 @media (max-width: 575.98px) {
     .tracking-details { grid-template-columns: minmax(0, 1fr); }
     .tracking-footer ::deep .btn { width: 100%; }
+    .tracking-overview-item ::deep .btn { width: 100%; }
 }

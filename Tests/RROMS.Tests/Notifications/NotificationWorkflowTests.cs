@@ -122,6 +122,34 @@ public class NotificationWorkflowTests : PageTest
         Assert.Contains("AccessDenied", (await Client.GetAsync("/Notifications")).RequestMessage!.RequestUri!.AbsoluteUri);
     }
 
+    [Fact]
+    public async Task TrackingOverviewAndItsLiveSnapshotOnlyListOwnedRecords()
+    {
+        var ids = await WithDatabaseAsync(async db =>
+        {
+            var own = new Order { CustomerUserId = TestCustomer, TableId = 1 };
+            var other = new Order { CustomerUserId = OtherCustomer, TableId = 2 };
+            var ownBooking = new Reservation { CustomerUserId = TestCustomer, TableId = 1,
+                ReservationDate = Tomorrow, TimeSlot = new TimeOnly(12, 0), PartySize = 2 };
+            var otherBooking = new Reservation { CustomerUserId = OtherCustomer, TableId = 2,
+                ReservationDate = Tomorrow, TimeSlot = new TimeOnly(12, 0), PartySize = 2 };
+            db.AddRange(own, other, ownBooking, otherBooking);
+            await db.SaveChangesAsync();
+            return (Own: own.OrderId, Other: other.OrderId, Booking: ownBooking.ReservationId);
+        });
+        var page = await GetPageAsync("/Tracking");
+        Assert.Contains(OrderFormatter.Reference(ids.Own), TextOf(page));
+        Assert.DoesNotContain(OrderFormatter.Reference(ids.Other), TextOf(page));
+        var response = await Client.GetAsync("/Tracking?handler=OverviewStatus");
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        using var json = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        Assert.True(json.RootElement.GetProperty("overview").GetBoolean());
+        Assert.Equal(ids.Own, Assert.Single(json.RootElement.GetProperty("orders").EnumerateArray()).GetProperty("orderId").GetInt32());
+        Assert.Equal(ids.Booking, Assert.Single(json.RootElement.GetProperty("reservations").EnumerateArray()).GetProperty("reservationId").GetInt32());
+        Assert.Equal(HttpStatusCode.BadRequest, (await Client.GetAsync($"/Tracking?handler=OverviewStatus&orderId={ids.Other}")).StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, (await Client.GetAsync("/Tracking?handler=Status")).StatusCode);
+    }
+
     private static Notification Notice(int userId, string title) => new()
     {
         UserId = userId, Type = NotificationTypes.Announcement, Title = title, Message = "Fixture notification."
