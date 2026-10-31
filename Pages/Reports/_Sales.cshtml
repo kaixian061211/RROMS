@@ -7,7 +7,7 @@
     var sales = report.Sales;
 
     <section id="sales" class="mb-5" aria-labelledby="sales-heading">
-        <h2 id="sales-heading" class="h4 mb-3">
+        <h2 id="sales-heading" class="mb-3">
             Sales
         </h2>
 
@@ -27,7 +27,7 @@
             <div class="col-xl-8">
                 <div class="card h-100">
                     <div class="card-body">
-                        <h3 class="h5">Collections and refunds</h3>
+                        <h3 class="">Collections and refunds</h3>
 
                         <p class="small text-body-secondary">
                             Select a chart legend item to show or hide a series.
@@ -45,9 +45,8 @@
                         }
                         else
                         {
-                            <p class="text-body-secondary">
-                                No data for this period.
-                            </p>
+                            <div class="rr-empty"><p class="rr-empty__title">No data for this period.
+                            </p></div>
                         }
 
                         <details class="mt-3">
@@ -101,7 +100,7 @@
             <div class="col-xl-4">
                 <div class="card h-100">
                     <div class="card-body">
-                        <h3 class="h5">Collections by payment method</h3>
+                        <h3 class="">Collections by payment method</h3>
 
                         @if (sales.GrossCollections > 0)
                         {
@@ -115,11 +114,18 @@
                         }
                         else
                         {
-                            <p class="text-body-secondary">
-                                No collections for this period.
-                            </p>
+                            <div class="rr-empty"><p class="rr-empty__title">No collections for this period.
+                            </p></div>
                         }
 
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <details class="card mb-4">
+            <summary class="card-body">Payment method breakdown</summary>
+            <div class="card-body pt-0">
                         @if (sales.Methods.Count > 0)
                         {
                             <div class="table-responsive mt-3">
@@ -173,20 +179,17 @@
                                 No payment-method data for this period.
                             </p>
                         }
-                    </div>
-                </div>
             </div>
-        </div>
+        </details>
 
         <div class="card">
             <div class="card-body">
-                <h3 class="h5">Transaction ledger</h3>
+                <h3 class="">Transaction ledger</h3>
 
                 @if (sales.Transactions.Count == 0)
                 {
-                    <p class="text-body-secondary mb-0">
-                        No transactions for this period.
-                    </p>
+                    <div class="rr-empty"><p class="rr-empty__title">No transactions for this period.
+                    </p></div>
                 }
                 else
                 {
@@ -230,13 +233,13 @@
                                         </td>
 
                                         <td>
-                                            <span class="badge @(isRefund ? "text-bg-warning" : "text-bg-success")">
+                                            <span class="rr-status @(isRefund ? "rr-status--off" : "rr-status--good")">
                                                 @(isRefund ? "Refund" : "Collection")
                                             </span>
                                         </td>
 
                                         <td>@transaction.PaymentId</td>
-                                        <td>@transaction.OrderId</td>
+                                        <td class="rr-ref">@ReportUi.OrderReference(transaction.OrderId)</td>
 
                                         <td class="text-nowrap">
                                             @Model.CustomerLabel(transaction.CustomerUserId)
