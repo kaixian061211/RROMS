@@ -16,6 +16,7 @@
 }
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -28,8 +29,9 @@
     <link rel="stylesheet" href="~/css/rroms.css" asp-append-version="true" />
     @* The bundle of page-specific stylesheets (CSS isolation). Its name comes from the project, so keep it. *@
     <link rel="stylesheet" href="~/PaymentModule.styles.css" asp-append-version="true" />
-        <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+    <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
 </head>
+
 <body>
     @if (HostEnvironment.IsDevelopment())
     {
@@ -49,118 +51,150 @@
                         @if (signedIn)
                         {
                             <li class="nav-item">
-                                <a class="nav-link @Active(Under("/Dashboards"))" aria-current="@Current(Under("/Dashboards"))" asp-page="/Dashboards/Index">Dashboard</a>
+                                <a class="nav-link @Active(Under("/Dashboards"))"
+                                   aria-current="@Current(Under("/Dashboards"))" asp-page="/Dashboards/Index">Dashboard</a>
                             </li>
                         }
                         @if (isCustomer)
                         {
                             <li class="nav-item">
-                                <a class="nav-link @Active(onMyReservations)" aria-current="@Current(onMyReservations)" asp-area="" asp-page="/Reservations/Index">Reservations</a>
+                                <a class="nav-link @Active(onMyReservations)" aria-current="@Current(onMyReservations)"
+                                   asp-area="" asp-page="/Reservations/Index">Reservations</a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link @Active(onMyOrders)" aria-current="@Current(onMyOrders)" asp-area="" asp-page="/Orders/Index">My orders</a>
+                                <a class="nav-link @Active(onMyOrders)" aria-current="@Current(onMyOrders)" asp-area=""
+                                   asp-page="/Orders/Index">My orders</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link @Active(Under("/History"))" aria-current="@Current(Under("/History"))"
+                                   asp-page="/History/Index">History</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link @Active(currentPage == "/Preferences/Index")"
+                                   aria-current="@Current(currentPage == "/Preferences/Index")"
+                                   asp-page="/Preferences/Index">My preferences</a>
                             </li>
                         }
                         @if (isAdmin)
                         {
                             <li class="nav-item">
-                                <a class="nav-link @Active(Under("/Menu/Manage"))" aria-current="@Current(Under("/Menu/Manage"))" asp-page="/Menu/Manage/Index">Manage menu</a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link @Active(Under("/Admin/Accounts"))" aria-current="@Current(Under("/Admin/Accounts"))" asp-page="/Admin/Accounts/Index">Manage accounts</a>
-                            </li>
-                        }
-                        @if (isStaff)
-                        {
-                            <li class="nav-item">
-                                <a class="nav-link @Active(Under("/Reservations/Manage"))" aria-current="@Current(Under("/Reservations/Manage"))" asp-area="" asp-page="/Reservations/Manage/Index">Manage reservations</a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link @Active(currentPage == "/Orders/Queue")" aria-current="@Current(currentPage == "/Orders/Queue")" asp-area="" asp-page="/Orders/Queue">Order queue</a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link @Active(Under("/Feedback"))" aria-current="@Current(Under("/Feedback"))" asp-area="" asp-page="/Feedback/All">Customer feedback</a>
-                            </li>
-                        }
-                        @if (HostEnvironment.IsDevelopment())
-                        {
-                            <li class="nav-item"><a class="nav-link @Active(currentPage == "/Payments/Demo")" asp-page="/Payments/Demo">Payments</a></li>
-                        }
-                        @if (isCustomer)
-                        {
-                            <li class="nav-item"><a class="nav-link @Active(currentPage == "/Payments/MyOrders")" asp-page="/Payments/MyOrders">Orders for payment</a></li>
-                            <li class="nav-item"><a class="nav-link @Active(currentPage == "/Payments/History")" asp-page="/Payments/History">My payments</a></li>
-                            <li class="nav-item">
-                                <a class="nav-link @Active(Under("/Notifications"))"
-                                   aria-current="@Current(Under("/Notifications"))"
-                                   asp-area=""
-                                   asp-page="/Notifications/Index">
-                                    Notifications
-                                    <span id="notification-unread-count"
-                                          class="badge text-bg-primary"
-                                          aria-live="polite"
-                                          hidden></span>
-                                </a>
-                            </li>
-                        }
-                        @if (isStaff)
-                        {
-                            <li class="nav-item"><a class="nav-link @Active(currentPage == "/Payments/Counter")" asp-page="/Payments/Counter">Counter payments</a></li>
-                            <li class="nav-item"><a class="nav-link @Active(currentPage == "/Payments/Index")" asp-page="/Payments/Index">Manage payments</a></li>
-                        }
-                    </ul>
+                                <a class="nav-link @Active(Under("/Menu/Manage"))"
+                                   aria-current="@Current(Under("/Menu/Manage"))" asp-page="/Menu/Manage/Index">Manage
+                                    menu</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link @Active(Under("/Admin/Accounts"))"
+                                       aria-current="@Current(Under("/Admin/Accounts"))"
+                                       asp-page="/Admin/Accounts/Index">Manage accounts</a>
+                                </li>
+                            }
+                            @if (isStaff)
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link @Active(Under("/Reservations/Manage"))"
+                                       aria-current="@Current(Under("/Reservations/Manage"))" asp-area=""
+                                       asp-page="/Reservations/Manage/Index">Manage reservations</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link @Active(currentPage == "/Orders/Queue")"
+                                       aria-current="@Current(currentPage == "/Orders/Queue")" asp-area=""
+                                       asp-page="/Orders/Queue">Order queue</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link @Active(Under("/Feedback"))" aria-current="@Current(Under("/Feedback"))"
+                                       asp-area="" asp-page="/Feedback/All">Customer feedback</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link @Active(Under("/Preferences/Manage"))"
+                                       aria-current="@Current(Under("/Preferences/Manage"))"
+                                       asp-page="/Preferences/Manage/Index">Customer preferences</a>
+                                </li>
+                            }
+                            @if (HostEnvironment.IsDevelopment())
+                            {
+                                <li class="nav-item"><a class="nav-link @Active(currentPage == "/Payments/Demo")"
+                                                            asp-page="/Payments/Demo">Payments</a></li>
+                                }
+                                @if (isCustomer)
+                                {
+                                    <li class="nav-item"><a class="nav-link @Active(currentPage == "/Payments/MyOrders")"
+                                                                asp-page="/Payments/MyOrders">Orders for payment</a></li>
+                                        <li class="nav-item"><a class="nav-link @Active(currentPage == "/Payments/History")"
+                                                                    asp-page="/Payments/History">My payments</a></li>
+                                            <li class="nav-item">
+                                                <a class="nav-link @Active(Under("/Notifications"))"
+                                                   aria-current="@Current(Under("/Notifications"))" asp-area=""
+                                                   asp-page="/Notifications/Index">
+                                                    Notifications
+                                                    <span id="notification-unread-count" class="badge text-bg-primary" aria-live="polite"
+                                                          hidden></span>
+                                                </a>
+                                            </li>
+                                        }
+                                        @if (isStaff)
+                                        {
+                                            <li class="nav-item"><a class="nav-link @Active(currentPage == "/Payments/Counter")"
+                                                                        asp-page="/Payments/Counter">Counter payments</a></li>
+                                                <li class="nav-item"><a class="nav-link @Active(currentPage == "/Payments/Index")"
+                                                                            asp-page="/Payments/Index">Manage payments</a></li>
+                                                }
+                                            </ul>
 
-                    <ul class="navbar-nav ms-xl-auto gap-xl-1">
-                        @if (signedIn)
-                        {
-                            <li class="nav-item">
-                                <a class="nav-link @Active(Under("/Account"))" aria-current="@Current(Under("/Account"))" asp-page="/Account/Profile">@User.Identity!.Name</a>
-                            </li>
-                            <li class="nav-item">
-                                <form method="post" asp-page="/Account/Logout" class="d-xl-flex">
-                                    <button type="submit" class="nav-link btn btn-link text-start">Log out</button>
-                                </form>
-                            </li>
-                        }
-                        else
-                        {
-                            <li class="nav-item">
-                                <a class="nav-link @Active(currentPage == "/Account/Register")" asp-page="/Account/Register">Register</a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link @Active(currentPage == "/Account/Login")" asp-page="/Account/Login">Log in</a>
-                            </li>
-                        }
-                    </ul>
-                </div>
-            </div>
-        </nav>
-    </header>
+                                            <ul class="navbar-nav ms-xl-auto gap-xl-1">
+                                                @if (signedIn)
+                                                {
+                                                    <li class="nav-item">
+                                                        <a class="nav-link @Active(Under("/Account"))" aria-current="@Current(Under("/Account"))"
+                                                           asp-page="/Account/Profile">@User.Identity!.Name</a>
+                                                    </li>
+                                                    <li class="nav-item">
+                                                        <form method="post" asp-page="/Account/Logout" class="d-xl-flex">
+                                                            <button type="submit" class="nav-link btn btn-link text-start">Log out</button>
+                                                        </form>
+                                                    </li>
+                                                }
+                                                else
+                                                {
+                                                    <li class="nav-item">
+                                                        <a class="nav-link @Active(currentPage == "/Account/Register")"
+                                                           asp-page="/Account/Register">Register</a>
+                                                    </li>
+                                                    <li class="nav-item">
+                                                        <a class="nav-link @Active(currentPage == "/Account/Login")" asp-page="/Account/Login">Log
+                                                            in</a>
+                                                        </li>
+                                                    }
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    </nav>
+                                </header>
 
-    <main role="main" class="rr-main">
-        <div class="container-xxl">
-            @RenderBody()
-        </div>
-    </main>
+                                <main role="main" class="rr-main">
+                                    <div class="container-xxl">
+                                        @RenderBody()
+                                    </div>
+                                </main>
 
-    <footer class="rr-footer">
-        <div class="container-xxl d-flex flex-wrap justify-content-between column-gap-4 row-gap-1">
-            <span>&copy; 2026 RROMS · Restaurant Reservation and Order Management System</span>
-            <a asp-area="" asp-page="/Privacy">Privacy</a>
-        </div>
-    </footer>
+                                <footer class="rr-footer">
+                                    <div class="container-xxl d-flex flex-wrap justify-content-between column-gap-4 row-gap-1">
+                                        <span>&copy; 2026 RROMS · Restaurant Reservation and Order Management System</span>
+                                        <a asp-area="" asp-page="/Privacy">Privacy</a>
+                                    </div>
+                                </footer>
 
-    <script src="~/lib/jquery/dist/jquery.min.js"></script>
-    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="~/js/site.js" asp-append-version="true"></script>
+                                <script src="~/lib/jquery/dist/jquery.min.js"></script>
+                                <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+                                <script src="~/js/site.js" asp-append-version="true"></script>
 
-    @if (isCustomer)
-    {
-        <partial name="/Pages/Shared/_NotificationLive.cshtml" />
-    }
+                                @if (isCustomer)
+                                {
+                                    <partial name="/Pages/Shared/_NotificationLive.cshtml" />
+                                }
 
-    <partial name="/Pages/Shared/_WebPush.cshtml" />
+                                <partial name="/Pages/Shared/_WebPush.cshtml" />
 
-    @await RenderSectionAsync("Scripts", required: false)
-</body>
-</html>
+                                @await RenderSectionAsync("Scripts", required: false)
+                            </body>
+
+                        </html>

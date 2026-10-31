@@ -11,6 +11,7 @@ using RROMS.Web.Services.OrdersAndReservations;
 using RROMS.Web.Services.Payments.Receipts;
 
 using RROMS.Web.Services.CustomerSupportAndFeedback;
+using RROMS.Web.Services.CustomerHistoryAndPreferences;
 
 using RROMS.Web.Services.Notifications;
 using RROMS.Web.Services.Tracking;
