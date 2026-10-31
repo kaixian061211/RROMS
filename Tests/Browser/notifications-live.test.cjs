@@ -46,6 +46,7 @@ test('incoming notifications queue toasts and defer inbox refresh until they fin
 
 function badgeFixture() {
     const events = {};
+    const pageEvents = {};
     const pending = [];
     const badge = { setAttribute() {} };
     const connection = {
@@ -57,12 +58,12 @@ function badgeFixture() {
         withUrl() { return this; } withAutomaticReconnect() { return this; } build() { return connection; }
     } };
     vm.runInNewContext(script, {
-        window: { signalR, addEventListener() {} }, signalR,
+        window: { signalR, addEventListener(name, callback) { pageEvents[name] = callback; } }, signalR,
         document: { getElementById(id) { return id === 'notification-live'
             ? { dataset: {} } : id === 'notification-unread-count' ? badge : null; }, addEventListener() {} },
         setTimeout() {}, clearTimeout() {}
     });
-    return { events, pending, badge };
+    return { events, pending, badge, pageEvents };
 }
 
 const settle = async () => { for (let i = 0; i < 4; i++) await new Promise(setImmediate); };
@@ -90,4 +91,12 @@ test('invalid unread counts cannot be displayed', async () => {
     const state = badgeFixture(); await settle();
     state.pending[0](-1); await settle();
     assert.equal(state.badge.textContent, undefined);
+});
+
+test('only restored pages trigger pageshow reconciliation after connecting', async () => {
+    const state = badgeFixture(); await settle();
+    state.pageEvents.pageshow({ persisted: false });
+    assert.equal(state.pending.length, 1);
+    state.pageEvents.pageshow({ persisted: true });
+    assert.equal(state.pending.length, 2);
 });

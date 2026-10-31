@@ -58,9 +58,9 @@
         }
     });
 
-    window.addEventListener("pageshow", () => {
+    window.addEventListener("pageshow", event => {
         submitting = false;
-        if (connectedBefore) {
+        if (event.persisted && connectedBefore) {
             void updateUnreadCount();
             refreshPageSoon();
         }
