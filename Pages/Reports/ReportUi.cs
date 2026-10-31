@@ -1,22 +1,9 @@
 using System;
-using System.Collections.Generic;
 using System.Globalization;
 using RROMS.Web.Models.OrdersAndReservations;
 using RROMS.Web.Models.Payments;
 
 namespace RROMS.Web.Pages.Reports;
-
-public sealed record ReportCell(
-    string Text,
-    string CssClass = "",
-    bool Numeric = false);
-
-public sealed record ReportTableModel(
-    string Caption,
-    string[] Headers,
-    IEnumerable<ReportCell[]> Rows,
-    string EmptyMessage,
-    int? Limit = null);
 
 public static class ReportUi
 {
@@ -41,10 +28,10 @@ public static class ReportUi
     public static string Timestamp(DateTime value) =>
         value.ToString("d MMM yyyy, h:mm tt", CultureInfo.InvariantCulture);
 
-    public static string Date(DateOnly value) =>
+    public static string DateLabel(DateOnly value) =>
         value.ToString("d MMM yyyy", Culture);
 
-    public static string Time(TimeOnly value) =>
+    public static string TimeLabel(TimeOnly value) =>
         value.ToString("h:mm tt", CultureInfo.InvariantCulture);
 
     public static string OrderReference(int id) => $"ORD-{id:D6}";
@@ -57,19 +44,14 @@ public static class ReportUi
     public static ReportCell N(int value) =>
         new(Count(value), Numeric: true);
 
-    public static ReportCell M(decimal? value) =>
-        new(Money(value), "rr-money", Numeric: true);
-
     public static ReportCell P(decimal? value) =>
         new(Percentage(value), Numeric: true);
 
-    public static ReportCell Ref(string value) =>
-        new(value, "rr-ref");
+    public static string OrderStatusClass(string status) => StatusClass(status, "Order");
+    public static string ReservationStatusClass(string status) => StatusClass(status, "Reservation");
+    public static string PaymentStatusClass(string? status) => StatusClass(status, "Payment");
 
-    public static ReportCell State(
-        string? value,
-        string domain,
-        string? label = null)
+    private static string StatusClass(string? value, string domain)
     {
         var modifier = (domain, value) switch
         {
@@ -92,8 +74,55 @@ public static class ReportUi
             _ => "off"
         };
 
-        return new(
-            label ?? value ?? "Not recorded",
-            $"rr-status rr-status--{modifier}");
+        return $"rr-status rr-status--{modifier}";
     }
+
+    public static string PaymentMethodLabel(string method) =>
+        method switch
+        {
+            PaymentMethod.Cash => "Cash",
+            PaymentMethod.Card => "Card",
+            PaymentMethod.OnlineBanking => "Online banking",
+            PaymentMethod.EWallet => "E-wallet",
+            PaymentMethod.PayAtCounter => "Pay at counter",
+            _ => method
+        };
+
+    public static string CustomerLabel(int? customerId) =>
+        customerId.HasValue
+            ? $"Customer #{customerId.Value}"
+            : "Unknown";
+
+    public static string OrderStatusLabel(string status) =>
+        status switch
+        {
+            OrderStatus.Pending => "Pending",
+            OrderStatus.Preparing => "Preparing",
+            OrderStatus.Ready => "Ready",
+            OrderStatus.Served => "Served",
+            OrderStatus.Completed => "Completed",
+            OrderStatus.Cancelled => "Cancelled",
+            _ => status
+        };
+
+    public static string PaymentStatusLabel(string? status) =>
+        status switch
+        {
+            PaymentStatus.Pending => "Pending",
+            PaymentStatus.Paid => "Paid",
+            PaymentStatus.Failed => "Failed",
+            PaymentStatus.Refunded => "Refunded",
+            null => "Not recorded",
+            _ => status
+        };
+
+    public static string ReservationStatusLabel(string status) =>
+        status switch
+        {
+            ReservationStatus.Pending => "Pending",
+            ReservationStatus.Confirmed => "Confirmed",
+            ReservationStatus.Cancelled => "Cancelled",
+            ReservationStatus.Completed => "Completed",
+            _ => status
+        };
 }

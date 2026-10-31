@@ -19,14 +19,14 @@
                     <div class="col-sm-6">
                         <dt class="small text-body-secondary">Active customers</dt>
                         <dd class="h5 mb-0">
-                            @Model.Count(customers.ActiveCustomers)
+                            @ReportUi.Count(customers.ActiveCustomers)
                         </dd>
                     </div>
 
                     <div class="col-sm-6">
                         <dt class="small text-body-secondary">Returning customers (estimate)</dt>
                         <dd class="h5 mb-0">
-                            @Model.Count(customers.ReturningCustomers)
+                            @ReportUi.Count(customers.ReturningCustomers)
                         </dd>
                     </div>
                 </dl>
@@ -41,7 +41,7 @@
 
         <div class="card">
             <div class="card-body">
-                <h3 class="">Activity and spending by account</h3>
+                <h3>Activity and spending by account</h3>
 
                 @if (customers.Customers.Count == 0)
                 {
@@ -54,7 +54,7 @@
                     {
                         <p class="small text-body-secondary">
                             Showing the first @IndexModel.DetailRowLimit
-                            of @Model.Count(customers.Customers.Count) customers.
+                            of @ReportUi.Count(customers.Customers.Count) customers.
                             Summary figures include all customers.
                         </p>
                     }
@@ -91,25 +91,25 @@
                                             </span>
                                         </th>
                                         <td class="text-end">
-                                            @Model.Count(customer.ReservationsMade)
+                                            @ReportUi.Count(customer.ReservationsMade)
                                         </td>
                                         <td class="text-end">
-                                            @Model.Count(customer.OrdersPlaced)
+                                            @ReportUi.Count(customer.OrdersPlaced)
                                         </td>
                                         <td class="text-end">
-                                            @Model.Count(customer.PaidOrders)
+                                            @ReportUi.Count(customer.PaidOrders)
                                         </td>
                                         <td class="text-end text-nowrap">
-                                            @Model.Money(customer.GrossSpending)
+                                            @ReportUi.Money(customer.GrossSpending)
                                         </td>
                                         <td class="text-end text-nowrap">
-                                            @Model.Money(customer.RefundsReceived)
+                                            @ReportUi.Money(customer.RefundsReceived)
                                         </td>
                                         <td class="text-end text-nowrap">
-                                            @Model.Money(customer.NetSpending)
+                                            @ReportUi.Money(customer.NetSpending)
                                         </td>
                                         <td class="text-end">
-                                            @Model.Count(customer.EstimatedDiningDays)
+                                            @ReportUi.Count(customer.EstimatedDiningDays)
                                         </td>
                                         <td>
                                             @(customer.IsReturning ? "Yes" : "No")
