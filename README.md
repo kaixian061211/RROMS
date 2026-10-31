@@ -1,62 +1,115 @@
-1. Install packages
+1. Restore packages
 
-powershell:
+Run inside the project folder:
 
-dotnet add package Stripe.net --version 53.0.0
-dotnet add package QuestPDF --version 2026.2.4
-dotnet add package MailKit --version 4.18.1
-dotnet add package Microsoft.EntityFrameworkCore --version 10.0.13
-dotnet add package Microsoft.EntityFrameworkCore.SqlServer --version 10.0.13
-dotnet add package Microsoft.EntityFrameworkCore.Design --version 10.0.13
-dotnet add package ClosedXML --version 0.105.0
-dotnet add package System.Security.Cryptography.Pkcs --version 10.0.13
+```powershell
+dotnet restore
+```
 
+2. Shared team secrets
 
-2. Stripe setup
+Use `secrets.shared.json` for the team's Stripe sandbox key, SMTP account and
+OneSignal settings. The team member managing these accounts fills the file once
+and shares it privately with teammates. Everyone places their copy beside
+`PaymentModule.csproj`.
 
-- Download: https://github.com/stripe/stripe-cli/releases/latest
-- Extract stripe.exe and add its folder to PATH.
-- Restart VS Code/Visual Studio if necessary.
-- Check installation:
+To prepare the file from the blank template:
 
-powershell:
-stripe version
+```powershell
+Copy-Item secrets.shared.example.json secrets.shared.json
+```
 
-dotnet add package Stripe.net --version 53.0.0
+Edit the values in `secrets.shared.json`. Use the actual sandbox key for
+`Stripe__SecretKey`. For email, set `Smtp__Host`, `Smtp__UserName`,
+`Smtp__Password` and `Smtp__FromEmail`; the username and app password must belong
+to the same account. Leave SMTP Host empty to disable email. OneSignal settings
+are optional. Keep the push alias secret at least 32 characters long and stable.
 
-$paymentStripeKey = "sk_test_REPLACE_WITH_YOUR_KEY"
+No Stripe CLI, listener, webhook secret or extra package is needed for the
+return-page payment flow. Set `Stripe__WebhookSecret` only when using webhooks.
 
-dotnet user-secrets set "Stripe:SecretKey" $paymentStripeKey
-dotnet user-secrets set "Stripe:Currency" "myr"
+3. Each teammate's database
 
+Each teammate creates their own `secrets.local.json`:
 
-## start listener
+```powershell
+Copy-Item secrets.local.example.json secrets.local.json
+```
 
-powershell:
-stripe listen --api-key $paymentStripeKey --events "checkout.session.completed,checkout.session.async_payment_succeeded,checkout.session.async_payment_failed,checkout.session.expired" --forward-to https://localhost:7116/webhooks/stripe --skip-verify
+Edit `ConnectionStrings__DefaultConnection` to use that teammate's SQL Server
+instance and database. Everyone can use a different connection. Do not put a
+database connection in the shared file.
 
+For example, a local SQL Server connection has this form:
 
-## project folder
+```json
+{
+  "ConnectionStrings__DefaultConnection": "Server=YOUR_SQL_SERVER;Database=YOUR_DATABASE;Trusted_Connection=True;TrustServerCertificate=True;MultipleActiveResultSets=true",
+  "DefaultAdmin__Email": "",
+  "DefaultAdmin__Password": ""
+}
+```
 
-powershell:
-dotnet user-secrets set "Stripe:WebhookSecret" "whsec_REPLACE_WITH_SECRET_FROM_TERMINAL_A"
+For a new database, fill both `DefaultAdmin` values to create the initial
+administrator in Development. Existing accounts are unchanged. Change the
+bootstrap password after the first login, then clear it from this file.
+Optional settings such as `Notifications__WebPush__PublicBaseUrl` can also go in
+this local file when a teammate needs a different value.
 
-dotnet run --launch-profile https
+4. Run locally
 
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\Start-Local.ps1
+```
 
-## Open the payment page
+This command reads both private files, passes their values to the app as process
+environment variables and starts the HTTPS launch profile. Local values override
+shared values. It does not change Windows user environment variables or require
+an IDE restart. The execution policy option applies only to this PowerShell
+process.
 
-powershell
-Start-Process "https://localhost:7116/Payments/Demo"
+To check the files without starting the app or connecting to the database:
 
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\Start-Local.ps1 -Check
+```
 
-## Test card
+Use this launcher for the file-based team setup. Plain `dotnet run` does not read
+these two files; it uses existing environment variables and Development User
+Secrets instead. A missing, empty or unchanged template database connection is
+rejected by the launcher.
 
-text
+## Test a Stripe payment
+
+Sign in as a customer, create an order and choose online card payment.
+
+```text
 Card:   4242 4242 4242 4242
 Expiry: Any future date
 CVC:    Any three digits
+```
 
+Complete checkout and return to the app. Confirm **Payment received**, **Paid**
+in history and receipt download. If still unconfirmed, use **Check payment
+status** before trying another payment. Internet access is required. Without
+webhooks, leaving before returning or a delayed payment can leave the local
+record pending until the customer revisits and checks again.
+
+## Keeping private files out of Git
+
+`secrets.shared.json` and `secrets.local.json` are ignored by Git and excluded
+from build and publish output. Only the empty `.example.json` templates belong
+in the repository. Share the real shared file through your team's private
+credential-sharing channel. Keep each teammate's database/admin file local.
+These JSON files are not encrypted.
+
+Rotate the SMTP app password previously committed to this repository before
+sharing it, then update `Smtp__Password` in the private shared file. Removing the
+old value from the current source does not remove it from Git history.
+
+For deployment, use the hosting provider's secret environment settings with the
+same names. ASP.NET Core maps `__` to `:`; see Microsoft's
+[configuration guidance](https://learn.microsoft.com/en-us/aspnet/core/fundamentals/configuration/).
 
 ## Order and reservation notifications
 
@@ -69,25 +122,3 @@ email to the signed-in customer's `ClaimTypes.Email` claim. Staff-triggered
 reservation status changes are in-app, real-time, and Web Push only; the app
 does not store customer email addresses on reservations. The authentication
 provider must issue an email claim for customer email notifications to work.
-
-3. Shared SMTP email configuration
-
-The `Smtp` section in `appsettings.json` holds the shared sender configuration:
-`Host`, `Port`, `UserName`, `Password`, `FromName` and `FromEmail`.
-`UserName` and the Google app password in `Password` must belong to the same
-SMTP account.
-
-The shared login and sender are `p24016577@student.newinti.edu.my`. Enter that
-account's matching app password in `Smtp.Password` locally before distributing
-the configured project to other computers.
-
-Once these shared values are configured and copied with the project, other
-computers don't need to set SMTP User Secrets. Start the app normally:
-
-```powershell
-dotnet run --launch-profile https
-```
-
-Existing `Smtp:*` User Secrets in Development and `Smtp__*` environment variables
-still override values in `appsettings.json`. Computers with older local SMTP
-overrides must use matching values or remove those overrides.

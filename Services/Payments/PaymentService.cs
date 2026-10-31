@@ -125,6 +125,27 @@ public class PaymentService : IPaymentService
         }
         else
         {
+            // The customer may return through their orders instead of Stripe's
+            // success URL. Reconcile the stored attempt before replacing it.
+            if (existing.PaymentStatus is PaymentStatus.Pending or PaymentStatus.Failed
+                && existing.RecordedByStaffId is null
+                && PaymentMethod.IsOnline(existing.PaymentMethod)
+                && !string.IsNullOrWhiteSpace(existing.TransactionRef))
+            {
+                var confirmation = await _stripe.GetPaidConfirmationAsync(
+                    existing.TransactionRef);
+
+                if (confirmation is not null)
+                {
+                    return new PaymentResult
+                    {
+                        Payment = await RecordOnlineConfirmationAsync(
+                            existing,
+                            confirmation)
+                    };
+                }
+            }
+
             payment = await ReopenAsync(
                 existing,
                 order,
@@ -244,7 +265,8 @@ public class PaymentService : IPaymentService
                     existing.TransactionRef))
             {
                 throw new PaymentException(
-                    "Your previous payment is still being processed. Please wait a moment and refresh.");
+                    "Your previous payment could not be closed. Use Check payment status before paying again.",
+                    paymentMayBeInProgress: true);
             }
 
             await _db.Payments
@@ -459,6 +481,97 @@ public class PaymentService : IPaymentService
         return true;
     }
 
+    public async Task RefreshOnlineStatusAsync(
+        int paymentId,
+        int customerUserId)
+    {
+        if (paymentId <= 0 || customerUserId <= 0)
+        {
+            throw new PaymentException("Choose a valid payment.");
+        }
+
+        var payment = await _db.Payments
+            .AsNoTracking()
+            .SingleOrDefaultAsync(p => p.PaymentId == paymentId);
+
+        // Verify ownership before contacting Stripe.
+        if (payment is null || !await OwnsAsync(payment, customerUserId))
+        {
+            throw new PaymentException(
+                "We couldn't find that payment.");
+        }
+
+        if (payment.PaymentStatus is PaymentStatus.Paid or PaymentStatus.Refunded)
+        {
+            return;
+        }
+
+        if (payment.PaymentStatus is not (
+                PaymentStatus.Pending or PaymentStatus.Failed)
+            || payment.RecordedByStaffId is not null
+            || !PaymentMethod.IsOnline(payment.PaymentMethod))
+        {
+            throw new PaymentException(
+                "Counter payment status is recorded by restaurant staff.");
+        }
+
+        if (string.IsNullOrWhiteSpace(payment.TransactionRef))
+        {
+            throw new PaymentException(
+                "Checkout is still being confirmed. Please wait or contact the restaurant before paying again.",
+                true);
+        }
+
+        // Use the session reference stored by the server.
+        var confirmation = await _stripe.GetPaidConfirmationAsync(
+            payment.TransactionRef);
+
+        if (confirmation is null)
+        {
+            throw new PaymentException(
+                "Stripe has not confirmed payment yet. Please wait and check again.",
+                true);
+        }
+
+        await RecordOnlineConfirmationAsync(payment, confirmation);
+    }
+
+    private async Task<Payment> RecordOnlineConfirmationAsync(
+        Payment payment,
+        OnlinePaymentConfirmation confirmation)
+    {
+        if (confirmation.PaymentId != payment.PaymentId
+            || confirmation.OrderId != payment.OrderId
+            || confirmation.SessionId != payment.TransactionRef)
+        {
+            _logger.LogWarning(
+                "Stripe lookup did not match payment {PaymentId}",
+                payment.PaymentId);
+
+            throw new PaymentException(
+                "Stripe's confirmation does not match this payment. Contact the restaurant before paying again.",
+                true);
+        }
+
+        // Preserve existing validation, locking and duplicate protection.
+        await MarkPaidOnlineAsync(confirmation);
+
+        // False from MarkPaidOnlineAsync can also mean already processed.
+        // Read the saved status before deciding the result.
+        var saved = await _db.Payments
+            .AsNoTracking()
+            .SingleOrDefaultAsync(p => p.PaymentId == payment.PaymentId);
+
+        if (saved?.PaymentStatus is not (PaymentStatus.Paid or PaymentStatus.Refunded))
+        {
+            throw new PaymentException(
+                "Stripe's payment details could not be matched to this attempt. Contact the restaurant before paying again.",
+                true);
+        }
+
+        return saved;
+    }
+
     public async Task<bool> MarkFailedAsync(
         int paymentId,
         string? sessionId = null)
@@ -662,24 +775,12 @@ public class PaymentService : IPaymentService
         RefundCoreAsync(
             paymentId,
             staffUserId,
-            reason,
-            recheckOnly: false);
-
-    public Task RecheckRefundAsync(
-        int paymentId,
-        int staffUserId,
-        string? reason = null) =>
-        RefundCoreAsync(
-            paymentId,
-            staffUserId,
-            reason,
-            recheckOnly: true);
+            reason);
 
     private async Task RefundCoreAsync(
         int paymentId,
         int staffUserId,
-        string? reason,
-        bool recheckOnly)
+        string? reason)
     {
         if (paymentId <= 0 || staffUserId <= 0)
         {
@@ -721,12 +822,6 @@ public class PaymentService : IPaymentService
             payment.RecordedByStaffId is null &&
             PaymentMethod.IsOnline(payment.PaymentMethod);
 
-        if (recheckOnly && !onlinePayment)
-        {
-            throw new PaymentException(
-                "Only online payments have a Stripe refund to recheck.");
-        }
-
         if (onlinePayment)
         {
             if (string.IsNullOrWhiteSpace(
@@ -736,19 +831,10 @@ public class PaymentService : IPaymentService
                     "This online payment has no Stripe PaymentIntent reference. Check it in Stripe before refunding.");
             }
 
-            if (recheckOnly)
-            {
-                await _stripe.RecheckRefundAsync(
-                    payment.StripePaymentIntentId,
-                    payment.Amount);
-            }
-            else
-            {
-                await _stripe.RefundAsync(
-                    payment.StripePaymentIntentId,
-                    payment.Amount,
-                    $"refund-payment-{payment.PaymentId}");
-            }
+            await _stripe.RefundAsync(
+                payment.StripePaymentIntentId,
+                payment.Amount,
+                $"refund-payment-{payment.PaymentId}");
         }
         else if (
             payment.RecordedByStaffId is not > 0 ||

@@ -1,3 +1,4 @@
+using RROMS.Web.Services.Reports;
 using System.Security.Claims;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication;
@@ -11,6 +12,7 @@ using RROMS.Web.Services.OrdersAndReservations;
 using RROMS.Web.Services.Payments.Receipts;
 
 using RROMS.Web.Services.CustomerSupportAndFeedback;
+using RROMS.Web.Services.CustomerHistoryAndPreferences;
 
 using RROMS.Web.Services.Notifications;
 using RROMS.Web.Services.Tracking;
@@ -20,8 +22,13 @@ using RROMS.Web.Services.Accounts;
 
 var builder = WebApplication.CreateBuilder(args);
 
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
-    ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+if (string.IsNullOrWhiteSpace(connectionString))
+{
+    throw new InvalidOperationException(
+        "Configure ConnectionStrings:DefaultConnection in .NET User Secrets for local development " +
+        "or ConnectionStrings__DefaultConnection in the deployment environment.");
+}
 
 builder.Services.AddDbContext<AppDbContext>(o => o.UseSqlServer(connectionString));
 builder.Services.AddRazorPages(options =>
@@ -72,6 +79,8 @@ builder.Services.AddScoped<TrackingQueries>();
 builder.Services.AddScoped<IReservationService, ReservationService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
 builder.Services.AddScoped<IMenuItemLookup, MenuItemLookup>();
+builder.Services.AddScoped<IReportService, ReportService>();
+builder.Services.AddScoped<ReportExportService>();
 builder.Services.AddScoped<IPaymentOrderProvider, PaymentOrderProvider>();
 builder.Services.AddHttpContextAccessor();
 
@@ -138,11 +147,16 @@ if (app.Environment.IsDevelopment())
     using var scope = app.Services.CreateScope();
     await scope.ServiceProvider.GetRequiredService<AppDbContext>().Database.MigrateAsync();
 
-    // The first administrator, so someone can log in and create the other accounts.
-    // Override with DefaultAdmin:Email / DefaultAdmin:Password in user-secrets, and change the password after the first login.
-    await scope.ServiceProvider.GetRequiredService<IAccountService>().EnsureDefaultAdminAsync(
-        builder.Configuration["DefaultAdmin:Email"] ?? "admin@gmail.com",
-        builder.Configuration["DefaultAdmin:Password"] ?? "admin123");
+    // Bootstrap an administrator only when credentials were supplied explicitly.
+    // Environment variables: DefaultAdmin__Email and DefaultAdmin__Password.
+    var adminEmail = builder.Configuration["DefaultAdmin:Email"];
+    var adminPassword = builder.Configuration["DefaultAdmin:Password"];
+    if (!string.IsNullOrWhiteSpace(adminEmail)
+        && !string.IsNullOrWhiteSpace(adminPassword))
+    {
+        await scope.ServiceProvider.GetRequiredService<IAccountService>()
+            .EnsureDefaultAdminAsync(adminEmail, adminPassword);
+    }
 }
 
 app.Run();

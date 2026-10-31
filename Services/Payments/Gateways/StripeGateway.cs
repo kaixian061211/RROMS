@@ -1,4 +1,5 @@
 using System.Net;
+using RROMS.Web.Models.Payments;
 using System.Globalization;
 using Microsoft.Extensions.Options;
 using Stripe;
@@ -130,6 +131,72 @@ public class StripeGateway : IStripeGateway
         }
     }
 
+    public async Task<OnlinePaymentConfirmation?> GetPaidConfirmationAsync(
+        string sessionId)
+    {
+        if (string.IsNullOrWhiteSpace(sessionId) || sessionId.Length > 100)
+        {
+            throw new PaymentException(
+                "The Stripe checkout reference is invalid.");
+        }
+
+        try
+        {
+            var session = await new SessionService(GetClient())
+                .GetAsync(sessionId);
+
+            if (session.Id != sessionId)
+            {
+                throw new PaymentException(
+                    "Stripe returned a different checkout reference. Check the payment before trying again.",
+                    true);
+            }
+
+            if (session.PaymentStatus != "paid")
+            {
+                return null;
+            }
+
+            if (!StripePaymentConfirmation.TryCreate(
+                    session,
+                    out var confirmation))
+            {
+                _logger.LogWarning(
+                    "Stripe session {SessionId} has inconsistent payment details",
+                    sessionId);
+
+                throw new PaymentException(
+                    "Stripe's checkout details could not be verified. Check the payment before trying again.",
+                    true);
+            }
+
+            return confirmation;
+        }
+        catch (StripeException ex)
+        {
+            _logger.LogWarning(
+                ex,
+                "Could not retrieve Stripe checkout {SessionId}",
+                sessionId);
+
+            throw new PaymentException(
+                "Stripe could not confirm the payment status. Please check again later.",
+                true);
+        }
+        catch (Exception ex)
+            when (ex is HttpRequestException or OperationCanceledException)
+        {
+            _logger.LogWarning(
+                ex,
+                "Stripe checkout lookup was interrupted for {SessionId}",
+                sessionId);
+
+            throw new PaymentException(
+                "The connection was interrupted while checking Stripe. Please check again before paying again.",
+                true);
+        }
+    }
+
     public async Task<bool> TryExpireSessionAsync(string sessionId)
     {
         var service = new SessionService(GetClient());
@@ -176,18 +243,10 @@ public class StripeGateway : IStripeGateway
             idempotencyKey);
     }
 
-    public Task<string> RecheckRefundAsync(
-        string paymentIntentId,
-        decimal amount) =>
-        ProcessRefundAsync(
-            paymentIntentId,
-            amount,
-            idempotencyKey: null);
-
     private async Task<string> ProcessRefundAsync(
         string paymentIntentId,
         decimal amount,
-        string? idempotencyKey)
+        string idempotencyKey)
     {
         if (string.IsNullOrWhiteSpace(paymentIntentId))
         {
@@ -265,19 +324,13 @@ public class StripeGateway : IStripeGateway
                     return existing.Id;
                 }
 
-                if (existing.Status is not ("failed" or "canceled") ||
-                    idempotencyKey is null)
+                if (existing.Status is not ("failed" or "canceled"))
                 {
                     return RequireSucceededRefund(existing);
                 }
 
                 // Concurrent clicks and interrupted retries use the same key.
                 idempotencyKey += "-after-" + existing.Id;
-            }
-            else if (idempotencyKey is null)
-            {
-                throw new PaymentException(
-                    "No Stripe refund was found for this payment. Use Refund / retry in full to request one.");
             }
 
             var created = await service.CreateAsync(
@@ -372,12 +425,12 @@ public class StripeGateway : IStripeGateway
 
             "pending" or "requires_action" =>
                 throw new PaymentException(
-                    "The Stripe refund is awaiting confirmation. The payment remains marked paid. Use Recheck refund to check it again.",
+                    "The Stripe refund is awaiting confirmation. The payment remains marked paid. This will be confirmed automatically on the next payment refresh.",
                     paymentMayBeInProgress: true),
 
             "failed" or "canceled" =>
                 throw new PaymentException(
-                    "The Stripe refund failed or was cancelled. The payment remains marked paid. Use Refund / retry in full to request another attempt."),
+                    "The Stripe refund failed or was cancelled. The payment remains marked paid. The system will retry automatically when a new refund is needed."),
 
             _ => throw new PaymentException(
                 "Stripe has not confirmed the refund. Check its status in Stripe before trying again.",
@@ -406,7 +459,7 @@ public class StripeGateway : IStripeGateway
         if (string.IsNullOrWhiteSpace(_settings.SecretKey))
         {
             throw new PaymentException(
-                "Online payments are not set up yet. Add the Stripe test keys (Stripe:SecretKey in user-secrets) or pay at the counter.");
+                "Online payments are not set up yet. Configure the Stripe__SecretKey environment variable or pay at the counter.");
         }
 
         return _client ??= new StripeClient(_settings.SecretKey);

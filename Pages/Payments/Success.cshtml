@@ -7,6 +7,14 @@
 
 <partial name="_PaymentPageHeader" />
 
+@if (!string.IsNullOrWhiteSpace(Model.StatusMessage))
+{
+    <div class="alert alert-warning" role="alert">
+        @Model.StatusMessage
+    </div>
+}
+
+
 <div class="status-panel text-center">
     @if (payment.Status == PaymentStatus.Paid)
     {
@@ -130,6 +138,22 @@
         }
     }
 </div>
+
+@if (Model.CanRefreshFromStripe)
+{
+    <form method="post"
+          asp-page-handler="Refresh"
+          class="text-center mt-3">
+
+        <input type="hidden"
+               name="paymentId"
+               value="@payment.PaymentId" />
+
+        <button type="submit" class="btn btn-outline-primary">
+            Check payment status
+        </button>
+    </form>
+}
 
 @section Scripts {
     @if (Model.ShouldPoll)
