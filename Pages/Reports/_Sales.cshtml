@@ -27,7 +27,7 @@
             <div class="col-xl-8">
                 <div class="card h-100">
                     <div class="card-body">
-                        <h3 class="">Collections and refunds</h3>
+                        <h3>Collections and refunds</h3>
 
                         <p class="small text-body-secondary">
                             Select a chart legend item to show or hide a series.
@@ -76,16 +76,16 @@
                                                     @point.Label
                                                 </th>
                                                 <td class="text-end text-nowrap">
-                                                    @Model.Money(point.Collections)
+                                                    @ReportUi.Money(point.Collections)
                                                 </td>
                                                 <td class="text-end">
-                                                    @Model.Count(point.PaymentCount)
+                                                    @ReportUi.Count(point.PaymentCount)
                                                 </td>
                                                 <td class="text-end text-nowrap">
-                                                    @Model.Money(point.Refunds)
+                                                    @ReportUi.Money(point.Refunds)
                                                 </td>
                                                 <td class="text-end text-nowrap">
-                                                    @Model.Money(point.Net)
+                                                    @ReportUi.Money(point.Net)
                                                 </td>
                                             </tr>
                                         }
@@ -100,7 +100,7 @@
             <div class="col-xl-4">
                 <div class="card h-100">
                     <div class="card-body">
-                        <h3 class="">Collections by payment method</h3>
+                        <h3>Collections by payment method</h3>
 
                         @if (sales.GrossCollections > 0)
                         {
@@ -150,22 +150,22 @@
                                         {
                                             <tr>
                                                 <th scope="row" class="fw-normal text-nowrap">
-                                                    @Model.PaymentMethodLabel(method.Method)
+                                                    @ReportUi.PaymentMethodLabel(method.Method)
                                                 </th>
                                                 <td class="text-end">
-                                                    @Model.Count(method.PaymentCount)
+                                                    @ReportUi.Count(method.PaymentCount)
                                                 </td>
                                                 <td class="text-end text-nowrap">
-                                                    @Model.Money(method.Amount)
+                                                    @ReportUi.Money(method.Amount)
                                                 </td>
                                                 <td class="text-end text-nowrap">
-                                                    @Model.Money(method.Refunds)
+                                                    @ReportUi.Money(method.Refunds)
                                                 </td>
                                                 <td class="text-end text-nowrap">
-                                                    @Model.Money(method.Net)
+                                                    @ReportUi.Money(method.Net)
                                                 </td>
                                                 <td class="text-end text-nowrap">
-                                                    @Model.Percentage(method.SharePercent)
+                                                    @ReportUi.Percentage(method.SharePercent)
                                                 </td>
                                             </tr>
                                         }
@@ -184,7 +184,7 @@
 
         <div class="card">
             <div class="card-body">
-                <h3 class="">Transaction ledger</h3>
+                <h3>Transaction ledger</h3>
 
                 @if (sales.Transactions.Count == 0)
                 {
@@ -197,7 +197,7 @@
                     {
                         <p class="small text-body-secondary">
                             Showing the first @IndexModel.DetailRowLimit
-                            of @Model.Count(sales.Transactions.Count) transactions.
+                            of @ReportUi.Count(sales.Transactions.Count) transactions.
                         </p>
                     }
 
@@ -229,7 +229,7 @@
 
                                     <tr>
                                         <td class="text-nowrap">
-                                            @Model.Timestamp(transaction.At)
+                                            @ReportUi.Timestamp(transaction.At)
                                         </td>
 
                                         <td>
@@ -242,15 +242,15 @@
                                         <td class="rr-ref">@ReportUi.OrderReference(transaction.OrderId)</td>
 
                                         <td class="text-nowrap">
-                                            @Model.CustomerLabel(transaction.CustomerUserId)
+                                            @ReportUi.CustomerLabel(transaction.CustomerUserId)
                                         </td>
 
                                         <td class="text-nowrap">
-                                            @Model.PaymentMethodLabel(transaction.Method)
+                                            @ReportUi.PaymentMethodLabel(transaction.Method)
                                         </td>
 
                                         <td class="text-end text-nowrap">
-                                            @Model.Money(transaction.Amount)
+                                            @ReportUi.Money(transaction.Amount)
                                         </td>
 
                                         <td>@(transaction.Reference ?? "—")</td>

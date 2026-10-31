@@ -24,7 +24,7 @@
                             Scheduled reservations
                         </dt>
                         <dd class="h5 mb-1">
-                            @Model.Count(reservations.ScheduledReservations)
+                            @ReportUi.Count(reservations.ScheduledReservations)
                         </dd>
                         <p class="small text-body-secondary mb-0">
                             Includes all current statuses.
@@ -36,7 +36,7 @@
                             Scheduled guests
                         </dt>
                         <dd class="h5 mb-1">
-                            @Model.Count(reservations.ScheduledGuests)
+                            @ReportUi.Count(reservations.ScheduledGuests)
                         </dd>
                         <p class="small text-body-secondary mb-0">
                             Non-cancelled reservations.
@@ -48,7 +48,7 @@
                             New bookings
                         </dt>
                         <dd class="h5 mb-1">
-                            @Model.Count(reservations.NewBookingsCreated)
+                            @ReportUi.Count(reservations.NewBookingsCreated)
                         </dd>
                         <p class="small text-body-secondary mb-0">
                             Created during this period.
@@ -60,7 +60,7 @@
                             Cancelled scheduled
                         </dt>
                         <dd class="h5 mb-1">
-                            @Model.Count(reservations.CancelledScheduled)
+                            @ReportUi.Count(reservations.CancelledScheduled)
                         </dd>
                         <p class="small text-body-secondary mb-0">
                             Current status is cancelled.
@@ -72,7 +72,7 @@
                             Cancellation percentage
                         </dt>
                         <dd class="h5 mb-1">
-                            @Model.Percentage(reservations.CancellationPercent)
+                            @ReportUi.Percentage(reservations.CancellationPercent)
                         </dd>
                         <p class="small text-body-secondary mb-0">
                             Cancelled / all scheduled reservations.
@@ -84,7 +84,7 @@
 
         <div class="card mb-4">
             <div class="card-body">
-                <h3 class="">Scheduled reservation trend</h3>
+                <h3>Scheduled reservation trend</h3>
 
                 <p class="small text-body-secondary">
                     Cancelled reservations are included in scheduled totals.
@@ -132,10 +132,10 @@
                                             @point.Label
                                         </th>
                                         <td class="text-end">
-                                            @Model.Count(point.Scheduled)
+                                            @ReportUi.Count(point.Scheduled)
                                         </td>
                                         <td class="text-end">
-                                            @Model.Count(point.Cancelled)
+                                            @ReportUi.Count(point.Cancelled)
                                         </td>
                                     </tr>
                                 }
@@ -150,7 +150,7 @@
             <div class="col-xl-6">
                 <div class="card h-100">
                     <div class="card-body">
-                        <h3 class="">Current reservation statuses</h3>
+                        <h3>Current reservation statuses</h3>
 
                         @if (reservations.ScheduledReservations > 0)
                         {
@@ -186,10 +186,10 @@
                                     {
                                         <tr>
                                             <th scope="row" class="fw-normal">
-                                                @Model.ReservationStatusLabel(status.Status)
+                                                @ReportUi.ReservationStatusLabel(status.Status)
                                             </th>
                                             <td class="text-end">
-                                                @Model.Count(status.Count)
+                                                @ReportUi.Count(status.Count)
                                             </td>
                                         </tr>
                                     }
@@ -203,7 +203,7 @@
             <div class="col-xl-6">
                 <div class="card h-100">
                     <div class="card-body">
-                        <h3 class="">Peak reserved dining times</h3>
+                        <h3>Peak reserved dining times</h3>
 
                         <p class="small text-body-secondary">
                             Counts non-cancelled reservations at each full seating time.
@@ -245,13 +245,13 @@
                                     {
                                         <tr>
                                             <th scope="row" class="fw-normal">
-                                                @Model.TimeLabel(slot.TimeSlot)
+                                                @ReportUi.TimeLabel(slot.TimeSlot)
                                             </th>
                                             <td class="text-end">
-                                                @Model.Count(slot.Reservations)
+                                                @ReportUi.Count(slot.Reservations)
                                             </td>
                                             <td class="text-end">
-                                                @Model.Count(slot.Guests)
+                                                @ReportUi.Count(slot.Guests)
                                             </td>
                                             <td>
                                                 @if (slot.IsPeak)
@@ -277,7 +277,7 @@
 
         <div class="card">
             <div class="card-body">
-                <h3 class="">Scheduled reservation records</h3>
+                <h3>Scheduled reservation records</h3>
 
                 @if (reservations.Reservations.Count == 0)
                 {
@@ -290,7 +290,7 @@
                     {
                         <p class="small text-body-secondary">
                             Showing the first @IndexModel.DetailRowLimit
-                            of @Model.Count(reservations.Reservations.Count)
+                            of @ReportUi.Count(reservations.Reservations.Count)
                             reservations.
                         </p>
                     }
@@ -321,10 +321,10 @@
                                         <td class="rr-ref">@ReportUi.ReservationReference(reservation.ReservationId)</td>
 
                                         <td class="text-nowrap">
-                                            @Model.DateLabel(reservation.Date)
+                                            @ReportUi.DateLabel(reservation.Date)
 
                                             <span class="d-block small text-body-secondary">
-                                                @Model.TimeLabel(reservation.TimeSlot)
+                                                @ReportUi.TimeLabel(reservation.TimeSlot)
                                             </span>
                                         </td>
 
@@ -337,19 +337,19 @@
                                         </td>
 
                                         <td class="text-nowrap">
-                                            @Model.CustomerLabel(reservation.CustomerUserId)
+                                            @ReportUi.CustomerLabel(reservation.CustomerUserId)
                                         </td>
 
                                         <td class="text-end">
-                                            @Model.Count(reservation.PartySize)
+                                            @ReportUi.Count(reservation.PartySize)
                                         </td>
 
                                         <td class="text-nowrap">
-                                            <span class="@Model.ReservationStatusClass(reservation.Status)">@Model.ReservationStatusLabel(reservation.Status)</span>
+                                            <span class="@ReportUi.ReservationStatusClass(reservation.Status)">@ReportUi.ReservationStatusLabel(reservation.Status)</span>
                                         </td>
 
                                         <td class="text-nowrap">
-                                            @Model.Timestamp(reservation.CreatedAt)
+                                            @ReportUi.Timestamp(reservation.CreatedAt)
                                         </td>
 
                                         <td class="report-reservation-note">@(reservation.SpecialRequest ?? "—")</td>

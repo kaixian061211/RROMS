@@ -20,14 +20,14 @@
                     <div class="col-sm-6">
                         <dt class="small text-body-secondary">Items purchased</dt>
                         <dd class="h5 mb-0">
-                            @Model.Count(menu.TotalQuantity)
+                            @ReportUi.Count(menu.TotalQuantity)
                         </dd>
                     </div>
 
                     <div class="col-sm-6">
                         <dt class="small text-body-secondary">Purchased item amount</dt>
                         <dd class="h5 mb-0">
-                            @Model.Money(menu.TotalAmount)
+                            @ReportUi.Money(menu.TotalAmount)
                         </dd>
                     </div>
                 </dl>
@@ -43,7 +43,7 @@
 
         <div class="card mb-4">
             <div class="card-body">
-                <h3 class="">Top @PopularMenuReport.ChartCount by quantity</h3>
+                <h3>Top @PopularMenuReport.ChartCount by quantity</h3>
 
                 @if (menu.Items.Count > 0)
                 {
@@ -71,7 +71,7 @@
 
         <div class="card">
             <div class="card-body">
-                <h3 class="">Purchased menu-item rankings</h3>
+                <h3>Purchased menu-item rankings</h3>
 
                 @if (menu.Items.Count == 0)
                 {
@@ -84,7 +84,7 @@
                     {
                         <p class="small text-body-secondary">
                             Showing the first @IndexModel.DetailRowLimit
-                            of @Model.Count(menu.Items.Count) menu items.
+                            of @ReportUi.Count(menu.Items.Count) menu items.
                             Summary totals and amount shares include all items.
                         </p>
                     }
@@ -110,17 +110,17 @@
                                 @foreach (var item in menu.Items.Take(IndexModel.DetailRowLimit))
                                 {
                                     <tr>
-                                        <td class="text-end">@Model.Count(item.Rank)</td>
+                                        <td class="text-end">@ReportUi.Count(item.Rank)</td>
                                         <th scope="row" class="fw-normal report-menu-name">
                                             @item.Name
                                         </th>
                                         <td>@item.Category</td>
-                                        <td class="text-end">@Model.Count(item.Quantity)</td>
+                                        <td class="text-end">@ReportUi.Count(item.Quantity)</td>
                                         <td class="text-end text-nowrap">
-                                            @Model.Money(item.Amount)
+                                            @ReportUi.Money(item.Amount)
                                         </td>
                                         <td class="text-end text-nowrap">
-                                            @Model.Percentage(item.SharePercent)
+                                            @ReportUi.Percentage(item.SharePercent)
                                         </td>
                                     </tr>
                                 }
