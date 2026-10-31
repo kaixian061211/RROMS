@@ -1,0 +1,107 @@
+.notifications-page {
+    padding-block: 0.5rem 2rem;
+}
+
+.notifications-page ::deep .btn:focus-visible {
+    outline: 3px solid var(--rr-pandan);
+    outline-offset: 3px;
+}
+
+.notification-summary {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.notification-summary p {
+    margin: 0.25rem 0 0;
+    font-size: 0.875rem;
+    color: var(--rr-muted);
+}
+
+.notification-list {
+    display: grid;
+    gap: 1rem;
+}
+
+.notification-item {
+    padding: 1.25rem;
+    border: 1px solid var(--rr-line);
+    border-inline-start: 4px solid var(--rr-line);
+    border-radius: var(--rr-radius-card);
+    background: var(--rr-enamel);
+    overflow-wrap: anywhere;
+}
+
+.notification-item--unread {
+    border-inline-start-color: var(--rr-kaya);
+}
+
+.notification-item__meta,
+.notification-item__actions,
+.notification-history {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.notification-item__meta {
+    justify-content: space-between;
+    margin-bottom: 0.75rem;
+}
+
+.notification-item h2 {
+    margin: 0 0 0.5rem;
+}
+
+.notification-item__message {
+    white-space: pre-line;
+    margin-bottom: 1rem;
+}
+
+.notification-item__time {
+    display: block;
+    font-size: 0.875rem;
+    color: var(--rr-muted);
+}
+
+.notification-item__actions {
+    justify-content: space-between;
+    margin-top: 1rem;
+}
+
+.notification-item__actions ::deep form {
+    margin: 0;
+}
+
+.notification-history {
+    justify-content: space-between;
+    margin-top: 1.5rem;
+}
+
+.notification-history p {
+    margin: 0;
+    color: var(--rr-muted);
+    font-size: 0.875rem;
+}
+
+.notification-history__links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+@media (max-width: 575.98px) {
+    .notification-item { padding: 1rem; }
+    .notification-summary { align-items: stretch; }
+    .notification-summary ::deep form,
+    .notification-summary button { width: 100%; }
+    .notification-item__actions { align-items: stretch; }
+    .notification-item__actions ::deep a,
+    .notification-item__actions ::deep form,
+    .notification-item__actions button { width: 100%; }
+}

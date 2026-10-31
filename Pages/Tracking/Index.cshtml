@@ -2,136 +2,128 @@
 @model RROMS.Web.Pages.Tracking.IndexModel
 @using RROMS.Web.Models.OrdersAndReservations
 @using RROMS.Web.Models.Payments
+@using RROMS.Web.Models.Tracking
 
 @{
     ViewData["Title"] = "Track status";
-
 }
 
-<h1 class="h3 mb-3">Track status</h1>
-
-<div id="tracking-updates-banner"
-     class="alert alert-info"
-     role="status"
-     aria-live="polite"
-     hidden>
-    <span>Automatic status refresh is unavailable. You can refresh this page.</span>
-    <button id="tracking-refresh-button"
-            class="btn btn-sm btn-outline-primary ms-2"
-            type="button">
-        Refresh status
-    </button>
-</div>
-
-<div id="tracking-content"
-     data-order-id="@Model.TrackedOrder?.OrderId"
-     data-reservation-id="@Model.TrackedReservation?.ReservationId"
-     data-snapshot="@Model.Snapshot"
-     aria-live="polite"
-     aria-atomic="true">
-
-@if (Model.TrackedOrder is { } order)
-{
-    <section class="card mb-3">
-        <div class="card-body">
-            <h2 class="h5">
-                Order @OrderFormatter.Reference(order.OrderId)
-            </h2>
-
-            <p>
-                Status:
-                <span class="badge @OrderFormatter.StatusBadge(order.Status)">
-                    @OrderFormatter.StatusLabel(order.Status)
-                </span>
-            </p>
-
-            <p>@OrderFormatter.Table(order.TableId, Model.Tables)</p>
-
-            <a class="btn btn-sm btn-outline-primary"
-               asp-page="/Orders/Details"
-               asp-route-id="@order.OrderId">
-                View order
-            </a>
+<div class="rr-narrow tracking-page">
+    <header class="rr-page-header">
+        <div>
+            <h1>@(Model.TrackedReservation is not null ? "Track your booking" : "Track your order")</h1>
+            <p class="rr-lede">Your current status and the details you need.</p>
         </div>
-    </section>
+    </header>
 
-    <section class="card mb-3">
-        <div class="card-body">
-            <h2 class="h5">Payment</h2>
+    <p class="tracking-auto">This page checks for updates automatically while it is open.</p>
+    <div id="tracking-updates-banner" class="alert alert-warning" role="status" aria-live="polite" hidden>
+        <div class="tracking-refresh">
+            <span>We couldn't refresh this status. Your last update is shown below.</span>
+            <button id="tracking-refresh-button" class="btn btn-outline-secondary" type="button">Try again</button>
+        </div>
+    </div>
 
-            @if (Model.TrackedPayment is { } payment)
-            {
-                <p>
-                    Status:
-                    <span class="badge @PaymentFormatter.StatusBadge(payment.PaymentStatus)">
-                        @PaymentFormatter.StatusLabel(payment.PaymentStatus)
-                    </span>
-                </p>
-
-                <p class="mb-1">
-                    Amount: @PaymentFormatter.Money(payment.Amount)
-                </p>
-
-                <p>
-                    Method: @PaymentFormatter.MethodLabel(payment.PaymentMethod)
-                </p>
-
-                @if (payment.PaymentStatus is PaymentStatus.Paid or PaymentStatus.Refunded)
+    <div id="tracking-content"
+         data-order-id="@Model.TrackedOrder?.OrderId"
+         data-reservation-id="@Model.TrackedReservation?.ReservationId"
+         data-snapshot="@Model.Snapshot" aria-live="polite" aria-atomic="true">
+        @if (Model.TrackedOrder is { } order)
+        {
+            <section class="rr-docket" aria-labelledby="tracked-order-title">
+                <div class="rr-docket__head">
+                    <div>
+                        <span class="rr-ref">@OrderFormatter.Reference(order.OrderId)</span>
+                        <h2 id="tracked-order-title">Your order</h2>
+                    </div>
+                    <span class="@OrderFormatter.StatusBadge(order.Status)">@OrderFormatter.StatusLabel(order.Status)</span>
+                </div>
+                <dl class="tracking-details">
+                    <div><dt>Table</dt><dd>@ReservationFormatter.TableNumber(order.TableId, Model.Tables)</dd></div>
+                    <div><dt>Placed</dt><dd>@OrderFormatter.PlacedAt(order.CreatedAt)</dd></div>
+                </dl>
+                @if (order.Status != OrderStatus.Cancelled)
                 {
-                    <a class="btn btn-sm btn-outline-primary"
-                       asp-page="/Payments/Receipt"
-                       asp-route-id="@payment.PaymentId">
-                        Download receipt
-                    </a>
+                    <div class="tracking-progress">
+                        <ol class="rr-steps" aria-label="Order progress">
+                            @foreach (var step in OrderFormatter.Steps)
+                            {
+                                var stepClass = OrderFormatter.StepClass(order.Status, step);
+                                <li class="@stepClass" aria-current="@(stepClass == "is-current" ? "step" : null)">@OrderFormatter.StatusLabel(step)</li>
+                            }
+                        </ol>
+                    </div>
                 }
-            }
-            else
-            {
-                <p class="mb-0">
-                    No payment has been started for this order.
-                </p>
-            }
-        </div>
-    </section>
-}
+                <div class="rr-docket__actions">
+                    <a class="btn btn-outline-secondary" asp-page="/Orders/Details" asp-route-id="@order.OrderId">View order details</a>
+                </div>
+            </section>
 
-@if (Model.TrackedReservation is { } reservation)
-{
-    <section class="card mb-3">
-        <div class="card-body">
-            <h2 class="h5">
-                Reservation @ReservationFormatter.Reference(reservation.ReservationId)
-            </h2>
+            <section class="rr-docket" aria-labelledby="tracked-payment-title">
+                <div class="rr-docket__head">
+                    <div>
+                        @if (Model.TrackedPayment is { } referencePayment)
+                        {
+                            <span class="rr-ref">Payment #@referencePayment.PaymentId</span>
+                        }
+                        <h2 id="tracked-payment-title">Payment</h2>
+                    </div>
+                    @if (Model.TrackedPayment is { } statusPayment)
+                    {
+                        <span class="@TrackingFormatter.PaymentStatusClass(statusPayment)">@TrackingFormatter.PaymentLabel(statusPayment)</span>
+                    }
+                </div>
+                @if (Model.TrackedPayment is { } payment)
+                {
+                    <dl class="tracking-details">
+                        <div><dt>Amount</dt><dd class="rr-money tracking-amount">@PaymentFormatter.Money(payment.Amount)</dd></div>
+                        <div><dt>Method</dt><dd>@PaymentFormatter.MethodLabel(payment.PaymentMethod)</dd></div>
+                        @if (payment.PaidAt.HasValue)
+                        {
+                            <div><dt>Payment received</dt><dd>@PaymentFormatter.When(payment.PaidAt)</dd></div>
+                        }
+                        @if (payment.RefundedAt.HasValue)
+                        {
+                            <div><dt>Refund recorded</dt><dd>@PaymentFormatter.When(payment.RefundedAt)</dd></div>
+                        }
+                    </dl>
+                    @if (payment.PaymentStatus is PaymentStatus.Paid or PaymentStatus.Refunded)
+                    {
+                        <div class="rr-docket__actions">
+                            <a class="btn btn-outline-secondary" asp-page="/Payments/Receipt" asp-route-id="@payment.PaymentId">Download receipt</a>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <p class="tracking-note">No payment has been started for this order.</p>
+                }
+            </section>
+        }
 
-            <p>
-                Status:
-                <span class="badge @ReservationFormatter.StatusBadge(reservation.Status)">
-                    @ReservationFormatter.StatusLabel(reservation.Status)
-                </span>
-            </p>
+        @if (Model.TrackedReservation is { } reservation)
+        {
+            <section class="rr-docket" aria-labelledby="tracked-reservation-title">
+                <div class="rr-docket__head">
+                    <div>
+                        <span class="rr-ref">@ReservationFormatter.Reference(reservation.ReservationId)</span>
+                        <h2 id="tracked-reservation-title">Your booking</h2>
+                    </div>
+                    <span class="@ReservationFormatter.StatusBadge(reservation.Status)">@ReservationFormatter.StatusLabel(reservation.Status)</span>
+                </div>
+                <dl class="tracking-details">
+                    <div><dt>Date and time</dt><dd>@ReservationFormatter.When(reservation.ReservationDate, reservation.TimeSlot)</dd></div>
+                    <div><dt>Party size</dt><dd>@ReservationFormatter.PartySize(reservation.PartySize)</dd></div>
+                    <div><dt>Table</dt><dd>@ReservationFormatter.TableNumber(reservation.TableId, Model.Tables)</dd></div>
+                </dl>
+                <div class="rr-docket__actions">
+                    <a class="btn btn-outline-secondary" asp-page="/Reservations/Confirmation" asp-route-id="@reservation.ReservationId">View booking details</a>
+                </div>
+            </section>
+        }
+    </div>
 
-            <p class="mb-1">
-                @ReservationFormatter.When(reservation.ReservationDate, reservation.TimeSlot)
-            </p>
-
-            <p class="mb-1">
-                @ReservationFormatter.Table(reservation.TableId, Model.Tables)
-            </p>
-
-            <p>
-                @ReservationFormatter.PartySize(reservation.PartySize)
-            </p>
-
-            <a class="btn btn-sm btn-outline-primary"
-               asp-page="/Reservations/Confirmation"
-               asp-route-id="@reservation.ReservationId">
-                View reservation
-            </a>
-        </div>
-    </section>
-}
+    <div class="tracking-footer">
+        <a class="btn btn-outline-secondary" asp-page="/Notifications/Index">Back to notifications</a>
+    </div>
 </div>
-
-<a class="btn btn-outline-secondary" asp-page="/Notifications/Index">
-    Back to notifications
-</a>
