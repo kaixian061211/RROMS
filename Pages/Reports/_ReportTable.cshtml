@@ -3,9 +3,6 @@
 
 @{
     var rows = Model.Rows.ToArray();
-    var visibleRows = Model.Limit.HasValue
-        ? rows.Take(Model.Limit.Value).ToArray()
-        : rows;
 }
 
 @if (rows.Length == 0)
@@ -17,13 +14,6 @@
 }
 else
 {
-    @if (visibleRows.Length < rows.Length)
-    {
-        <p class="report-help">
-            Showing the first @visibleRows.Length of @rows.Length records.
-        </p>
-    }
-
     <div class="report-table-wrap">
         <table class="table table-hover report-table" role="table">
             <caption class="visually-hidden">@Model.Caption</caption>
@@ -38,7 +28,7 @@ else
             </thead>
 
             <tbody role="rowgroup">
-                @foreach (var row in visibleRows)
+                @foreach (var row in rows)
                 {
                     <tr role="row">
                         @for (var index = 0; index < row.Length; index++)

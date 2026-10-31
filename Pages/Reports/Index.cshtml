@@ -83,12 +83,12 @@
     {
         var summaryCards = new (string Label, string Value, string Hint)[]
         {
-            ("Gross collections", Model.Money(report.Sales.GrossCollections), "Payments received within the period."),
-            ("Net collections", Model.Money(report.Sales.NetCollections), "Gross collections less confirmed refunds."),
-            ("Orders placed", Model.Count(report.Orders.OrdersPlaced), "Orders created during the period."),
-            ("Scheduled reservations", Model.Count(report.Reservations.ScheduledReservations), "Reservations scheduled during the period."),
-            ("Active customers", Model.Count(report.Customers.ActiveCustomers), "Accounts with recorded activity in the period."),
-            ("Booked-slot utilization", Model.Percentage(report.Utilization.UtilizationPercent), "Estimate using current tables and opening hours.")
+            ("Gross collections", ReportUi.Money(report.Sales.GrossCollections), "Payments received within the period."),
+            ("Net collections", ReportUi.Money(report.Sales.NetCollections), "Gross collections less confirmed refunds."),
+            ("Orders placed", ReportUi.Count(report.Orders.OrdersPlaced), "Orders created during the period."),
+            ("Scheduled reservations", ReportUi.Count(report.Reservations.ScheduledReservations), "Reservations scheduled during the period."),
+            ("Active customers", ReportUi.Count(report.Customers.ActiveCustomers), "Accounts with recorded activity in the period."),
+            ("Booked-slot utilization", ReportUi.Percentage(report.Utilization.UtilizationPercent), "Estimate using current tables and opening hours.")
         };
 
         <section class="rr-panel mb-4" aria-label="Report metadata">
@@ -100,7 +100,7 @@
                     </div>
                     <div>
                         <dt>Generated</dt>
-                        <dd>@Model.Timestamp(report.GeneratedAt)</dd>
+                        <dd>@ReportUi.Timestamp(report.GeneratedAt)</dd>
                     </div>
                     <div>
                         <dt>Currency</dt>
@@ -193,7 +193,7 @@
         </details>
 
         <section aria-labelledby="report-notes-heading">
-            <h2 id="report-notes-heading" class="">Report notes</h2>
+            <h2 id="report-notes-heading">Report notes</h2>
             <ul class="small text-body-secondary mb-0">
                 @foreach (var note in report.Notes)
                 {

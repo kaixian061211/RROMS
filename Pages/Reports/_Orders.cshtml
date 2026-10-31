@@ -16,28 +16,28 @@
                     <div class="col-sm-6 col-xl-3 mb-3 mb-xl-0">
                         <dt class="small text-body-secondary">Orders placed</dt>
                         <dd class="h5 mb-0">
-                            @Model.Count(orders.OrdersPlaced)
+                            @ReportUi.Count(orders.OrdersPlaced)
                         </dd>
                     </div>
 
                     <div class="col-sm-6 col-xl-3 mb-3 mb-xl-0">
                         <dt class="small text-body-secondary">Cancelled orders</dt>
                         <dd class="h5 mb-0">
-                            @Model.Count(orders.CancelledOrders)
+                            @ReportUi.Count(orders.CancelledOrders)
                         </dd>
                     </div>
 
                     <div class="col-sm-6 col-xl-3 mb-3 mb-sm-0">
                         <dt class="small text-body-secondary">Order value</dt>
                         <dd class="h5 mb-0">
-                            @Model.Money(orders.OrderValue)
+                            @ReportUi.Money(orders.OrderValue)
                         </dd>
                     </div>
 
                     <div class="col-sm-6 col-xl-3">
                         <dt class="small text-body-secondary">Average order value</dt>
                         <dd class="h5 mb-0">
-                            @Model.Money(orders.AverageOrderValue)
+                            @ReportUi.Money(orders.AverageOrderValue)
                         </dd>
                     </div>
                 </dl>
@@ -52,7 +52,7 @@
             <div class="col-xl-4">
                 <div class="card h-100">
                     <div class="card-body">
-                        <h3 class="">Current order statuses</h3>
+                        <h3>Current order statuses</h3>
 
                         @if (orders.OrdersPlaced > 0)
                         {
@@ -88,10 +88,10 @@
                                     {
                                         <tr>
                                             <th scope="row" class="fw-normal">
-                                                @Model.OrderStatusLabel(status.Status)
+                                                @ReportUi.OrderStatusLabel(status.Status)
                                             </th>
                                             <td class="text-end">
-                                                @Model.Count(status.Count)
+                                                @ReportUi.Count(status.Count)
                                             </td>
                                         </tr>
                                     }
@@ -105,7 +105,7 @@
             <div class="col-xl-8">
                 <div class="card h-100">
                     <div class="card-body">
-                        <h3 class="">Orders and order value</h3>
+                        <h3>Orders and order value</h3>
 
                         <p class="small text-body-secondary">
                             Order counts use the left axis.
@@ -154,10 +154,10 @@
                                                     @point.Label
                                                 </th>
                                                 <td class="text-end">
-                                                    @Model.Count(point.OrdersPlaced)
+                                                    @ReportUi.Count(point.OrdersPlaced)
                                                 </td>
                                                 <td class="text-end text-nowrap">
-                                                    @Model.Money(point.OrderValue)
+                                                    @ReportUi.Money(point.OrderValue)
                                                 </td>
                                             </tr>
                                         }
@@ -172,7 +172,7 @@
 
         <div class="card">
             <div class="card-body">
-                <h3 class="">Order records</h3>
+                <h3>Order records</h3>
 
                 @if (orders.Orders.Count == 0)
                 {
@@ -185,7 +185,7 @@
                     {
                         <p class="small text-body-secondary">
                             Showing the first @IndexModel.DetailRowLimit
-                            of @Model.Count(orders.Orders.Count) orders.
+                            of @ReportUi.Count(orders.Orders.Count) orders.
                         </p>
                     }
 
@@ -215,29 +215,29 @@
                                         <td class="rr-ref">@ReportUi.OrderReference(order.OrderId)</td>
 
                                         <td class="text-nowrap">
-                                            @Model.Timestamp(order.PlacedAt)
+                                            @ReportUi.Timestamp(order.PlacedAt)
                                         </td>
 
                                         <td class="text-nowrap">
-                                            @Model.CustomerLabel(order.CustomerUserId)
+                                            @ReportUi.CustomerLabel(order.CustomerUserId)
                                         </td>
 
                                         <td>@order.Table</td>
 
                                         <td>
-                                            <span class="@Model.OrderStatusClass(order.Status)">@Model.OrderStatusLabel(order.Status)</span>
+                                            <span class="@ReportUi.OrderStatusClass(order.Status)">@ReportUi.OrderStatusLabel(order.Status)</span>
                                         </td>
 
                                         <td class="text-end">
-                                            @Model.Count(order.ItemCount)
+                                            @ReportUi.Count(order.ItemCount)
                                         </td>
 
                                         <td class="text-end text-nowrap">
-                                            @Model.Money(order.Total)
+                                            @ReportUi.Money(order.Total)
                                         </td>
 
                                         <td class="text-nowrap">
-                                            <span class="@Model.PaymentStatusClass(order.PaymentStatus)">@Model.PaymentStatusLabel(order.PaymentStatus)</span>
+                                            <span class="@ReportUi.PaymentStatusClass(order.PaymentStatus)">@ReportUi.PaymentStatusLabel(order.PaymentStatus)</span>
                                         </td>
                                     </tr>
                                 }
