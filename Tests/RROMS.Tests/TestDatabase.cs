@@ -8,39 +8,43 @@ using RROMS.Web.Models.Restaurant;
 namespace RROMS.Tests;
 
 /// <summary>
-/// The tests' own database, RROMS_Tests on the local SQL Server. Every way into it goes through
+/// The tests' own databases on the local SQL Server. Every way into them goes through
 /// CheckIsTestDatabase, so the tests refuse to run, and never empty a table, anywhere else.
 /// </summary>
 public static class TestDatabase
 {
     public const string Name = "RROMS_Tests";
+    public const string NotificationTrackingName = "RROMS_NotificationTracking_Tests";
 
     private const string DefaultConnectionString =
         "Server=localhost;Database=RROMS_Tests;Trusted_Connection=True;TrustServerCertificate=True";
 
     private static readonly Lazy<Task> Prepared = new(PrepareAsync);
 
-    /// <summary>Set RROMS_TEST_CONNECTION to use another server. The database must still be RROMS_Tests.</summary>
+    /// <summary>Set RROMS_TEST_CONNECTION to select a server and one of the two explicitly allowed test databases.</summary>
     public static string ConnectionString =>
         CheckIsTestDatabase(Environment.GetEnvironmentVariable("RROMS_TEST_CONNECTION") ?? DefaultConnectionString);
 
-    /// <summary>Throws unless the connection string names exactly the RROMS_Tests database.</summary>
+    /// <summary>Throws unless the connection string names an explicitly allowed test database.</summary>
     public static string CheckIsTestDatabase(string connectionString)
     {
         var database = new SqlConnectionStringBuilder(connectionString).InitialCatalog;
-        if (database != Name)
+        if (!IsTestDatabase(database))
             throw new InvalidOperationException(
-                $"The tests only run against the {Name} database, but the connection string names '{database}'. Nothing was changed.");
+                $"The tests only run against {Name} or {NotificationTrackingName}, but the connection string names '{database}'. Nothing was changed.");
         return connectionString;
     }
 
     /// <summary>The same check on an open connection, so it's the database the server actually put us in.</summary>
     public static void CheckIsTestDatabase(SqlConnection connection)
     {
-        if (connection.Database != Name)
+        if (!IsTestDatabase(connection.Database))
             throw new InvalidOperationException(
-                $"The tests only run against the {Name} database, but the connection is using '{connection.Database}'. Nothing was changed.");
+                $"The tests only run against {Name} or {NotificationTrackingName}, but the connection is using '{connection.Database}'. Nothing was changed.");
     }
+
+    private static bool IsTestDatabase(string database) =>
+        database is Name or NotificationTrackingName;
 
     /// <summary>Runs PrepareAsync the first time any test asks, and only once per test run.</summary>
     public static Task PrepareOnceAsync() => Prepared.Value;
