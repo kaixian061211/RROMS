@@ -1,0 +1,80 @@
+@page "{id:int}"
+@model DetailsModel
+@{
+    ViewData["Title"] = Model.CustomerName;
+}
+
+<header class="rr-page-header">
+    <div>
+        <span class="rr-ref d-block mb-1">@ReservationFormatter.Customer(Model.Id)</span>
+        <h1>@Model.CustomerName</h1>
+        <p class="rr-lede">Preferences and reservations. Staff can read these but not change them.</p>
+    </div>
+    <div class="rr-page-actions">
+        <a asp-page="Index" class="btn btn-outline-secondary">Back to preferences</a>
+    </div>
+</header>
+
+<section class="mb-5" aria-labelledby="preferences-title">
+    <h2 class="rr-group-title" id="preferences-title">Preferences</h2>
+    @if (Model.Preference is null)
+    {
+        <div class="rr-empty">
+            <p class="rr-empty__title">No preferences saved.</p>
+            <p class="mb-0">This customer hasn't filled in their preferences yet.</p>
+        </div>
+    }
+    else
+    {
+        <div class="rr-panel">
+            <dl class="row mb-0">
+                <dt class="col-sm-3">Dietary needs</dt>
+                <dd class="col-sm-9">@(Model.Preference.DietaryNeeds ?? "None given")</dd>
+                <dt class="col-sm-3">Favourite categories</dt>
+                <dd class="col-sm-9">@(Model.Preference.FavouriteCategories ?? "None given")</dd>
+                <dt class="col-sm-3">Seating</dt>
+                <dd class="col-sm-9">@(Model.Preference.SeatingPreferences ?? "No preference")</dd>
+                <dt class="col-sm-3">Last updated</dt>
+                <dd class="col-sm-9 mb-0">@(Model.Preference.UpdatedAt.ToString("dd MMM yyyy, h:mm tt", System.Globalization.CultureInfo.InvariantCulture))</dd>
+            </dl>
+        </div>
+    }
+</section>
+
+<section aria-labelledby="reservations-title">
+    <h2 class="rr-group-title" id="reservations-title">
+        Reservations
+        <span class="rr-count">@Model.Reservations.Count</span>
+    </h2>
+    @if (Model.Reservations.Count == 0)
+    {
+        <div class="rr-empty">
+            <p class="rr-empty__title">No reservations.</p>
+            <p class="mb-0">This customer hasn't booked a table.</p>
+        </div>
+    }
+    else
+    {
+        <ul class="list-unstyled d-grid gap-3 mb-0">
+            @foreach (var r in Model.Reservations)
+            {
+                <li class="rr-slip">
+                    <div class="rr-slip__body">
+                        <div>
+                            <div class="rr-slip__title">@ReservationFormatter.When(r.Date, r.Time)</div>
+                            <span class="rr-ref">@ReservationFormatter.Reference(r.ReservationId)</span>
+                            <span class="small text-muted"> · @ReservationFormatter.PartySize(r.PartySize)</span>
+                            @if (r.SpecialRequest is not null)
+                            {
+                                <p class="small mt-2 mb-0"><strong>Request:</strong> @r.SpecialRequest</p>
+                            }
+                        </div>
+                        <div class="rr-slip__side">
+                            <span class="@ReservationFormatter.StatusBadge(r.Status)">@ReservationFormatter.StatusLabel(r.Status)</span>
+                        </div>
+                    </div>
+                </li>
+            }
+        </ul>
+    }
+</section>

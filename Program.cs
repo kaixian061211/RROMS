@@ -10,6 +10,7 @@ using RROMS.Web.Services.Payments.Gateways;
 using RROMS.Web.Services.Payments.Notifications;
 using RROMS.Web.Services.OrdersAndReservations;
 using RROMS.Web.Services.Payments.Receipts;
+using RROMS.Web.Services.CustomerHistoryAndPreferences;
 using RROMS.Web.Services.Notifications;
 using RROMS.Web.Services.Tracking;
 using RROMS.Web.Services.Restaurant;
@@ -104,6 +105,10 @@ builder.Services.AddScoped<IPaymentService, PaymentService>();
 QuestPDF.Settings.License = LicenseType.Community;
 builder.Services.AddSingleton<IReceiptService, ReceiptService>();
 builder.Services.AddScoped<StripeWebhookHandler>();
+
+// ---- Customer history and preferences module ----
+builder.Services.AddScoped<ICustomerHistoryService, CustomerHistoryService>();
+builder.Services.AddScoped<ICustomerPreferenceService, CustomerPreferenceService>();
 
 var app = builder.Build();
 

@@ -20,7 +20,7 @@ public static class DashboardCards
         new("Profile", "Update your details.", 8, "Ooi", Customer, "/Account/Profile"),
         new("Place orders", "Order food and drinks to your table.", 12, "Cheah", Customer, "/Orders"),
         new("Browse menu", "See what's on the menu.", 13, "Lim", Customer, null),
-        new("History", "Look back at your past visits.", 15, "Vishalinii", Customer, null),
+        new("History", "Look back at your past visits.", 15, "Vishalinii", Customer, "/History"),
         new("Live tracking", "Follow your order as it's prepared.", 19, "Chang", Customer, null),
         new("Notifications", "Messages about your bookings and orders.", 20, "Chang", Customer, "/Notifications/Index"),
         new("Chatbot", "Ask a question and get help.", 21, "Vishalinii", Customer, null),
@@ -29,7 +29,7 @@ public static class DashboardCards
         new("Profile", "Update your details.", 9, "Ooi", Staff, "/Account/Profile"),
         new("Manage reservations", "The day's bookings: confirm, change or cancel them.", 11, "Cheah", Staff, "/Reservations/Manage"),
         new("Order queue", "Receive orders and move them through to served.", 17, "Cheah", Staff, "/Orders/Queue"),
-        new("Customer preferences", "See what customers like.", 18, "Vishalinii", Staff, null),
+        new("Customer preferences", "See what customers like.", 18, "Vishalinii", Staff, "/Preferences/Manage"),
 
         new("Restaurant info and tables", "The restaurant's details and its tables.", 3, "Lim", Admin, null),
         new("Menu items", "Add, change or remove dishes.", 4, "Lim", Admin, null),
