@@ -5,7 +5,7 @@ const vm = require('node:vm');
 const path = require('node:path');
 const script = fs.readFileSync(path.join(__dirname, '../../wwwroot/js/notifications-live.js'), 'utf8');
 
-test('incoming notifications queue toasts and defer inbox refresh until they finish', async () => {
+test('the reload fallback waits for queued toasts when the in-place updater is absent', async () => {
     const events = {};
     const toastEvents = {};
     const timers = new Map();
@@ -44,9 +44,12 @@ test('incoming notifications queue toasts and defer inbox refresh until they fin
     assert.equal([...timers.values()][0].ms, 500);
 });
 
-function badgeFixture() {
+function badgeFixture(inbox) {
+    let runtimeWindow;
     const events = {};
     const pageEvents = {};
+    let shown = 0;
+    const toast = { addEventListener() {} };
     const pending = [];
     const badge = { setAttribute() {} };
     const connection = {
@@ -58,12 +61,17 @@ function badgeFixture() {
         withUrl() { return this; } withAutomaticReconnect() { return this; } build() { return connection; }
     } };
     vm.runInNewContext(script, {
-        window: { signalR, addEventListener(name, callback) { pageEvents[name] = callback; } }, signalR,
-        document: { getElementById(id) { return id === 'notification-live'
-            ? { dataset: {} } : id === 'notification-unread-count' ? badge : null; }, addEventListener() {} },
+        window: runtimeWindow = { signalR, RromsNotificationInbox: inbox,
+            bootstrap: { Toast: { getOrCreateInstance() { return { show() { shown++; } }; } } },
+            addEventListener(name, callback) { pageEvents[name] = callback; } }, signalR,
+        document: { getElementById(id) {
+            return ({ 'notification-live': { dataset: { refreshPage: 'true', inboxPage: 'true' } },
+                'notification-unread-count': badge, 'notification-toast': toast,
+                'notification-toast-title': {}, 'notification-toast-message': {} })[id];
+        }, addEventListener() {} },
         setTimeout() {}, clearTimeout() {}
     });
-    return { events, pending, badge, pageEvents };
+    return { events, pending, badge, pageEvents, window: runtimeWindow, get shown() { return shown; } };
 }
 
 const settle = async () => { for (let i = 0; i < 4; i++) await new Promise(setImmediate); };
@@ -99,4 +107,22 @@ test('only restored pages trigger pageshow reconciliation after connecting', asy
     assert.equal(state.pending.length, 1);
     state.pageEvents.pageshow({ persisted: true });
     assert.equal(state.pending.length, 2);
+});
+
+test('the live inbox refresh starts immediately when a notification arrives', async () => {
+    let refreshes = 0;
+    const state = badgeFixture({ refresh() { refreshes++; } }); await settle();
+    state.events.NotificationReceived({ notificationId: 42, title: 'Ready', message: 'Ready now.' });
+    assert.equal(state.shown, 1);
+    assert.equal(refreshes, 1);
+    state.events.NotificationReadStateChanged();
+    assert.equal(refreshes, 2, 'read state updates also refresh while a toast is still visible');
+});
+
+test('the inbox updater can register after the shared live script loads', async () => {
+    const state = badgeFixture(); await settle();
+    let refreshes = 0;
+    state.window.RromsNotificationInbox = { refresh() { refreshes++; } };
+    state.events.NotificationReceived({ notificationId: 55, title: 'Ready', message: 'Ready now.' });
+    assert.equal(refreshes, 1);
 });

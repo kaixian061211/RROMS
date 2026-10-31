@@ -72,6 +72,14 @@
             return;
         }
 
+        // The inbox updates in place, so visible toasts no longer delay the list.
+        // Razor loads page-section scripts after this shared live script.
+        const inbox = window.RromsNotificationInbox;
+        if (inbox) {
+            if (!submitting) inbox.refresh();
+            return;
+        }
+
         if (!refreshPage || submitting || toastShowing || toastQueue.length > 0) return;
 
         clearTimeout(reloadTimer);

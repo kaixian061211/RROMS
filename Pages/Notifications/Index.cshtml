@@ -7,13 +7,20 @@
     ViewData["Title"] = "Notifications";
 }
 
-<div class="rr-narrow notifications-page" data-notification-inbox>
+<div class="rr-narrow notifications-page" data-notification-inbox
+     data-notification-owner="@User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value"
+     data-before-id="@Model.BeforeId">
     <header class="rr-page-header">
         <div>
-            <h1>Notifications</h1>
+            <h1 tabindex="-1">Notifications</h1>
             <p class="rr-lede">Updates for your orders, bookings and payments.</p>
         </div>
     </header>
+
+    <div data-inbox-error class="alert alert-warning" role="status" hidden>
+        Updates couldn't be refreshed. Your last inbox is shown below.
+        <button type="button" data-inbox-refresh class="btn btn-outline-secondary">Try again</button>
+    </div>
 
     @if (TempData["NotificationFeedback"] is string feedback)
     {
