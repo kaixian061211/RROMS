@@ -5,8 +5,8 @@ using RROMS.Web.Models.OrdersAndReservations;
 
 namespace RROMS.Web.Services.Notifications;
 
-    public class NotificationService : INotificationService
-    {
+public class NotificationService : INotificationService
+{
     private readonly AppDbContext _db;
     private readonly INotificationRealtime _realtime;
 

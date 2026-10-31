@@ -22,7 +22,7 @@ test('incoming notifications queue toasts and defer inbox refresh until they fin
     const signalR = { HubConnectionBuilder: class {
         withUrl() { return this; } withAutomaticReconnect() { return this; } build() { return connection; }
     } };
-    const window = { signalR, bootstrap: { Toast: { getOrCreateInstance() {
+    const window = { signalR, addEventListener() {}, bootstrap: { Toast: { getOrCreateInstance() {
         return { show() { shown++; } };
     } } }, location: { reload() {} } };
     vm.runInNewContext(script, {
@@ -42,4 +42,52 @@ test('incoming notifications queue toasts and defer inbox refresh until they fin
     assert.equal(timers.size, 0);
     toastEvents['hidden.bs.toast']();
     assert.equal([...timers.values()][0].ms, 500);
+});
+
+function badgeFixture() {
+    const events = {};
+    const pending = [];
+    const badge = { setAttribute() {} };
+    const connection = {
+        on(name, handler) { events[name] = handler; }, onreconnected() {}, onclose() {},
+        start: async () => {},
+        invoke() { return new Promise(resolve => pending.push(resolve)); }
+    };
+    const signalR = { HubConnectionBuilder: class {
+        withUrl() { return this; } withAutomaticReconnect() { return this; } build() { return connection; }
+    } };
+    vm.runInNewContext(script, {
+        window: { signalR, addEventListener() {} }, signalR,
+        document: { getElementById(id) { return id === 'notification-live'
+            ? { dataset: {} } : id === 'notification-unread-count' ? badge : null; }, addEventListener() {} },
+        setTimeout() {}, clearTimeout() {}
+    });
+    return { events, pending, badge };
+}
+
+const settle = async () => { for (let i = 0; i < 4; i++) await new Promise(setImmediate); };
+
+test('replayed notification IDs do not trigger duplicate delivery handling', async () => {
+    const state = badgeFixture(); await settle();
+    const notice = { notificationId: 42, title: 'Ready', message: 'Your order is ready.' };
+    state.events.NotificationReceived(notice);
+    state.events.NotificationReceived(notice);
+    assert.equal(state.pending.length, 2, 'initial count plus one distinct notification');
+    state.events.NotificationReceived({ ...notice, notificationId: 43 });
+    assert.equal(state.pending.length, 3);
+});
+
+test('an older count request cannot overwrite the latest unread count', async () => {
+    const state = badgeFixture(); await settle();
+    state.events.NotificationReadStateChanged();
+    state.pending[1](0); await settle();
+    state.pending[0](5); await settle();
+    assert.equal(state.badge.textContent, '0');
+    assert.equal(state.badge.hidden, true);
+});
+
+test('invalid unread counts cannot be displayed', async () => {
+    const state = badgeFixture(); await settle();
+    state.pending[0](-1); await settle();
+    assert.equal(state.badge.textContent, undefined);
 });

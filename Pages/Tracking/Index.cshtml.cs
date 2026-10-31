@@ -36,6 +36,7 @@ public class IndexModel : PageModel
         orderId = TrackedOrder?.OrderId,
         orderStatus = TrackedOrder?.Status,
         orderTableId = TrackedOrder?.TableId,
+        orderCreatedAt = TrackedOrder?.CreatedAt,
 
         reservationId = TrackedReservation?.ReservationId,
         reservationStatus = TrackedReservation?.Status,
@@ -47,7 +48,9 @@ public class IndexModel : PageModel
         paymentId = TrackedPayment?.PaymentId,
         paymentStatus = TrackedPayment?.PaymentStatus,
         paymentAmount = TrackedPayment?.Amount,
-        paymentMethod = TrackedPayment?.PaymentMethod
+        paymentMethod = TrackedPayment?.PaymentMethod,
+        paymentPaidAt = TrackedPayment?.PaidAt,
+        paymentRefundedAt = TrackedPayment?.RefundedAt
     }, JsonSerializerOptions.Web);
 
     public async Task<IActionResult> OnGetStatusAsync(
@@ -56,22 +59,30 @@ public class IndexModel : PageModel
         int? paymentId,
         CancellationToken ct)
     {
-        var result = await OnGetAsync(
+        var result = await LoadAsync(
             orderId,
             reservationId,
             paymentId,
-            ct);
+            ct,
+            includeTables: false);
 
         return result is PageResult
             ? Content(Snapshot, "application/json")
             : result;
     }
 
-    public async Task<IActionResult> OnGetAsync(
+    public Task<IActionResult> OnGetAsync(
         int? orderId,
         int? reservationId,
         int? paymentId,
-        CancellationToken ct)
+        CancellationToken ct) => LoadAsync(orderId, reservationId, paymentId, ct, includeTables: true);
+
+    private async Task<IActionResult> LoadAsync(
+        int? orderId,
+        int? reservationId,
+        int? paymentId,
+        CancellationToken ct,
+        bool includeTables)
     {
         if (!User.TryGetPaymentUserId(out var userId) || userId <= 0)
             return Forbid();
@@ -88,8 +99,6 @@ public class IndexModel : PageModel
             return BadRequest();
         }
 
-        Tables = await _restaurant.GetTablesAsync();
-
         if (reservationId is int selectedReservationId)
         {
             TrackedReservation = await _db.Set<Reservation>()
@@ -99,10 +108,9 @@ public class IndexModel : PageModel
                         && r.CustomerUserId == userId,
                     ct);
 
-            return TrackedReservation is null ? NotFound() : Page();
+            if (TrackedReservation is null) return NotFound();
         }
-
-        if (paymentId is int selectedPaymentId)
+        else if (paymentId is int selectedPaymentId)
         {
             var result = await (
                 from payment in _db.Payments.AsNoTracking()
@@ -118,25 +126,29 @@ public class IndexModel : PageModel
 
             TrackedOrder = result.Order;
             TrackedPayment = result.Payment;
+        }
+        else
+        {
+            TrackedOrder = await _db.Set<Order>()
+                .AsNoTracking()
+                .SingleOrDefaultAsync(
+                    o => o.OrderId == orderId
+                        && o.CustomerUserId == userId,
+                    ct);
 
-            return Page();
+            if (TrackedOrder is null)
+                return NotFound();
+
+            TrackedPayment = await _db.Payments
+                .AsNoTracking()
+                .SingleOrDefaultAsync(
+                    p => p.OrderId == TrackedOrder.OrderId,
+                    ct);
         }
 
-        TrackedOrder = await _db.Set<Order>()
-            .AsNoTracking()
-            .SingleOrDefaultAsync(
-                o => o.OrderId == orderId
-                    && o.CustomerUserId == userId,
-                ct);
-
-        if (TrackedOrder is null)
-            return NotFound();
-
-        TrackedPayment = await _db.Payments
-            .AsNoTracking()
-            .SingleOrDefaultAsync(
-                p => p.OrderId == TrackedOrder.OrderId,
-                ct);
+        // Polling only needs the owned records. Load table labels for HTML once
+        // ownership is established, rather than on every five-second status check.
+        if (includeTables) Tables = await _restaurant.GetTablesAsync();
 
         return Page();
     }

@@ -21,6 +21,8 @@
     let retryTimer;
     let connectedBefore = false;
     let startFailed = false;
+    let unreadRequest = 0;
+    const seenNotifications = new Set();
     const toastQueue = [];
     let toastShowing = false;
     const toastInstance = window.bootstrap?.Toast && toast
@@ -56,6 +58,14 @@
         }
     });
 
+    window.addEventListener("pageshow", () => {
+        submitting = false;
+        if (connectedBefore) {
+            void updateUnreadCount();
+            refreshPageSoon();
+        }
+    });
+
     function refreshPageSoon() {
         if (tracking) {
             tracking.refresh();
@@ -74,8 +84,10 @@
     async function updateUnreadCount() {
         if (!badge) return;
 
+        const request = ++unreadRequest;
         try {
             const count = await connection.invoke("GetUnreadCount");
+            if (request !== unreadRequest || !Number.isSafeInteger(count) || count < 0) return;
 
             badge.textContent = String(count);
             badge.hidden = count === 0;
@@ -90,6 +102,15 @@
     }
 
     connection.on("NotificationReceived", notification => {
+        // SignalR may replay a delivered notice after reconnecting. Keep a small
+        // bounded set so replayed IDs cannot queue duplicate toasts or reloads.
+        if (Number.isSafeInteger(notification.notificationId) && notification.notificationId > 0) {
+            if (seenNotifications.has(notification.notificationId)) return;
+            seenNotifications.add(notification.notificationId);
+            if (seenNotifications.size > 100) {
+                seenNotifications.delete(seenNotifications.values().next().value);
+            }
+        }
         clearTimeout(reloadTimer);
         toastQueue.push(notification);
         showNextToast();
