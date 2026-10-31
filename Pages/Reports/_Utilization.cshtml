@@ -1,5 +1,6 @@
 @model RROMS.Web.Pages.Reports.IndexModel
 @using RROMS.Web.Pages.Reports
+@using static RROMS.Web.Pages.Reports.ReportUi
 
 @if (Model.Report is { } report)
 {
@@ -9,7 +10,7 @@
              class="mb-5"
              aria-labelledby="utilization-heading">
 
-        <h2 id="utilization-heading" class="h4 mb-3">
+        <h2 id="utilization-heading" class="mb-3">
             Estimated table utilization
         </h2>
 
@@ -69,7 +70,7 @@
             <div class="col-md-6">
                 <div class="card h-100">
                     <div class="card-body">
-                        <h3 class="h6 text-body-secondary">
+                        <h3 class="text-body-secondary">
                             Additional duplicate reservations
                         </h3>
 
@@ -89,7 +90,7 @@
             <div class="col-md-6">
                 <div class="card h-100">
                     <div class="card-body">
-                        <h3 class="h6 text-body-secondary">
+                        <h3 class="text-body-secondary">
                             Booked slots outside current availability
                         </h3>
 
@@ -109,14 +110,13 @@
 
         <div class="card">
             <div class="card-body">
-                <h3 class="h5">Utilization by table</h3>
+                <h3 class="">Utilization by table</h3>
 
                 @if (utilization.Tables.Count == 0)
                 {
-                    <p class="text-body-secondary mb-0">
-                        No active tables are available under the current
+                    <div class="rr-empty"><p class="rr-empty__title">No active tables are available under the current
                         restaurant configuration.
-                    </p>
+                    </p></div>
                 }
                 else
                 {
@@ -129,49 +129,15 @@
                         </p>
                     }
 
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle">
-                            <caption class="visually-hidden">
-                                Estimated booked-slot utilization by table
-                                for @report.PeriodLabel
-                            </caption>
-
-                            <thead>
-                                <tr>
-                                    <th scope="col">Table</th>
-                                    <th scope="col">Dining area</th>
-                                    <th scope="col" class="text-end">Seats</th>
-                                    <th scope="col" class="text-end">Available slots</th>
-                                    <th scope="col" class="text-end">Booked slots</th>
-                                    <th scope="col" class="text-end">Estimated utilization</th>
-                                </tr>
-                            </thead>
-
-                            <tbody>
-                                @foreach (var table in utilization.Tables.Take(IndexModel.DetailRowLimit))
-                                {
-                                    <tr>
-                                        <th scope="row" class="fw-normal">
-                                            @table.TableNumber
-                                        </th>
-                                        <td>@table.Area</td>
-                                        <td class="text-end">
-                                            @Model.Count(table.Capacity)
-                                        </td>
-                                        <td class="text-end">
-                                            @Model.Count(table.AvailableSlots)
-                                        </td>
-                                        <td class="text-end">
-                                            @Model.Count(table.BookedSlots)
-                                        </td>
-                                        <td class="text-end text-nowrap">
-                                            @Model.Percentage(table.UtilizationPercent)
-                                        </td>
-                                    </tr>
-                                }
-                            </tbody>
-                        </table>
-                    </div>
+                    @await Html.PartialAsync("_ReportTable", new ReportTableModel(
+                        $"Estimated booked-slot utilization by table for {report.PeriodLabel}",
+                        new[] { "Table", "Dining area", "Seats", "Available slots", "Booked slots", "Estimated utilization" },
+                        utilization.Tables.Take(IndexModel.DetailRowLimit).Select(table => new[]
+                        {
+                            T(table.TableNumber), T(table.Area), N(table.Capacity),
+                            N(table.AvailableSlots), N(table.BookedSlots), P(table.UtilizationPercent)
+                        }),
+                        "No active tables under the current configuration"))
 
                     <p class="small text-body-secondary mb-0">
                         Seat capacity is shown for reference.

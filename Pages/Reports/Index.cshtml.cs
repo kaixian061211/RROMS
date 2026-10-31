@@ -105,7 +105,9 @@ public class IndexModel : PageModel
 
                         amounts = report.Sales.Methods
                             .Select(m => m.Amount)
-                            .ToArray()
+                            .ToArray(),
+                        shares = report.Sales.Methods.Select(m => m.SharePercent).ToArray(),
+                        total = report.Sales.GrossCollections
                     }
                 },
 
@@ -190,7 +192,9 @@ public class IndexModel : PageModel
 
                     quantities = topItems
                         .Select(item => item.Quantity)
-                        .ToArray()
+                        .ToArray(),
+                    amounts = topItems.Select(item => item.Amount).ToArray(),
+                    categories = topItems.Select(item => item.Category).ToArray()
                 }
             },
             ChartJsonOptions);
@@ -236,10 +240,7 @@ public class IndexModel : PageModel
         }
     }
 
-    public string Money(decimal? amount) =>
-        amount.HasValue
-            ? $"{DashboardReport.Currency} {amount.Value.ToString("N2", ReportCulture)}"
-            : "N/A";
+    public string Money(decimal? amount) => ReportUi.Money(amount);
 
     public string Count(int value) =>
         value.ToString("N0", ReportCulture);
@@ -250,7 +251,11 @@ public class IndexModel : PageModel
             : "N/A";
 
     public string Timestamp(DateTime value) =>
-        value.ToString("d MMM yyyy, HH:mm", ReportCulture);
+        ReportUi.Timestamp(value);
+
+    public string OrderStatusClass(string status) => ReportUi.State(status, "Order").CssClass;
+    public string ReservationStatusClass(string status) => ReportUi.State(status, "Reservation").CssClass;
+    public string PaymentStatusClass(string? status) => ReportUi.State(status, "Payment").CssClass;
 
     public string PaymentMethodLabel(string method) =>
         method switch
@@ -305,5 +310,5 @@ public class IndexModel : PageModel
         value.ToString("d MMM yyyy", ReportCulture);
 
     public string TimeLabel(TimeOnly value) =>
-        value.ToString("HH:mm", ReportCulture);
+        ReportUi.Time(value);
 }
