@@ -37,7 +37,8 @@
             return;
         }
 
-        offered.add(expectedAlias);
+        const alias = expectedAlias;
+        offered.add(alias);
         permissionBusy = true;
 
         try {
@@ -52,6 +53,8 @@
                 await sdk.Slidedown.promptPush();
             }
         } catch (error) {
+            // A failed SDK request must be retryable on the next focus/sync.
+            offered.delete(alias);
             report(error);
         } finally {
             permissionBusy = false;
@@ -229,6 +232,9 @@
             });
 
             window.addEventListener("focus", synchronize);
+            window.addEventListener("pageshow", event => {
+                if (event.persisted) synchronize();
+            });
 
             document.addEventListener("visibilitychange", () => {
                 if (document.visibilityState === "visible") {
