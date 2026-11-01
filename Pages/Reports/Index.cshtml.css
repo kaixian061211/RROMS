@@ -50,32 +50,6 @@
     font-weight: 600;
 }
 
-.report-kpis {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
-    gap: 1rem 1.5rem;
-    margin: 0;
-}
-
-.report-kpis div {
-    display: grid;
-    gap: 0.25rem;
-}
-
-.report-kpis dt {
-    font-size: 0.75rem;
-    letter-spacing: .08em;
-    text-transform: uppercase;
-    color: var(--rr-muted);
-}
-
-.report-kpis dd {
-    margin: 0;
-    font-weight: 700;
-    font-size: 1.125rem;
-    font-variant-numeric: tabular-nums;
-}
-
 .report-help {
     margin: 0 0 0.75rem;
     color: var(--rr-muted);
@@ -145,7 +119,7 @@
 .report-page ::deep .report-chart {
     position: relative;
     width: 100%;
-    height: 20rem;
+    height: 22rem;
 }
 
 .report-page ::deep .report-method-chart {
@@ -158,56 +132,6 @@
     max-width: 22rem;
     white-space: pre-wrap;
     overflow-wrap: anywhere;
-}
-
-@media (max-width: 575.98px) {
-    .report-page ::deep .report-chart {
-        height: 17rem;
-    }
-
-    .report-summary__head {
-        flex-direction: column;
-        align-items: flex-start;
-    }
-
-    .report-table {
-        min-width: 0;
-    }
-
-    .report-table thead {
-        display: none;
-    }
-
-    .report-table tbody,
-    .report-table tr,
-    .report-table td,
-    .report-table th {
-        display: block;
-        width: 100%;
-    }
-
-    .report-table tr {
-        padding: 0.75rem 0.875rem;
-        border-top: 1px solid var(--rr-line);
-    }
-
-    .report-table td,
-    .report-table th {
-        border: 0;
-        padding: 0.25rem 0;
-    }
-
-    .report-mobile-label {
-        display: block;
-    }
-
-    .report-cell-value {
-        display: block;
-    }
-
-    .report-number {
-        text-align: left;
-    }
 }
 
 .report-page ::deep .report-reservation-note {
@@ -251,7 +175,6 @@
 }
 .report-page ::deep section[id] { scroll-margin-top: 1.5rem; }
 .report-page ::deep .card-body { padding: clamp(1rem, 1.5vw, 1.5rem); }
-.report-page ::deep .report-chart { height: 22rem; }
 .report-page ::deep .report-chart-controls {
     display: flex;
     align-items: center;
@@ -318,7 +241,6 @@
 .report-page ::deep .report-table { min-width: 0; }
 .report-page ::deep .report-cell-value { overflow-wrap: anywhere; }
 .report-page ::deep .report-mobile-label { display: none; }
-.report-page ::deep .report-responsive-table .report-mobile-label { display: none; }
 .report-page ::deep .report-records-summary {
     min-height: var(--rr-touch);
     padding: 1.25rem;
@@ -329,6 +251,7 @@
 .report-page ::deep .report-records[open] .report-records-summary { border-bottom: 1px solid var(--rr-line); }
 
 @media (max-width: 575.98px) {
+    .report-summary__head { flex-direction: column; align-items: flex-start; }
     .report-downloads { gap: 0.5rem; width: 100%; }
     .report-downloads .btn { flex: 1 1 auto; }
     .report-nav a { flex: 1 1 40%; }
@@ -376,5 +299,4 @@
     .report-page ::deep .report-responsive-table tbody td > *,
     .report-page ::deep .report-responsive-table tbody th > * { grid-column: 2; min-width: 0; }
     .report-page ::deep .report-responsive-table .rr-status { justify-self: start; }
-    .report-page ::deep .report-responsive-table .report-mobile-label { display: none; }
 }

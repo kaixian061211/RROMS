@@ -27,7 +27,7 @@
                             Available table-slots
                         </dt>
                         <dd class="h5 mb-0">
-                            @Model.Count(utilization.AvailableSlots)
+                            @ReportUi.Count(utilization.AvailableSlots)
                         </dd>
                     </div>
 
@@ -36,7 +36,7 @@
                             Booked table-slots
                         </dt>
                         <dd class="h5 mb-0">
-                            @Model.Count(utilization.BookedSlots)
+                            @ReportUi.Count(utilization.BookedSlots)
                         </dd>
                     </div>
 
@@ -45,7 +45,7 @@
                             Estimated utilization
                         </dt>
                         <dd class="h5 mb-0">
-                            @Model.Percentage(utilization.UtilizationPercent)
+                            @ReportUi.Percentage(utilization.UtilizationPercent)
                         </dd>
                     </div>
                 </dl>
@@ -75,7 +75,7 @@
                         </h3>
 
                         <p class="h5 mb-2">
-                            @Model.Count(utilization.DuplicateBookings)
+                            @ReportUi.Count(utilization.DuplicateBookings)
                         </p>
 
                         <p class="small text-body-secondary mb-0">
@@ -95,7 +95,7 @@
                         </h3>
 
                         <p class="h5 mb-2">
-                            @Model.Count(utilization.UnmatchedBookings)
+                            @ReportUi.Count(utilization.UnmatchedBookings)
                         </p>
 
                         <p class="small text-body-secondary mb-0">
@@ -110,7 +110,7 @@
 
         <div class="card">
             <div class="card-body">
-                <h3 class="">Utilization by table</h3>
+                <h3>Utilization by table</h3>
 
                 @if (utilization.Tables.Count == 0)
                 {
@@ -124,7 +124,7 @@
                     {
                         <p class="small text-body-secondary">
                             Showing the first @IndexModel.DetailRowLimit
-                            of @Model.Count(utilization.Tables.Count) tables.
+                            of @ReportUi.Count(utilization.Tables.Count) tables.
                             Overall figures include all tables.
                         </p>
                     }
