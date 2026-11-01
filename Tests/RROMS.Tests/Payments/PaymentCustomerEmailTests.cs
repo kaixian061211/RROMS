@@ -48,5 +48,8 @@ public class PaymentCustomerEmailTests : DatabaseTest
         var result = await new PaymentOrderProvider(db).GetOrderAsync(order.OrderId);
         Assert.NotNull(result);
         Assert.Empty(result.CustomerEmail);
+        var provider = new PaymentOrderProvider(db);
+        Assert.Empty(Assert.Single(await provider.GetOrdersForCustomerAsync(Alice)).CustomerEmail);
+        Assert.Empty(Assert.Single(await provider.GetOrdersAsync(new[] { order.OrderId })).Value.CustomerEmail);
     }
 }
