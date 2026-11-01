@@ -91,6 +91,40 @@ public class CounterPaymentTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task CheckoutInvalidatesAnEarlierCancellationSnapshot()
+    {
+        await using var cancellationDb = NewContext();
+        var staleOrder = await cancellationDb.Set<Order>().SingleAsync(o => o.OrderId == _orderId);
+
+        await using var checkoutDb = NewContext();
+        var service = CounterPaymentTestServices.Create(checkoutDb,
+            new CounterPaymentTestServices.RecordingDelivery());
+        await service.StartCheckoutAsync(_orderId, CustomerId, PaymentMethod.PayAtCounter, "https://localhost");
+
+        // The cancellation's earlier payment check is stale. Its existing
+        // RowVersion check must prevent it from overwriting checkout.
+        staleOrder.Status = OrderStatus.Cancelled;
+        await Assert.ThrowsAsync<DbUpdateConcurrencyException>(() => cancellationDb.SaveChangesAsync());
+        await using var verify = NewContext();
+        Assert.Equal(OrderStatus.Pending,
+            await verify.Set<Order>().Where(o => o.OrderId == _orderId).Select(o => o.Status).SingleAsync());
+        Assert.Equal(PaymentStatus.Pending,
+            await verify.Payments.Where(p => p.PaymentId == _paymentId).Select(p => p.PaymentStatus).SingleAsync());
+    }
+
+    [Fact]
+    public async Task CancellationBeforeCheckoutPreventsReopeningPayment()
+    {
+        await using var db = NewContext();
+        await db.Set<Order>().Where(o => o.OrderId == _orderId)
+            .ExecuteUpdateAsync(s => s.SetProperty(o => o.Status, OrderStatus.Cancelled));
+        var service = CounterPaymentTestServices.Create(db,
+            new CounterPaymentTestServices.RecordingDelivery());
+        await Assert.ThrowsAsync<PaymentException>(() => service.StartCheckoutAsync(
+            _orderId, CustomerId, PaymentMethod.PayAtCounter, "https://localhost"));
+    }
+
+    [Fact]
     public async Task CancelledOrderCannotBeCollectedOrNotifyTheCustomer()
     {
         await using var db = NewContext();

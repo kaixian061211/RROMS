@@ -7,6 +7,7 @@ using RROMS.Web.Data;
 using RROMS.Web.Models.Payments;
 using RROMS.Web.Models.Restaurant;
 using RROMS.Web.Services.Restaurant;
+using RROMS.Web.Services.Notifications;
 
 namespace RROMS.Web.Pages.Promotions.Manage;
 
@@ -16,11 +17,13 @@ public class EditModel : PageModel
 {
     private readonly AppDbContext _db;
     private readonly IWebHostEnvironment _environment;
+    private readonly NotificationPublisher _notifications;
 
-    public EditModel(AppDbContext db, IWebHostEnvironment environment)
+    public EditModel(AppDbContext db, IWebHostEnvironment environment, NotificationPublisher notifications)
     {
         _db = db;
         _environment = environment;
+        _notifications = notifications;
     }
 
     [BindProperty]
@@ -131,6 +134,9 @@ public class EditModel : PageModel
             return Page();
         }
 
+        var wasPublished = promotion is not null && promotion.IsActive
+            && promotion.EndDate >= DateOnly.FromDateTime(DateTime.Today);
+
         if (promotion is null)
         {
             promotion = new Promotion();
@@ -155,6 +161,8 @@ public class EditModel : PageModel
         }
 
         await _db.SaveChangesAsync();
+        if (!wasPublished)
+            await _notifications.PromotionPublishedAsync(promotion);
 
         TempData["Message"] = Input.PromotionId == 0 ? $"{promotion.Title} added." : $"{promotion.Title} saved.";
         return RedirectToPage("/Promotions/Manage/Index");

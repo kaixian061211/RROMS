@@ -5,9 +5,12 @@ namespace RROMS.Tests;
 [Trait("Technique", "Security")]
 public class TestSetupTests
 {
-    [Theory(DisplayName = "TC-00-01 The test setup refuses any database except RROMS_Tests")]
+    [Theory(DisplayName = "TC-00-01 The test setup refuses unapproved database names")]
     [InlineData("Server=localhost;Database=RROMS_Payment;Trusted_Connection=True")]
     [InlineData("Server=localhost;Database=rroms_tests;Trusted_Connection=True")]
+    [InlineData("Server=localhost;Database=RROMS_NotificationTracking;Trusted_Connection=True")]
+    [InlineData("Server=localhost;Database=rroms_notificationtracking_tests;Trusted_Connection=True")]
+    [InlineData("Server=localhost;Database=RROMS_Other_Tests;Trusted_Connection=True")]
     [InlineData("Server=localhost;Trusted_Connection=True")]
     public void RefusesOtherDatabases(string connectionString)
     {
@@ -19,6 +22,13 @@ public class TestSetupTests
     public void AcceptsTheTestDatabase()
     {
         var connectionString = "Server=localhost;Database=RROMS_Tests;Trusted_Connection=True";
+        Assert.Equal(connectionString, TestDatabase.CheckIsTestDatabase(connectionString));
+    }
+
+    [Fact]
+    public void AcceptsTheIsolatedNotificationTrackingDatabase()
+    {
+        var connectionString = "Server=localhost;Database=RROMS_NotificationTracking_Tests;Trusted_Connection=True";
         Assert.Equal(connectionString, TestDatabase.CheckIsTestDatabase(connectionString));
     }
 }

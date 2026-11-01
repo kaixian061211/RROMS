@@ -64,10 +64,7 @@ public class ReservationService : IReservationService
 
     // Customer actions
 
-    public async Task<ReservationResult> CreateAsync(
-        int customerUserId,
-        ReservationInput input,
-        string? customerEmail = null)
+    public async Task<ReservationResult> CreateAsync(int customerUserId, ReservationInput input)
     {
         // Switching reservations off stops new bookings. Existing ones can still be changed or cancelled.
         if (!await _restaurant.IsAcceptingReservationsAsync())
@@ -101,9 +98,7 @@ public class ReservationService : IReservationService
             await NotifyCustomerAsync(
                 reservation,
                 "Reservation request received",
-                $"Your reservation {ReservationFormatter.Reference(reservation.ReservationId)} for {ReservationFormatter.When(reservation.ReservationDate, reservation.TimeSlot)} is pending confirmation.",
-                sendEmail: true,
-                customerEmail: customerEmail);
+                $"Your reservation {ReservationFormatter.Reference(reservation.ReservationId)} for {ReservationFormatter.When(reservation.ReservationDate, reservation.TimeSlot)} is pending confirmation.");
         }
 
         return result;
@@ -113,20 +108,14 @@ public class ReservationService : IReservationService
         int customerUserId,
         int reservationId,
         ReservationInput input,
-        byte[] rowVersion,
-        string? customerEmail = null) =>
+        byte[] rowVersion) =>
         await ApplyChangesAsync(
             await FindOwnAsync(customerUserId, reservationId),
             input,
             rowVersion,
-            byCustomer: true,
-            customerEmail: customerEmail);
+            byCustomer: true);
 
-    public async Task<ReservationResult> CancelAsync(
-        int customerUserId,
-        int reservationId,
-        byte[] rowVersion,
-        string? customerEmail = null)
+    public async Task<ReservationResult> CancelAsync(int customerUserId, int reservationId, byte[] rowVersion)
     {
         var reservation = await FindOwnAsync(customerUserId, reservationId);
         if (reservation is null)
@@ -145,9 +134,7 @@ public class ReservationService : IReservationService
             await NotifyCustomerAsync(
                 reservation,
                 "Reservation status updated",
-                $"Your reservation {ReservationFormatter.Reference(reservation.ReservationId)} is now cancelled.",
-                sendEmail: true,
-                customerEmail: customerEmail);
+                $"Your reservation {ReservationFormatter.Reference(reservation.ReservationId)} is now cancelled.");
         }
 
         return result;
@@ -235,8 +222,7 @@ public class ReservationService : IReservationService
             await NotifyCustomerAsync(
                 reservation,
                 "Reservation status updated",
-                $"Your reservation {ReservationFormatter.Reference(reservation.ReservationId)} is now {ReservationFormatter.StatusLabel(newStatus).ToLowerInvariant()}.",
-                sendEmail: false);
+                $"Your reservation {ReservationFormatter.Reference(reservation.ReservationId)} is now {ReservationFormatter.StatusLabel(newStatus).ToLowerInvariant()}.");
         }
 
         return result;
@@ -253,8 +239,7 @@ public class ReservationService : IReservationService
         Reservation? reservation,
         ReservationInput input,
         byte[] rowVersion,
-        bool byCustomer,
-        string? customerEmail = null)
+        bool byCustomer)
     {
         if (reservation is null)
             return ReservationResult.Failure(NotFoundMessage);
@@ -289,9 +274,7 @@ public class ReservationService : IReservationService
             await NotifyCustomerAsync(
                 reservation,
                 "Reservation status updated",
-                $"Your reservation {ReservationFormatter.Reference(reservation.ReservationId)} is now pending confirmation.",
-                sendEmail: true,
-                customerEmail: customerEmail);
+                $"Your reservation {ReservationFormatter.Reference(reservation.ReservationId)} is now pending confirmation.");
         }
 
         return result;
@@ -300,9 +283,7 @@ public class ReservationService : IReservationService
     private async Task NotifyCustomerAsync(
         Reservation reservation,
         string title,
-        string message,
-        bool sendEmail,
-        string? customerEmail = null)
+        string message)
     {
         try
         {
@@ -316,15 +297,9 @@ public class ReservationService : IReservationService
             });
 
             await _db.SaveChangesAsync();
-            var recipient = sendEmail
-                ? new NotificationEmailRecipient(
-                    reservation.CustomerUserId,
-                    customerEmail ?? string.Empty)
-                : null;
             await _notificationDelivery.DeliverAsync(
                 notification.NotificationId,
-                sendEmail,
-                recipient);
+                sendEmail: reservation.Status == ReservationStatus.Confirmed);
         }
         catch (Exception ex)
         {

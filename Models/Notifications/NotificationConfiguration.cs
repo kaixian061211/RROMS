@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using RROMS.Web.Models.OrdersAndReservations;
 using RROMS.Web.Models.Payments;
+using RROMS.Web.Models.Accounts;
 
 namespace RROMS.Web.Models.Notifications;
 
@@ -42,6 +43,11 @@ public class NotificationConfiguration
 
         builder.Property(n => n.CreatedAt)
             .HasDefaultValueSql("SYSDATETIME()");
+
+        builder.HasOne<UserAccount>()
+            .WithMany()
+            .HasForeignKey(n => n.UserId)
+            .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasOne<Order>()
             .WithMany()

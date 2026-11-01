@@ -6,7 +6,7 @@ public class Notification
 {
     public int NotificationId { get; set; }
 
-    // No FK yet: the user table belongs to the login module.
+    // The user account receiving this notification.
     public int UserId { get; set; }
 
     [Required, StringLength(20)]

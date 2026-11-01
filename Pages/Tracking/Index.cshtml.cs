@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
 using RROMS.Web.Data;
 using RROMS.Web.Models.OrdersAndReservations;
 using RROMS.Web.Models.Payments;
@@ -26,14 +27,104 @@ public class IndexModel : PageModel
     public Order? TrackedOrder { get; private set; }
     public Reservation? TrackedReservation { get; private set; }
     public Payment? TrackedPayment { get; private set; }
+    public bool IsOverview { get; private set; }
+    public IReadOnlyList<Order> RecentOrders { get; private set; } = Array.Empty<Order>();
+    public IReadOnlyList<Reservation> RecentReservations { get; private set; } = Array.Empty<Reservation>();
     public IReadOnlyDictionary<int, TableInfo> Tables { get; private set; } =
         new Dictionary<int, TableInfo>();
+
+    // Both initial HTML and polling use the same authorized data and snapshot.
+    public string Snapshot => IsOverview ? JsonSerializer.Serialize(new
+    {
+        overview = true,
+        orderId = (int?)null,
+        reservationId = (int?)null,
+        orders = RecentOrders.Select(o => new { o.OrderId, o.Status, o.TableId, o.CreatedAt }),
+        reservations = RecentReservations.Select(r => new
+        {
+            r.ReservationId, r.Status, r.TableId, r.ReservationDate, r.TimeSlot, r.PartySize
+        })
+    }, JsonSerializerOptions.Web) : JsonSerializer.Serialize(new
+    {
+        orderId = TrackedOrder?.OrderId,
+        orderStatus = TrackedOrder?.Status,
+        orderTableId = TrackedOrder?.TableId,
+        orderCreatedAt = TrackedOrder?.CreatedAt,
+
+        reservationId = TrackedReservation?.ReservationId,
+        reservationStatus = TrackedReservation?.Status,
+        reservationDate = TrackedReservation?.ReservationDate,
+        reservationTime = TrackedReservation?.TimeSlot,
+        reservationTableId = TrackedReservation?.TableId,
+        reservationPartySize = TrackedReservation?.PartySize,
+
+        paymentId = TrackedPayment?.PaymentId,
+        paymentStatus = TrackedPayment?.PaymentStatus,
+        paymentAmount = TrackedPayment?.Amount,
+        paymentMethod = TrackedPayment?.PaymentMethod,
+        paymentPaidAt = TrackedPayment?.PaidAt,
+        paymentRefundedAt = TrackedPayment?.RefundedAt
+    }, JsonSerializerOptions.Web);
+
+    public async Task<IActionResult> OnGetStatusAsync(
+        int? orderId,
+        int? reservationId,
+        int? paymentId,
+        CancellationToken ct)
+    {
+        var result = await LoadAsync(
+            orderId,
+            reservationId,
+            paymentId,
+            ct,
+            includeTables: false);
+
+        return result is PageResult
+            ? Content(Snapshot, "application/json")
+            : result;
+    }
 
     public async Task<IActionResult> OnGetAsync(
         int? orderId,
         int? reservationId,
         int? paymentId,
         CancellationToken ct)
+    {
+        if (!ModelState.IsValid) return BadRequest();
+        return orderId is null && reservationId is null && paymentId is null
+            ? await LoadOverviewAsync(ct, includeTables: true)
+            : await LoadAsync(orderId, reservationId, paymentId, ct, includeTables: true);
+    }
+
+    public async Task<IActionResult> OnGetOverviewStatusAsync(
+        int? orderId, int? reservationId, int? paymentId, CancellationToken ct)
+    {
+        if (!ModelState.IsValid || orderId.HasValue || reservationId.HasValue || paymentId.HasValue)
+            return BadRequest();
+        var result = await LoadOverviewAsync(ct, includeTables: false);
+        return result is PageResult ? Content(Snapshot, "application/json") : result;
+    }
+
+    private async Task<IActionResult> LoadOverviewAsync(CancellationToken ct, bool includeTables)
+    {
+        if (!User.TryGetPaymentUserId(out var userId) || userId <= 0) return Forbid();
+        IsOverview = true;
+        RecentOrders = await _db.Set<Order>().AsNoTracking()
+            .Where(o => o.CustomerUserId == userId)
+            .OrderByDescending(o => o.OrderId).Take(20).ToListAsync(ct);
+        RecentReservations = await _db.Set<Reservation>().AsNoTracking()
+            .Where(r => r.CustomerUserId == userId)
+            .OrderByDescending(r => r.ReservationId).Take(20).ToListAsync(ct);
+        if (includeTables) Tables = await _restaurant.GetTablesAsync();
+        return Page();
+    }
+
+    private async Task<IActionResult> LoadAsync(
+        int? orderId,
+        int? reservationId,
+        int? paymentId,
+        CancellationToken ct,
+        bool includeTables)
     {
         if (!User.TryGetPaymentUserId(out var userId) || userId <= 0)
             return Forbid();
@@ -50,8 +141,6 @@ public class IndexModel : PageModel
             return BadRequest();
         }
 
-        Tables = await _restaurant.GetTablesAsync();
-
         if (reservationId is int selectedReservationId)
         {
             TrackedReservation = await _db.Set<Reservation>()
@@ -61,10 +150,9 @@ public class IndexModel : PageModel
                         && r.CustomerUserId == userId,
                     ct);
 
-            return TrackedReservation is null ? NotFound() : Page();
+            if (TrackedReservation is null) return NotFound();
         }
-
-        if (paymentId is int selectedPaymentId)
+        else if (paymentId is int selectedPaymentId)
         {
             var result = await (
                 from payment in _db.Payments.AsNoTracking()
@@ -80,25 +168,29 @@ public class IndexModel : PageModel
 
             TrackedOrder = result.Order;
             TrackedPayment = result.Payment;
+        }
+        else
+        {
+            TrackedOrder = await _db.Set<Order>()
+                .AsNoTracking()
+                .SingleOrDefaultAsync(
+                    o => o.OrderId == orderId
+                        && o.CustomerUserId == userId,
+                    ct);
 
-            return Page();
+            if (TrackedOrder is null)
+                return NotFound();
+
+            TrackedPayment = await _db.Payments
+                .AsNoTracking()
+                .SingleOrDefaultAsync(
+                    p => p.OrderId == TrackedOrder.OrderId,
+                    ct);
         }
 
-        TrackedOrder = await _db.Set<Order>()
-            .AsNoTracking()
-            .SingleOrDefaultAsync(
-                o => o.OrderId == orderId
-                    && o.CustomerUserId == userId,
-                ct);
-
-        if (TrackedOrder is null)
-            return NotFound();
-
-        TrackedPayment = await _db.Payments
-            .AsNoTracking()
-            .SingleOrDefaultAsync(
-                p => p.OrderId == TrackedOrder.OrderId,
-                ct);
+        // Polling only needs the owned records. Load table labels for HTML once
+        // ownership is established, rather than on every five-second status check.
+        if (includeTables) Tables = await _restaurant.GetTablesAsync();
 
         return Page();
     }

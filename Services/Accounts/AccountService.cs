@@ -285,6 +285,8 @@ public class AccountService : IAccountService
         if (await Users.AnyAsync(u => u.Role == UserRoles.Admin))
             return;
 
+        ArgumentException.ThrowIfNullOrWhiteSpace(password);
+
         Users.Add(new UserAccount
         {
             FullName = "System Administrator",

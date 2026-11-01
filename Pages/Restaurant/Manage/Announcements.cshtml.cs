@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using RROMS.Web.Data;
 using RROMS.Web.Models.Payments;
 using RROMS.Web.Models.Restaurant;
+using RROMS.Web.Services.Notifications;
 
 namespace RROMS.Web.Pages.Restaurant.Manage;
 
@@ -13,10 +14,12 @@ namespace RROMS.Web.Pages.Restaurant.Manage;
 public class AnnouncementsModel : PageModel
 {
     private readonly AppDbContext _db;
+    private readonly NotificationPublisher _notifications;
 
-    public AnnouncementsModel(AppDbContext db)
+    public AnnouncementsModel(AppDbContext db, NotificationPublisher notifications)
     {
         _db = db;
+        _notifications = notifications;
     }
 
     public List<Announcement> Announcements { get; private set; } = new();
@@ -74,22 +77,27 @@ public class AnnouncementsModel : PageModel
             return Page();
         }
 
+        Announcement announcement;
+        var wasPublished = false;
         if (Input.AnnouncementId == 0)
         {
-            _db.Add(new Announcement
+            announcement = new Announcement
             {
                 Title = Input.Title,
                 Message = Input.Message,
                 ExpiresAt = Input.ExpiresAt,
                 IsActive = Input.IsActive,
                 CreatedAt = DateTime.Now
-            });
+            };
+            _db.Add(announcement);
             TempData["Message"] = "Announcement posted.";
         }
         else
         {
-            var announcement = await _db.Set<Announcement>().FirstOrDefaultAsync(a => a.AnnouncementId == Input.AnnouncementId);
-            if (announcement is null) return NotFound();
+            var existing = await _db.Set<Announcement>().FirstOrDefaultAsync(a => a.AnnouncementId == Input.AnnouncementId);
+            if (existing is null) return NotFound();
+            announcement = existing;
+            wasPublished = announcement.IsLiveAt(DateTime.Now);
 
             announcement.Title = Input.Title;
             announcement.Message = Input.Message;
@@ -99,6 +107,8 @@ public class AnnouncementsModel : PageModel
         }
 
         await _db.SaveChangesAsync();
+        if (!wasPublished)
+            await _notifications.AnnouncementPublishedAsync(announcement);
         return RedirectToPage();
     }
 

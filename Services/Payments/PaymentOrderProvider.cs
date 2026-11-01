@@ -127,7 +127,8 @@ public sealed class PaymentOrderProvider : IPaymentOrderProvider
             OrderStatus = order.Status,
             CustomerUserId = order.CustomerUserId,
             CustomerName = customerName,
-            CustomerEmail = customer?.Email ?? string.Empty,
+            CustomerEmail = customer is { IsActive: true, Role: UserRoles.Customer }
+                ? customer.Email : string.Empty,
             TotalAmount = order.Items.Sum(item => item.LineTotal)
         };
     }
