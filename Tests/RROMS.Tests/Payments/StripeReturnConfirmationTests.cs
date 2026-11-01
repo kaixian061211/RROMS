@@ -16,10 +16,10 @@ public class StripeReturnConfirmationTests
     {
         var validator = typeof(StripeGateway).Assembly.GetType(
             "RROMS.Web.Services.Payments.Gateways.StripePaymentConfirmation", true)!;
-        object?[] args = [session, null];
+        object?[] args = [session, new DateTime(2026, 10, 30, 15, 59, 0, DateTimeKind.Utc), null];
         var valid = (bool)validator.GetMethod("TryCreate")!.Invoke(null, args)!;
-        Assert.Equal(valid, args[1] is not null);
-        return (OnlinePaymentConfirmation?)args[1];
+        Assert.Equal(valid, args[2] is not null);
+        return (OnlinePaymentConfirmation?)args[2];
     }
 
     private static Session PaidSession() => new()
@@ -40,6 +40,7 @@ public class StripeReturnConfirmationTests
         Assert.Equal("cs_test_stored", result.SessionId);
         Assert.Equal("pi_test_paid", result.PaymentIntentId);
         Assert.Equal(123L, result.AttemptTicks);
+        Assert.Equal(new DateTime(2026, 10, 30, 15, 59, 0, DateTimeKind.Utc), result.PaidAtUtc);
     }
 
     [Theory]

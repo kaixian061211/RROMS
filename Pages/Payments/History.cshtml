@@ -1,93 +1,38 @@
 @page
 @model RROMS.Web.Pages.Payments.HistoryModel
-@{
-    ViewData["Title"] = "My payments";
-}
-
-<partial name="_PaymentPageHeader" />
-
-<h1 class="h3 mb-3">My payments</h1>
-
-@if (Model.Payments.Count == 0)
-{
-    <div class="alert alert-info">
-        You haven't made any payments yet.
-    </div>
-}
-else
-{
-    <div class="table-responsive bg-white border rounded">
-        <table class="table mb-0">
-            <thead>
-                <tr>
-                    <th>Reference</th>
-                    <th>Order</th>
-                    <th>Method</th>
-                    <th>Status</th>
-                    <th class="num">Amount</th>
-                    <th>Date</th>
-                    <th></th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var payment in Model.Payments)
-                {
-                    <tr>
-                        <td>@payment.ReceiptNo</td>
-                        <td>@payment.OrderLabel</td>
-                        <td>
-                            @PaymentFormatter.MethodLabel(payment.Method)
-                        </td>
-                        <td>
-                            <span class="badge @PaymentFormatter.StatusBadge(payment.Status)">
-                                @PaymentFormatter.StatusLabel(payment.Status)
-                            </span>
-                        </td>
-                        <td class="num">
-                            @PaymentFormatter.Money(payment.Amount)
-                        </td>
-                        <td>
-                            @PaymentFormatter.When(
-                                payment.PaidAt ?? payment.CreatedAt)
-                        </td>
-                        <td class="text-end">
-                            @if (payment.Status is PaymentStatus.Pending or PaymentStatus.Failed
-                                 && payment.RecordedByStaffId is null
-                                 && PaymentMethod.IsOnline(payment.Method))
-                            {
-                                <a class="btn btn-sm btn-outline-primary"
-                                   asp-page="Success"
-                                   asp-route-paymentId="@payment.PaymentId">
-                                    Check payment status
-                                </a>
-                            }
-
-                            @if (payment.HasReceipt)
-                            {
-                                <a class="btn btn-sm btn-outline-secondary"
-                                   asp-page="Receipt"
-                                   asp-route-id="@payment.PaymentId">
-                                    Receipt
-                                </a>
-                            }
-                            else if (
-                                payment.OrderStatus !=
-                                RROMS.Web.Models.OrdersAndReservations.OrderStatus.Cancelled &&
-                                (payment.Status == PaymentStatus.Pending ||
-                                 payment.Status == PaymentStatus.Failed))
-                            {
-                                <a class="btn btn-sm btn-outline-secondary"
-                                   asp-page="Checkout"
-                                   asp-route-orderId="@payment.OrderId">
-                                    @(payment.Status == PaymentStatus.Failed
-                                        ? "Try again"
-                                        : "Change payment")
-                                </a>
-                            }
-                        </td>
-                    </tr>
-                }
-            </tbody>
-        </table>
-    </div>
-}
+@{ ViewData["Title"] = "My payments"; }
+<div class="rr-narrow">
+    <partial name="_PaymentPageHeader" />
+    <header class="rr-page-header"><div><h1>My payments</h1><p class="rr-lede">Payment outcomes, receipts, and refunds for your orders.</p></div><div class="rr-page-actions"><a class="btn btn-outline-secondary" asp-page="MyOrders">Orders for payment</a></div></header>
+    @if (Model.Payments.Count == 0)
+    {
+        <div class="rr-empty"><h2 class="rr-empty__title">Your payment history starts here</h2><p>Your payments and receipts will appear after you choose how to pay for an order.</p><a class="btn btn-primary" asp-page="MyOrders">View your orders</a></div>
+    }
+    else
+    {
+        <p class="payment-note">@Model.Payments.Count records · all times in Malaysia time</p>
+        <div class="payment-records">
+        @foreach (var payment in Model.Payments)
+        {
+            <article class="rr-slip payment-slip" aria-labelledby="history-@payment.PaymentId">
+                <div class="rr-slip__body">
+                    <div class="payment-slip__head"><span class="rr-ref">@payment.ReceiptNo</span><span class="@PaymentFormatter.StatusPill(payment.Status, payment.Method)">@PaymentFormatter.StatusText(payment.Status, payment.Method)</span></div>
+                    <h2 id="history-@payment.PaymentId" class="payment-card-title">@PaymentFormatter.OrderReference(payment.OrderId)</h2>
+                    <div class="payment-slip__summary"><span>@PaymentFormatter.MethodLabel(payment.Method)</span><strong class="rr-money">@PaymentFormatter.Money(payment.Amount)</strong></div>
+                    <p class="payment-note mb-1">@(payment.PaidAt.HasValue ? "Paid" : "Started") @PaymentFormatter.WhenUtc(payment.PaidAt ?? payment.CreatedAt)</p>
+                    @if (payment.RefundedAt.HasValue) { <p class="payment-note mb-1">Refunded @PaymentFormatter.WhenUtc(payment.RefundedAt)</p> }
+                    <div class="payment-actions mt-3">
+                        @if (payment.Status is PaymentStatus.Pending or PaymentStatus.Failed && payment.RecordedByStaffId is null && PaymentMethod.IsOnline(payment.Method))
+                        { <a class="btn btn-outline-secondary" asp-page="Success" asp-route-paymentId="@payment.PaymentId">Check payment status</a> }
+                        @if (payment.HasReceipt)
+                        { <a class="btn btn-outline-secondary" asp-page="Receipt" asp-route-id="@payment.PaymentId" aria-label="Download receipt @payment.ReceiptNo">Download receipt</a> }
+                        else if (payment.OrderStatus != RROMS.Web.Models.OrdersAndReservations.OrderStatus.Cancelled)
+                        { <a class="btn btn-outline-secondary" asp-page="CheckOut" asp-route-orderId="@payment.OrderId">@(payment.Status == PaymentStatus.Failed ? "Review payment options" : "Review payment")</a> }
+                        else { <span class="payment-note">Order cancelled</span> }
+                    </div>
+                </div>
+            </article>
+        }
+        </div>
+    }
+</div>

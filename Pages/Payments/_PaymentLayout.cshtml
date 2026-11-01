@@ -1,0 +1,43 @@
+@{
+    Layout = "/Pages/Shared/_Layout.cshtml";
+    var page = ViewContext.RouteData.Values["page"] as string ?? "";
+    var staff = User.IsInRole(PaymentRoles.Staff) || User.IsInRole(PaymentRoles.Admin);
+}
+<div class="payment-page">
+    @if (User.Identity?.IsAuthenticated == true)
+    {
+        <nav class="payment-nav" aria-label="Payments">
+            @if (staff)
+            {
+                <a asp-page="/Payments/Index" aria-current="@(page == "/Payments/Index" || page == "/Payments/Details" ? "page" : null)">Transactions</a>
+                <a asp-page="/Payments/Counter" aria-current="@(page == "/Payments/Counter" || page == "/Payments/Collect" ? "page" : null)">Counter queue</a>
+            }
+            else
+            {
+                <a asp-page="/Payments/MyOrders" aria-current="@(page == "/Payments/MyOrders" || page == "/Payments/CheckOut" ? "page" : null)">Orders for payment</a>
+                <a asp-page="/Payments/History" aria-current="@(page == "/Payments/History" ? "page" : null)">My payments</a>
+            }
+        </nav>
+    }
+    @RenderBody()
+
+    <div class="modal fade" id="payment-confirm" tabindex="-1" aria-labelledby="payment-confirm-title" aria-describedby="payment-confirm-description" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 class="modal-title" id="payment-confirm-title">Confirm payment action</h2>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close confirmation"></button>
+                </div>
+                <div class="modal-body"><p id="payment-confirm-description" class="mb-0"></p></div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Go back</button>
+                    <button type="button" class="btn btn-primary" data-payment-confirm-action>Confirm</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+@section Scripts {
+    <script src="~/js/payments.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+}

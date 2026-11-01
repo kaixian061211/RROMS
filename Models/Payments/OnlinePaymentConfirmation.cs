@@ -1,6 +1,6 @@
 namespace RROMS.Web.Models.Payments;
 
-/// <summary>Payment details received from a verified Stripe Checkout webhook.</summary>
+/// <summary>Payment details received from a verified Stripe Checkout success event (webhook or server lookup).</summary>
 public record OnlinePaymentConfirmation(
     int PaymentId,
     int OrderId,
@@ -8,4 +8,5 @@ public record OnlinePaymentConfirmation(
     string? PaymentIntentId,
     long AmountTotal,
     string Currency,
-    long? AttemptTicks);
+    long? AttemptTicks,
+    DateTime PaidAtUtc);

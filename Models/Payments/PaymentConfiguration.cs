@@ -23,7 +23,7 @@ public class PaymentConfiguration : IEntityTypeConfiguration<Payment>
         });
 
         builder.Property(p => p.PaymentStatus).HasDefaultValue("pending");
-        builder.Property(p => p.CreatedAt).HasDefaultValueSql("SYSDATETIME()");
+        builder.Property(p => p.CreatedAt).HasDefaultValueSql("SYSUTCDATETIME()");
 
         // one payment per order
         builder.HasIndex(p => p.OrderId).IsUnique();

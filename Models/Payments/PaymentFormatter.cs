@@ -28,6 +28,25 @@ public static class PaymentFormatter
         _ => "text-bg-light"
     };
 
+    /// <summary>Payment-only status pills; legacy Bootstrap classes remain available to Tracking.</summary>
+    public static string StatusPill(string status, string? method = null) => "rr-status " + (status switch
+    {
+        PaymentStatus.Pending when method == PaymentMethod.PayAtCounter => "rr-status--attention",
+        PaymentStatus.Pending => "rr-status--progress",
+        PaymentStatus.Paid => "rr-status--good",
+        PaymentStatus.Failed => "rr-status--bad",
+        _ => "rr-status--off"
+    });
+
+    public static string StatusText(string status, string? method = null) => status switch
+    {
+        PaymentStatus.Pending when method == PaymentMethod.PayAtCounter => "Waiting at counter",
+        PaymentStatus.Pending when method is not null => "Pending online",
+        _ => StatusLabel(status)
+    };
+
+    public static string OrderReference(int orderId) => $"ORD-{orderId:D6}";
+
     public static string MethodLabel(string method) => method switch
     {
         PaymentMethod.Cash => "Cash",
@@ -37,6 +56,10 @@ public static class PaymentFormatter
         PaymentMethod.PayAtCounter => "Pay at counter",
         _ => method
     };
+
+    /// <summary>UTC payment timestamps shown in Malaysia time; When remains compatible with other modules.</summary>
+    public static string WhenUtc(DateTime? value) =>
+        value.HasValue ? When(PaymentTime.ToLocal(value.Value)) : "-";
 
     public static string When(DateTime? value) =>
         value?.ToString("dd MMM yyyy, h:mm tt", CultureInfo.InvariantCulture) ?? "-";

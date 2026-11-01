@@ -25,7 +25,7 @@ public class PaymentFilter : IValidatableObject
     public (DateTime? From, DateTime? ToExclusive) ResolveRange(
         DateTime? now = null)
     {
-        var today = (now ?? DateTime.Now).Date;
+        var today = (now ?? PaymentTime.NowLocal()).Date;
         DateTime? rangeStart = null;
         DateTime? rangeEnd = null;
 
@@ -59,7 +59,9 @@ public class PaymentFilter : IValidatableObject
                 break;
         }
 
-        return (rangeStart, rangeEnd);
+        return (
+            rangeStart.HasValue ? PaymentTime.ToUtc(rangeStart.Value) : null,
+            rangeEnd.HasValue ? PaymentTime.ToUtc(rangeEnd.Value) : null);
     }
 
     public IEnumerable<ValidationResult> Validate(

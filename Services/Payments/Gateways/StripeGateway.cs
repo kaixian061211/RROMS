@@ -17,10 +17,12 @@ public class StripeGateway : IStripeGateway
 
     public StripeGateway(
         IOptions<StripeSettings> options,
-        ILogger<StripeGateway> logger)
+        ILogger<StripeGateway> logger,
+        StripeClient? client = null)
     {
         _settings = options.Value;
         _logger = logger;
+        _client = client;
     }
 
     public async Task<StripeSessionInfo> CreateCheckoutSessionAsync(
@@ -40,6 +42,15 @@ public class StripeGateway : IStripeGateway
         var options = new SessionCreateOptions
         {
             Mode = "payment",
+            // Stripe accepts these per-session brand values; shared account settings are untouched.
+            BrandingSettings = new SessionBrandingSettingsOptions
+            {
+                DisplayName = "RROMS",
+                BackgroundColor = "#F1F3F1", // DESIGN.md marble
+                ButtonColor = "#0B6B4F",     // DESIGN.md pandan
+                BorderStyle = "rounded",
+                FontFamily = "inter"        // Closest supported sans serif to the app's Jakarta Sans
+            },
             AllowedPaymentMethodTypes = new List<string>
             {
                 ToStripeMethodType(payment.PaymentMethod)
@@ -51,7 +62,8 @@ public class StripeGateway : IStripeGateway
                 : customerEmail,
             SuccessUrl = successUrl,
             CancelUrl = cancelUrl,
-            ExpiresAt = DateTime.UtcNow.AddMinutes(expiryMinutes),
+            // Keep every parameter stable when recovering an interrupted attempt.
+            ExpiresAt = DateTime.SpecifyKind(payment.CreatedAt, DateTimeKind.Utc).AddMinutes(expiryMinutes),
             Metadata = new Dictionary<string, string>
             {
                 ["payment_id"] = payment.PaymentId.ToString(
@@ -68,12 +80,12 @@ public class StripeGateway : IStripeGateway
                     Quantity = 1,
                     PriceData = new SessionLineItemPriceDataOptions
                     {
-                        Currency = _settings.Currency,
+                        Currency = "myr",
                         UnitAmount = ToMinorUnits(payment.Amount),
                         ProductData =
                             new SessionLineItemPriceDataProductDataOptions
                             {
-                                Name = $"RROMS order #{payment.OrderId}"
+                                Name = $"RROMS order {PaymentFormatter.OrderReference(payment.OrderId)}"
                             }
                     }
                 }
@@ -157,9 +169,8 @@ public class StripeGateway : IStripeGateway
                 return null;
             }
 
-            if (!StripePaymentConfirmation.TryCreate(
-                    session,
-                    out var confirmation))
+            var confirmation = await FindPaidEventAsync(session);
+            if (confirmation is null)
             {
                 _logger.LogWarning(
                     "Stripe session {SessionId} has inconsistent payment details",
@@ -197,6 +208,38 @@ public class StripeGateway : IStripeGateway
         }
     }
 
+    private async Task<OnlinePaymentConfirmation?> FindPaidEventAsync(Session session)
+    {
+        // A Session/PaymentIntent can exist before money is received. Use Stripe's
+        // successful Checkout event time, just as the signed webhook path does.
+        // The Events API retains 30 days; never invent a date for older/missing events.
+        var options = new EventListOptions
+        {
+            Types = ["checkout.session.completed", "checkout.session.async_payment_succeeded"],
+            Limit = 100,
+            Created = new DateRangeOptions { GreaterThanOrEqual = session.Created }
+        };
+        var inspected = 0;
+        await foreach (var stripeEvent in new EventService(GetClient()).ListAutoPagingAsync(options))
+        {
+            if (stripeEvent.Type is "checkout.session.completed" or "checkout.session.async_payment_succeeded"
+                && stripeEvent.Data.Object is Session paidSession
+                && paidSession.Id == session.Id
+                && StripePaymentConfirmation.TryCreate(paidSession, stripeEvent.Created, out var eventConfirmation)
+                && StripePaymentConfirmation.TryCreate(session, stripeEvent.Created, out var currentConfirmation)
+                && eventConfirmation == currentConfirmation)
+            {
+                return currentConfirmation;
+            }
+
+            // Bound recovery work on a busy shared Stripe account. A signed webhook
+            // can still confirm the payment; a later recheck must not start a new charge.
+            if (++inspected >= 1000) break;
+        }
+
+        return null;
+    }
+
     public async Task<bool> TryExpireSessionAsync(string sessionId)
     {
         var service = new SessionService(GetClient());
@@ -206,18 +249,19 @@ public class StripeGateway : IStripeGateway
             await service.ExpireAsync(sessionId);
             return true;
         }
-        catch (StripeException)
+        catch (Exception ex) when (ex is StripeException or HttpRequestException or OperationCanceledException)
         {
-            // It may already be expired or already paid.
+            // An interrupted response may still have closed the session.
+            // Verify closure before permitting cancellation or another checkout.
             try
             {
                 var session = await service.GetAsync(sessionId);
                 return session.Status == "expired";
             }
-            catch (StripeException ex)
+            catch (Exception lookupError) when (lookupError is StripeException or HttpRequestException or OperationCanceledException)
             {
                 _logger.LogWarning(
-                    ex,
+                    lookupError,
                     "Could not check Checkout Session {SessionId}",
                     sessionId);
 
@@ -262,11 +306,10 @@ public class StripeGateway : IStripeGateway
                 "The refund amount is invalid.");
         }
 
-        if (string.IsNullOrWhiteSpace(_settings.Currency) ||
-            _settings.Currency.Trim().Length != 3)
+        if (!string.Equals(_settings.Currency?.Trim(), "MYR", StringComparison.OrdinalIgnoreCase))
         {
             throw new PaymentException(
-                "The refund currency is not configured correctly.");
+                "RROMS payments and refunds must use MYR. Check the Stripe currency setting.");
         }
 
         if (string.IsNullOrWhiteSpace(_settings.SecretKey))
@@ -425,12 +468,12 @@ public class StripeGateway : IStripeGateway
 
             "pending" or "requires_action" =>
                 throw new PaymentException(
-                    "The Stripe refund is awaiting confirmation. The payment remains marked paid. This will be confirmed automatically on the next payment refresh.",
+                    "The Stripe refund is awaiting confirmation. The payment remains marked paid. Use the refund action again to check the existing refund; do not return the money separately.",
                     paymentMayBeInProgress: true),
 
             "failed" or "canceled" =>
                 throw new PaymentException(
-                    "The Stripe refund failed or was cancelled. The payment remains marked paid. The system will retry automatically when a new refund is needed."),
+                    "The Stripe refund failed or was cancelled. The payment remains marked paid. Check Stripe, then use the refund action again if another attempt is needed."),
 
             _ => throw new PaymentException(
                 "Stripe has not confirmed the refund. Check its status in Stripe before trying again.",
@@ -456,6 +499,12 @@ public class StripeGateway : IStripeGateway
 
     private StripeClient GetClient()
     {
+        if (!string.Equals(_settings.Currency?.Trim(), "MYR", StringComparison.OrdinalIgnoreCase))
+        {
+            throw new PaymentException(
+                "RROMS payments and refunds must use MYR. Check the Stripe currency setting.");
+        }
+
         if (string.IsNullOrWhiteSpace(_settings.SecretKey))
         {
             throw new PaymentException(

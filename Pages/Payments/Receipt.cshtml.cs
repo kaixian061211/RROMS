@@ -22,6 +22,11 @@ public class ReceiptModel : PageModel
 
     public async Task<IActionResult> OnGetAsync(int id)
     {
+        if (!User.TryGetPaymentUserId(out var userId) || userId <= 0)
+            return Forbid();
+        if (id <= 0 || !ModelState.IsValid)
+            return BadRequest("Choose a valid payment.");
+
         var payment = await _queries.GetDetailsAsync(id);
         if (payment is null)
         {
@@ -29,7 +34,7 @@ public class ReceiptModel : PageModel
         }
 
         var isStaff = User.IsInRole(PaymentRoles.Staff) || User.IsInRole(PaymentRoles.Admin);
-        if (!isStaff && payment.CustomerId != User.GetPaymentUserId())
+        if (!isStaff && payment.CustomerId != userId)
         {
             return Forbid();
         }

@@ -1,41 +1,44 @@
-// Poll saved payment status.
-// Stripe lookups happen on page entry or manual recheck.
+// Observe saved status without overlapping requests. Stripe verification remains explicit.
 (function () {
-    var poll = document.getElementById('poll');
-    if (!poll) { return; }
-
-    var url = poll.dataset.url;
+    'use strict';
+    var poll = document.querySelector('.payment-page #poll');
+    if (!poll) return;
+    var note = document.getElementById('poll-note');
+    var spinner = document.querySelector('[data-payment-spinner]');
     var attempts = 0;
-    var maxAttempts = 40;
-
-    var timer = setInterval(async function () {
+    var timer;
+    var active;
+    var stopped = false;
+    function stop(message) {
+        stopped = true;
+        clearTimeout(timer);
+        if (active) active.abort();
+        if (spinner) spinner.hidden = true;
+        if (note && message) note.textContent = message;
+    }
+    async function check() {
+        if (stopped) return;
+        if (document.hidden) { timer = setTimeout(check, 3000); return; }
         attempts++;
-
+        active = new AbortController();
+        var timeout = setTimeout(function () { if (active) active.abort(); }, 8000);
         try {
-            var response = await fetch(url);
-
-            if (response.ok) {
+            var response = await fetch(poll.dataset.url, { signal: active.signal, cache: 'no-store', headers: { 'Accept': 'application/json' } });
+            if (response.redirected || response.status === 401 || response.status === 403) {
+                stop('Your session needs attention. Sign in again to check this payment before paying again.');
+                return;
+            }
+            if (response.status === 404) { stop('This payment could not be found. Open your orders to check it.'); return; }
+            if (response.ok && (response.headers.get('content-type') || '').includes('application/json')) {
                 var data = await response.json();
-
-                if (data.status && data.status !== 'pending') {
-                    clearInterval(timer);
-                    location.reload();
-                    return;
-                }
+                if (['paid', 'failed', 'refunded'].includes(data.status)) { stop(); location.reload(); return; }
             }
-        } catch (e) {
-            // Retry a temporary connection failure on the next tick.
-        }
-
-        if (attempts >= maxAttempts) {
-            clearInterval(timer);
-
-            var note = document.getElementById('poll-note');
-
-            if (note) {
-                note.textContent =
-                    'Payment is still unconfirmed. Use Check payment status or contact the restaurant before paying again.';
-            }
-        }
-    }, 3000);
+        } catch (_) { /* A later check can recover a temporary connection failure. */ }
+        finally { clearTimeout(timeout); active = null; }
+        if (attempts >= 40) { stop('Payment is still unconfirmed. Use Check payment status or contact the restaurant before paying again.'); return; }
+        if (!stopped) timer = setTimeout(check, 3000);
+    }
+    window.addEventListener('pagehide', function () { stop(); });
+    window.addEventListener('pageshow', function (event) { if (event.persisted) location.reload(); });
+    timer = setTimeout(check, 3000);
 })();

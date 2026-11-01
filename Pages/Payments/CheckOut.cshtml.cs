@@ -38,22 +38,22 @@ public class CheckoutModel : PageModel
             new MethodOption(
                 PaymentMethod.Card,
                 "Card",
-                "Visa or Mastercard, paid securely on Stripe."),
+                "Pay securely by card on Stripe."),
 
             new MethodOption(
                 PaymentMethod.OnlineBanking,
-                "Online banking",
+                "Online banking (FPX)",
                 "Pay with FPX from your Malaysian bank account."),
 
             new MethodOption(
                 PaymentMethod.EWallet,
-                "E-wallet",
-                "Pay with GrabPay."),
+                "GrabPay e-wallet",
+                "Pay with GrabPay on Stripe."),
 
             new MethodOption(
                 PaymentMethod.PayAtCounter,
                 "Pay at the counter",
-                "Place your order now and pay our staff when you arrive.")
+                "Pay our staff at the restaurant. No online charge.")
         };
 
     [BindProperty(SupportsGet = true)]
@@ -75,6 +75,10 @@ public class CheckoutModel : PageModel
     public bool CanCheckOnlineStatus =>
         ExistingPayment is { Status: PaymentStatus.Pending or PaymentStatus.Failed, RecordedByStaffId: null }
         && PaymentMethod.IsOnline(ExistingPayment.Method);
+
+    public bool MustResumeOnlineCheckout => CanCheckOnlineStatus
+        && ExistingPayment!.Status == PaymentStatus.Pending
+        && string.IsNullOrWhiteSpace(ExistingPayment.TransactionRef);
 
     public async Task<IActionResult> OnGetAsync()
     {
@@ -101,6 +105,8 @@ public class CheckoutModel : PageModel
             Order = order;
 
             await LoadExistingPaymentAsync(customerId);
+            if (MustResumeOnlineCheckout)
+                Method = ExistingPayment!.Method;
 
             if (order.OrderStatus ==
                 RROMS.Web.Models.OrdersAndReservations.OrderStatus.Cancelled)
@@ -117,7 +123,7 @@ public class CheckoutModel : PageModel
                 TempData["Info"] =
                     "This order has already been paid or refunded.";
 
-                return RedirectToPage("MyOrders");
+                return RedirectToPage("Success", new { paymentId = ExistingPayment.PaymentId });
             }
 
             return Page();
@@ -171,6 +177,11 @@ public class CheckoutModel : PageModel
                 return RedirectToPage("MyOrders");
             }
 
+            if (ExistingPayment?.Status is PaymentStatus.Paid or PaymentStatus.Refunded)
+            {
+                return RedirectToPage("Success", new { paymentId = ExistingPayment.PaymentId });
+            }
+
             if (!PaymentMethod.CheckoutChoices.Contains(Method))
             {
                 ModelState.AddModelError(
@@ -184,7 +195,7 @@ public class CheckoutModel : PageModel
             }
 
             var baseUrl =
-                $"{Request.Scheme}://{Request.Host}";
+                $"{Request.Scheme}://{Request.Host}{Request.PathBase}";
 
             var result = await _payments.StartCheckoutAsync(
                 OrderId,

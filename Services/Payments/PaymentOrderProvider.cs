@@ -67,12 +67,18 @@ public sealed class PaymentOrderProvider : IPaymentOrderProvider
             .ToDictionary(order => order.OrderId);
     }
 
-    public Task<IReadOnlyDictionary<int, string>> GetStaffNamesAsync(
+    public async Task<IReadOnlyDictionary<int, string>> GetStaffNamesAsync(
         IEnumerable<int> staffUserIds)
     {
-        // Staff records belong to the authentication module.
-        return Task.FromResult<IReadOnlyDictionary<int, string>>(
-            new Dictionary<int, string>());
+        var ids = staffUserIds.Where(id => id > 0).Distinct().ToList();
+        if (ids.Count == 0)
+            return new Dictionary<int, string>();
+
+        // Historical records retain the name even if an account was deactivated.
+        return await _db.Set<UserAccount>()
+            .AsNoTracking()
+            .Where(user => ids.Contains(user.UserId))
+            .ToDictionaryAsync(user => user.UserId, user => user.FullName);
     }
 
     private IQueryable<Order> OrdersWithItems() =>

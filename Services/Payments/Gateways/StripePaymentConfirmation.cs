@@ -12,11 +12,15 @@ internal static class StripePaymentConfirmation
 {
     public static bool TryCreate(
         Session session,
+        DateTime paidAtUtc,
         out OnlinePaymentConfirmation? confirmation)
     {
         confirmation = null;
 
-        if (session.Mode != "payment"
+        if (paidAtUtc.Kind != DateTimeKind.Utc
+            || paidAtUtc <= DateTime.UnixEpoch
+            || paidAtUtc > DateTime.UtcNow.AddMinutes(5)
+            || session.Mode != "payment"
             || session.PaymentStatus != "paid"
             || string.IsNullOrWhiteSpace(session.Id)
             || session.Id.Length > 100
@@ -80,7 +84,8 @@ internal static class StripePaymentConfirmation
             session.PaymentIntentId,
             amountTotal,
             session.Currency,
-            attemptTicks);
+            attemptTicks,
+            paidAtUtc);
 
         return true;
     }

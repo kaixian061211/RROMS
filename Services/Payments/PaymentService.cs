@@ -101,7 +101,8 @@ public class PaymentService : IPaymentService
                 OrderId = order.OrderId,
                 Amount = order.TotalAmount,
                 PaymentMethod = method,
-                PaymentStatus = PaymentStatus.Pending
+                PaymentStatus = PaymentStatus.Pending,
+                CreatedAt = DateTime.UtcNow
             };
 
             _db.Payments.Add(payment);
@@ -146,10 +147,26 @@ public class PaymentService : IPaymentService
                 }
             }
 
-            payment = await ReopenAsync(
-                existing,
-                order,
-                method);
+            if (existing.PaymentStatus == PaymentStatus.Pending
+                && existing.RecordedByStaffId is null
+                && PaymentMethod.IsOnline(existing.PaymentMethod)
+                && string.IsNullOrWhiteSpace(existing.TransactionRef))
+            {
+                if (method != existing.PaymentMethod || existing.Amount != order.TotalAmount)
+                {
+                    throw new PaymentException(
+                        "Resume the previous online checkout with its original payment method before changing how you pay.",
+                        paymentMayBeInProgress: true);
+                }
+
+                // A lost Stripe response must reuse the same attempt and key.
+                // Creating a new attempt here could open a second payable session.
+                payment = existing;
+            }
+            else
+            {
+                payment = await ReopenAsync(existing, order, method);
+            }
         }
 
         if (method == PaymentMethod.PayAtCounter)
@@ -280,7 +297,7 @@ public class PaymentService : IPaymentService
                         PaymentStatus.Failed));
         }
 
-        DateTime now = DateTime.Now;
+        DateTime now = DateTime.UtcNow;
 
         if (now <= existing.CreatedAt)
         {
@@ -352,7 +369,10 @@ public class PaymentService : IPaymentService
             string.IsNullOrWhiteSpace(confirmation.SessionId) ||
             confirmation.SessionId.Length > 100 ||
             string.IsNullOrWhiteSpace(confirmation.Currency) ||
-            confirmation.PaymentIntentId is { Length: > 100 })
+            confirmation.PaymentIntentId is { Length: > 100 } ||
+            confirmation.PaidAtUtc.Kind != DateTimeKind.Utc ||
+            confirmation.PaidAtUtc <= DateTime.UnixEpoch ||
+            confirmation.PaidAtUtc > DateTime.UtcNow.AddMinutes(5))
         {
             return Reject(
                 "Missing or invalid payment references.");
@@ -372,15 +392,21 @@ public class PaymentService : IPaymentService
                 "The order or payment method does not match an online payment.");
         }
 
+        // Stripe event timestamps have second precision; SQL records may include fractions.
+        if (confirmation.PaidAtUtc < DateTime.SpecifyKind(payment.CreatedAt, DateTimeKind.Utc).AddSeconds(-1))
+        {
+            return Reject("The success timestamp predates this checkout attempt.");
+        }
+
         var expectedAmount = (long)Math.Round(
             payment.Amount * 100m,
             MidpointRounding.AwayFromZero);
 
         if (confirmation.AmountTotal != expectedAmount ||
-            string.IsNullOrWhiteSpace(_stripeSettings.Currency) ||
+            !string.Equals(_stripeSettings.Currency?.Trim(), "MYR", StringComparison.OrdinalIgnoreCase) ||
             !string.Equals(
                 confirmation.Currency.Trim(),
-                _stripeSettings.Currency.Trim(),
+                _stripeSettings.Currency?.Trim(),
                 StringComparison.OrdinalIgnoreCase))
         {
             return Reject(
@@ -431,7 +457,7 @@ public class PaymentService : IPaymentService
              p.StripePaymentIntentId == null ||
              p.StripePaymentIntentId == paymentIntentId));
 
-        DateTime? paidAt = DateTime.Now;
+        DateTime? paidAt = confirmation.PaidAtUtc;
 
         await using var transaction =
             await _db.Database.BeginTransactionAsync();
@@ -472,7 +498,7 @@ public class PaymentService : IPaymentService
 
         await transaction.CommitAsync();
 
-        await _notificationDelivery.DeliverAsync(notificationId);
+        await DeliverNotificationAsync(notificationId);
 
         await NotifyAsync(
             payment.PaymentId,
@@ -699,7 +725,13 @@ public class PaymentService : IPaymentService
                 "This payment has an invalid amount.");
         }
 
-        DateTime? paidAt = DateTime.Now;
+        if (payment.Amount != order.TotalAmount)
+        {
+            throw new PaymentException(
+                "The order total no longer matches this payment. Ask the customer to choose their payment method again before collecting.");
+        }
+
+        DateTime? paidAt = DateTime.UtcNow;
 
         await using var transaction =
             await _db.Database.BeginTransactionAsync();
@@ -729,7 +761,7 @@ public class PaymentService : IPaymentService
 
         await transaction.CommitAsync();
 
-        await _notificationDelivery.DeliverAsync(notificationId);
+        await DeliverNotificationAsync(notificationId);
 
         await NotifyAsync(
             paymentId,
@@ -768,19 +800,10 @@ public class PaymentService : IPaymentService
 
     // Refunds
 
-    public Task RefundAsync(
+    public async Task RefundAsync(
         int paymentId,
         int staffUserId,
-        string? reason = null) =>
-        RefundCoreAsync(
-            paymentId,
-            staffUserId,
-            reason);
-
-    private async Task RefundCoreAsync(
-        int paymentId,
-        int staffUserId,
-        string? reason)
+        string? reason = null)
     {
         if (paymentId <= 0 || staffUserId <= 0)
         {
@@ -850,7 +873,7 @@ public class PaymentService : IPaymentService
         }
 
         // Counter refunds record money already returned manually.
-        DateTime refundedAt = DateTime.Now;
+        DateTime refundedAt = DateTime.UtcNow;
 
         await using var transaction =
             await _db.Database.BeginTransactionAsync();
@@ -893,7 +916,7 @@ public class PaymentService : IPaymentService
 
         await transaction.CommitAsync();
 
-        await _notificationDelivery.DeliverAsync(notificationId);
+        await DeliverNotificationAsync(notificationId);
 
         await NotifyAsync(
             paymentId,
@@ -908,6 +931,19 @@ public class PaymentService : IPaymentService
 
         return order is not null &&
                order.CustomerUserId == customerUserId;
+    }
+
+    private async Task DeliverNotificationAsync(int notificationId)
+    {
+        try
+        {
+            await _notificationDelivery.DeliverAsync(notificationId);
+        }
+        catch (Exception ex)
+        {
+            // A transport failure cannot undo money already recorded and committed.
+            _logger.LogError(ex, "Delivery failed for saved payment notification {NotificationId}", notificationId);
+        }
     }
 
     private async Task NotifyAsync(

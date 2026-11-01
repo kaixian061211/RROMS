@@ -21,7 +21,7 @@ public class ReceiptService : IReceiptService
 
                 page.Header().Column(column =>
                 {
-                    column.Item().Text("RROMS").FontSize(22).Bold().FontColor(Color.FromHex("#0E5A5A"));
+                    column.Item().Text("RROMS").FontSize(22).Bold().FontColor(Color.FromHex("#0B6B4F"));
                     column.Item().Text(isRefunded ? "Payment receipt - REFUNDED" : "Payment receipt")
                         .FontSize(12).FontColor(Colors.Grey.Darken1);
                 });
@@ -31,10 +31,16 @@ public class ReceiptService : IReceiptService
                     column.Spacing(6);
 
                     Line(column, "Receipt no.", payment.ReceiptNo);
-                    Line(column, "Date paid", PaymentFormatter.When(payment.PaidAt));
+                    Line(column, "Date paid (MYT)", PaymentFormatter.WhenUtc(payment.PaidAt));
                     Line(column, "Customer", payment.CustomerName);
-                    Line(column, "Order", payment.OrderLabel);
+                    Line(column, "Order", PaymentFormatter.OrderReference(payment.OrderId));
                     Line(column, "Payment method", PaymentFormatter.MethodLabel(payment.Method));
+                    if (isRefunded)
+                    {
+                        Line(column, "Refunded (MYT)", PaymentFormatter.WhenUtc(payment.RefundedAt));
+                        if (!string.IsNullOrWhiteSpace(payment.RefundReason))
+                            Line(column, "Refund reason", payment.RefundReason);
+                    }
                     if (payment.StaffName != "-")
                     {
                         Line(column, "Served by", payment.StaffName);
@@ -52,7 +58,7 @@ public class ReceiptService : IReceiptService
                 page.Footer().AlignCenter().Text(text =>
                 {
                     text.Span("Thank you for dining with us. Generated ").FontColor(Colors.Grey.Darken1);
-                    text.Span(DateTime.Now.ToString("dd MMM yyyy HH:mm"));
+                    text.Span(PaymentTime.NowLocal().ToString("dd MMM yyyy HH:mm", System.Globalization.CultureInfo.InvariantCulture) + " MYT");
                 });
             });
         }).GeneratePdf();

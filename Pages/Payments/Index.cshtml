@@ -2,192 +2,76 @@
 @model RROMS.Web.Pages.Payments.IndexModel
 @{
     ViewData["Title"] = "Manage payments";
-
-    var presets = new (DateRangePreset Value, string Label)[]
-    {
-        (DateRangePreset.All, "All dates"),
-        (DateRangePreset.Today, "Today"),
-        (DateRangePreset.ThisWeek, "This week"),
-        (DateRangePreset.ThisMonth, "This month"),
-        (DateRangePreset.Custom, "Custom range")
-    };
+    var presets = new (DateRangePreset Value, string Label)[] { (DateRangePreset.All, "All dates"), (DateRangePreset.Today, "Today"), (DateRangePreset.ThisWeek, "This week"), (DateRangePreset.ThisMonth, "This month"), (DateRangePreset.Custom, "Custom range") };
+    string StatusUrl(string? status) => Url.Page("Index", new Microsoft.AspNetCore.Routing.RouteValueDictionary {
+        ["Filter.Status"] = status, ["Filter.Search"] = Model.Filter.Search, ["Filter.Method"] = Model.Filter.Method,
+        ["Filter.Preset"] = Model.Filter.Preset, ["Filter.From"] = Model.Filter.From?.ToString("yyyy-MM-dd"), ["Filter.To"] = Model.Filter.To?.ToString("yyyy-MM-dd") })!;
 }
-
 <partial name="_PaymentPageHeader" />
-
-<h1 class="h3 mb-3">Manage payments</h1>
-
-<form method="get"
-      class="bg-white border rounded p-3 mb-3">
-
-    <div asp-validation-summary="All"
-         class="text-danger mb-3"></div>
-
-    <div class="row g-2 align-items-end">
-        <div class="col-md-3">
-            <label class="form-label small"
-                   for="search">Search</label>
-
-            <input id="search"
-                   asp-for="Filter.Search"
-                   class="form-control"
-                   placeholder="Payment or order no., customer name" />
+<header class="rr-page-header">
+    <div><h1>Manage payments</h1><p class="rr-lede">Find a transaction, check its outcome, and open the receipt.</p></div>
+    <div class="rr-page-actions"><a class="btn btn-outline-secondary" asp-page="Counter">Open counter queue</a></div>
+</header>
+<section class="rr-panel mb-4" aria-labelledby="payment-filter-title">
+    <h2 id="payment-filter-title">Find payments</h2>
+    <form method="get" class="payment-filter-form">
+        <div asp-validation-summary="All" class="alert alert-danger" role="alert"></div>
+        <input type="hidden" asp-for="Filter.Status" />
+        <div class="payment-filter-grid">
+            <div class="payment-search"><label asp-for="Filter.Search" class="form-label">Reference or customer</label><input asp-for="Filter.Search" class="form-control" placeholder="RCP / ORD number, name, or Stripe reference" /></div>
+            <div><label asp-for="Filter.Method" class="form-label">Payment method</label><select asp-for="Filter.Method" class="form-select"><option value="">Any method</option>@foreach (var method in PaymentMethod.All) { <option value="@method">@PaymentFormatter.MethodLabel(method)</option> }</select></div>
+            <div><label asp-for="Filter.Preset" class="form-label">Payment date</label><select asp-for="Filter.Preset" class="form-select" data-preset-select aria-controls="payment-custom-range">@foreach (var preset in presets) { <option value="@preset.Value">@preset.Label</option> }</select></div>
+            <div class="payment-actions"><button type="submit" class="btn btn-primary">Update view</button><a class="btn btn-outline-secondary" asp-page="Index">Reset</a></div>
         </div>
-
-        <div class="col-md-2">
-            <label class="form-label small"
-                   for="status">Status</label>
-
-            <select id="status"
-                    asp-for="Filter.Status"
-                    class="form-select">
-                <option value="">Any status</option>
-
-                @foreach (var status in PaymentStatus.All)
-                {
-                    <option value="@status">
-                        @PaymentFormatter.StatusLabel(status)
-                    </option>
-                }
-            </select>
+        <div id="payment-custom-range" class="payment-date-range mt-3" data-custom-range>
+            <div><label asp-for="Filter.From" class="form-label">From</label><input type="date" asp-for="Filter.From" class="form-control" /><span asp-validation-for="Filter.From" class="text-danger"></span></div>
+            <div><label asp-for="Filter.To" class="form-label">Through</label><input type="date" asp-for="Filter.To" class="form-control" /><span asp-validation-for="Filter.To" class="text-danger"></span></div>
         </div>
-
-        <div class="col-md-2">
-            <label class="form-label small"
-                   for="method">Method</label>
-
-            <select id="method"
-                    asp-for="Filter.Method"
-                    class="form-select">
-                <option value="">Any method</option>
-
-                @foreach (var method in PaymentMethod.All)
-                {
-                    <option value="@method">
-                        @PaymentFormatter.MethodLabel(method)
-                    </option>
-                }
-            </select>
-        </div>
-
-        <div class="col-md-2">
-            <label class="form-label small"
-                   for="preset">Dates</label>
-
-            <select id="preset"
-                    asp-for="Filter.Preset"
-                    class="form-select"
-                    data-preset-select>
-                @foreach (var preset in presets)
-                {
-                    <option value="@preset.Value">
-                        @preset.Label
-                    </option>
-                }
-            </select>
-        </div>
-
-        <div class="col-md-3 d-flex gap-2">
-            <button type="submit"
-                    class="btn btn-primary">
-                Apply filters
-            </button>
-
-            <a class="btn btn-outline-secondary"
-               asp-page="Index">Clear</a>
-        </div>
-    </div>
-
-    <div class="row g-2 mt-1" data-custom-range>
-        <div class="col-md-3">
-            <label class="form-label small"
-                   for="from">From</label>
-
-            <input id="from"
-                   type="date"
-                   asp-for="Filter.From"
-                   class="form-control" />
-        </div>
-
-        <div class="col-md-3">
-            <label class="form-label small"
-                   for="to">To</label>
-
-            <input id="to"
-                   type="date"
-                   asp-for="Filter.To"
-                   class="form-control" />
-        </div>
-    </div>
-</form>
-
-<p class="text-muted">
-    @Model.Rows.Count payments shown.
-    Paid in this view:
-    <strong>
-        @PaymentFormatter.Money(Model.PaidTotal)
-    </strong>
-</p>
-
+        <p class="payment-note mt-3 mb-0">Dates use Malaysia time and filter when paid, or when created for unpaid attempts. Refund dates appear on each record.</p>
+    </form>
+</section>
+@if (ViewData.ModelState.IsValid)
+{
+    <dl class="payment-metrics mb-4" aria-label="Totals for the filtered records">
+        <div class="rr-panel"><dt>Transactions</dt><dd>@Model.Rows.Count</dd><p>Matching this view.</p></div>
+        <div class="rr-panel"><dt>Paid</dt><dd class="rr-money">@PaymentFormatter.Money(Model.PaidTotal)</dd><p>Currently paid, excluding refunds.</p></div>
+        <div class="rr-panel"><dt>Pending</dt><dd class="rr-money">@PaymentFormatter.Money(Model.Rows.Where(p => p.Status == PaymentStatus.Pending).Sum(p => p.Amount))</dd><p>Not confirmed as received.</p></div>
+        <div class="rr-panel"><dt>Refunded</dt><dd class="rr-money">@PaymentFormatter.Money(Model.Rows.Where(p => p.Status == PaymentStatus.Refunded).Sum(p => p.Amount))</dd><p>Full refunds on matching records.</p></div>
+    </dl>
+}
+<div class="payment-section-head">
+    <h2>Transactions</h2><span class="payment-note">All amounts in MYR · times in MYT</span>
+</div>
+<nav class="nav nav-pills payment-status-filter mb-3" aria-label="Filter payment status">
+    <a class="nav-link @(string.IsNullOrWhiteSpace(Model.Filter.Status) ? "active" : "")" href="@StatusUrl(null)" aria-current="@(string.IsNullOrWhiteSpace(Model.Filter.Status) ? "page" : null)">All</a>
+    @foreach (var status in PaymentStatus.All)
+    { <a class="nav-link @(Model.Filter.Status == status ? "active" : "")" href="@StatusUrl(status)" aria-current="@(Model.Filter.Status == status ? "page" : null)">@PaymentFormatter.StatusLabel(status)</a> }
+</nav>
 @if (Model.Rows.Count == 0)
 {
-    <div class="alert alert-info">
-        No payments match these filters.
-    </div>
+    <div class="rr-empty"><h3 class="rr-empty__title">@(ViewData.ModelState.IsValid ? "No matching payments" : "Check the filters above")</h3><p>@(ViewData.ModelState.IsValid ? "Try another reference, customer, date range or status." : "Payments will appear after the filter values are valid.")</p><a class="btn btn-outline-secondary" asp-page="Index">Reset filters</a></div>
 }
 else
 {
-    <div class="table-responsive bg-white border rounded">
-        <table class="table table-hover mb-0">
-            <thead>
-                <tr>
-                    <th>Reference</th>
-                    <th>Order</th>
-                    <th>Customer</th>
-                    <th>Method</th>
-                    <th>Status</th>
-                    <th class="num">Amount</th>
-                    <th>Date</th>
-                    <th></th>
+    <div class="payment-table-wrap">
+        <table class="table table-hover payment-table" role="table">
+            <caption class="visually-hidden">Payment transactions matching the selected filters. Amounts are in Malaysian ringgit and times in Malaysia time.</caption>
+            <thead role="rowgroup"><tr role="row"><th scope="col">Reference</th><th scope="col">Customer</th><th scope="col">Method</th><th scope="col">Status</th><th scope="col" class="text-end">Amount</th><th scope="col">Payment date · MYT</th><th scope="col"><span class="visually-hidden">Actions</span></th></tr></thead>
+            <tbody role="rowgroup">
+            @foreach (var payment in Model.Rows)
+            {
+                <tr role="row">
+                    <th scope="row" role="rowheader" data-label="Reference"><span class="rr-ref d-block">@payment.ReceiptNo</span><span class="payment-note rr-ref">@PaymentFormatter.OrderReference(payment.OrderId)</span></th>
+                    <td role="cell" data-label="Customer">@payment.CustomerName</td>
+                    <td role="cell" data-label="Method">@PaymentFormatter.MethodLabel(payment.Method)</td>
+                    <td role="cell" data-label="Status"><span class="@PaymentFormatter.StatusPill(payment.Status, payment.Method)">@PaymentFormatter.StatusText(payment.Status, payment.Method)</span></td>
+                    <td role="cell" data-label="Amount" class="payment-amount rr-money">@PaymentFormatter.Money(payment.Amount)</td>
+                    <td role="cell" data-label="Payment date"><span>@PaymentFormatter.WhenUtc(payment.PaidAt ?? payment.CreatedAt)</span>@if (payment.RefundedAt.HasValue) { <span class="payment-note d-block">Refunded @PaymentFormatter.WhenUtc(payment.RefundedAt)</span> }</td>
+                    <td role="cell" class="payment-row-actions"><a class="btn btn-sm btn-outline-secondary" asp-page="Details" asp-route-id="@payment.PaymentId" aria-label="View payment @payment.ReceiptNo">View payment</a></td>
                 </tr>
-            </thead>
-            <tbody>
-                @foreach (var payment in Model.Rows)
-                {
-                    <tr>
-                        <td>@payment.ReceiptNo</td>
-                        <td>@payment.OrderLabel</td>
-                        <td>@payment.CustomerName</td>
-                        <td>
-                            @PaymentFormatter.MethodLabel(payment.Method)
-                        </td>
-                        <td>
-                            <span class="badge @PaymentFormatter.StatusBadge(payment.Status)">
-                                @PaymentFormatter.StatusLabel(payment.Status)
-                            </span>
-                        </td>
-                        <td class="num">
-                            @PaymentFormatter.Money(payment.Amount)
-                        </td>
-                        <td>
-                            @PaymentFormatter.When(
-                                payment.PaidAt ?? payment.CreatedAt)
-                        </td>
-                        <td class="text-end">
-                            <a class="btn btn-sm btn-outline-secondary"
-                               asp-page="Details"
-                               asp-route-id="@payment.PaymentId">
-                                View
-                            </a>
-                        </td>
-                    </tr>
-                }
+            }
             </tbody>
         </table>
     </div>
 }
-
-@section Scripts {
-    <script src="~/js/payments-filters.js"
-            asp-append-version="true"></script>
-}
+@section Scripts { <script src="~/js/payments-filters.js" asp-append-version="true"></script> }
