@@ -75,6 +75,39 @@ configured. Failed delivery does not remove the saved inbox notification.
 Order and reservation tracking pages refresh status while open and can also
 update immediately when a real-time notification arrives.
 
+Delivery by event:
+
+| Event | Inbox, live update and subscribed browser push | Email |
+| --- | --- | --- |
+| Order created or status changed | Yes | No |
+| Reservation created, changed or cancelled | Yes | Only when confirmed |
+| Payment confirmed | Yes | Receipt PDF |
+| Payment refunded | Yes | Refund confirmation |
+| Promotion published | Active customers with order or reservation history | No |
+| Announcement published | Active customers | No |
+
+Receipt email addresses are resolved from active customer accounts. Browser
+push uses an opaque customer identity, preserves permission denials and explicit
+opt-outs, and checks the current login again after a page is restored with Back.
+Temporary subscription failures can retry when the page regains focus.
+
+Run the regression checks from the project folder:
+
+```powershell
+$env:RROMS_TEST_CONNECTION = 'Server=localhost;Database=RROMS_NotificationTracking_Tests;Trusted_Connection=True;TrustServerCertificate=True'
+dotnet test Tests/RROMS.Tests/RROMS.Tests.csproj
+node --test Tests/Browser/*.test.cjs Tests/Configuration/*.test.cjs
+```
+
+The .NET tests create and reset only a guarded test database. They exercise real
+SignalR transport, owner-only events, unread/read synchronization, SMTP message
+transport against a local receiver, delivery failures and tracking ownership.
+Provider calls in these tests use local receivers or recorded responses.
+Confirm delivery to an actual inbox and browser separately using a customer
+account and a browser that has allowed notifications. OneSignal's
+[web push setup guide](https://documentation.onesignal.com/docs/en/web-push-setup)
+describes the HTTPS, service worker and browser permission requirements.
+
 ## Keep private configuration out of Git
 
 `secrets.shared.json` and `secrets.local.json` are private and ignored by Git.

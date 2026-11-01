@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
+using System.Text;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -19,6 +20,63 @@ namespace RROMS.Tests.Notifications;
 [Trait("Type", "Unit")]
 public class NotificationReliabilityTests
 {
+    [Fact]
+    public async Task NotificationEmailReachesSmtpWithTheOwnersAddressAndMessage()
+    {
+        using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        using var listener = new TcpListener(IPAddress.Loopback, 0);
+        listener.Start();
+        var commands = new List<string>();
+        var received = ReceiveAsync();
+        var smtp = new SmtpEmailSender(Options.Create(new SmtpSettings
+        {
+            Host = "127.0.0.1", Port = ((IPEndPoint)listener.LocalEndpoint).Port,
+            FromEmail = "sender@example.invalid", FromName = "RROMS test"
+        }), NullLogger<SmtpEmailSender>.Instance);
+
+        await new NotificationEmailSender(smtp).SendAsync(
+            MailboxAddress.Parse("owner@example.invalid"), "Reservation confirmed",
+            "Your reservation is confirmed. <literal text>", deadline.Token);
+        using var message = await received;
+        Assert.Equal("owner@example.invalid", Assert.Single(message.To.Mailboxes).Address);
+        Assert.Equal("sender@example.invalid", Assert.Single(message.From.Mailboxes).Address);
+        Assert.Equal("Reservation confirmed", message.Subject);
+        Assert.Contains("Your reservation is confirmed. <literal text>", message.TextBody);
+        Assert.Contains(commands, command => command.StartsWith("RCPT TO:<owner@example.invalid>", StringComparison.OrdinalIgnoreCase));
+
+        async Task<MimeMessage> ReceiveAsync()
+        {
+            using var client = await listener.AcceptTcpClientAsync(deadline.Token);
+            await using var stream = client.GetStream();
+            using var reader = new StreamReader(stream, Encoding.UTF8, leaveOpen: true);
+            await using var writer = new StreamWriter(stream, new UTF8Encoding(false), leaveOpen: true)
+                { AutoFlush = true, NewLine = "\r\n" };
+            await writer.WriteLineAsync("220 localhost SMTP test");
+            var body = new StringBuilder();
+            while (await reader.ReadLineAsync(deadline.Token) is { } command)
+            {
+                commands.Add(command);
+                if (command.StartsWith("EHLO", StringComparison.OrdinalIgnoreCase))
+                    await writer.WriteLineAsync("250-localhost\r\n250 8BITMIME");
+                else if (command == "DATA")
+                {
+                    await writer.WriteLineAsync("354 Send message");
+                    while (await reader.ReadLineAsync(deadline.Token) is { } line && line != ".")
+                        body.AppendLine(line.StartsWith("..", StringComparison.Ordinal) ? line[1..] : line);
+                    await writer.WriteLineAsync("250 Accepted");
+                }
+                else if (command == "QUIT")
+                {
+                    await writer.WriteLineAsync("221 Bye");
+                    break;
+                }
+                else await writer.WriteLineAsync("250 OK");
+            }
+            using var data = new MemoryStream(Encoding.UTF8.GetBytes(body.ToString()));
+            return await MimeMessage.LoadAsync(data, deadline.Token);
+        }
+    }
+
     [Fact]
     public async Task SmtpStopsWhenTheServerAcceptsButNeverResponds()
     {

@@ -19,7 +19,8 @@ public class AppSetupTests : PageTest
             return db.Database.GetDbConnection().Database;
         });
 
-        Assert.Equal(TestDatabase.Name, database);
+        var expected = new Microsoft.Data.SqlClient.SqlConnectionStringBuilder(TestDatabase.ConnectionString).InitialCatalog;
+        Assert.Equal(expected, database);
     }
 }
 
