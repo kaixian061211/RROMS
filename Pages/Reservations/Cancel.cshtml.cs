@@ -1,4 +1,3 @@
-using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -57,11 +56,7 @@ public class CancelModel : PageModel
             return Page();
         }
 
-        var result = await _reservations.CancelAsync(
-            User.GetPaymentUserId(),
-            Id,
-            RowVersion,
-            User.FindFirst(ClaimTypes.Email)?.Value);
+        var result = await _reservations.CancelAsync(User.GetPaymentUserId(), Id, RowVersion);
         if (!result.Succeeded)
         {
             ErrorMessage = result.ErrorMessage;

@@ -15,9 +15,9 @@ public class DashboardPageTests : PageTest
 
     [Theory(DisplayName = "TC-00-08 Switching user lands on that role's dashboard: built cards open their pages, unbuilt ones don't link, other dashboards refuse")]
     [Trait("Technique", "Decision table")]
-    [InlineData("Customer A", "/Dashboards/Customer", "/Reservations, /Orders, /Notifications/Index", 7)]
-    [InlineData("Staff", "/Dashboards/Staff", "/Payments/Counter, /Reservations/Manage, /Orders/Queue", 2)]
-    [InlineData("Admin", "/Dashboards/Admin", "", 5)]
+    [InlineData("Customer A", "/Dashboards/Customer", "/Reservations, /Account/Profile, /Orders, /Tracking, /Notifications/Index", 5)]
+    [InlineData("Staff", "/Dashboards/Staff", "/Payments/Counter, /Account/Profile, /Reservations/Manage, /Orders/Queue", 1)]
+    [InlineData("Admin", "/Dashboards/Admin", "/Admin/Accounts/Index", 4)]
     public async Task EachRolesDashboard(string name, string expectedDashboard, string expectedLinks, int expectedNotBuilt)
     {
         var dashboard = await SignInAsAsync(TestUsers.All.Single(user => user.Name == name));
@@ -31,6 +31,6 @@ public class DashboardPageTests : PageTest
         foreach (var link in links)
             Assert.Equal(link, new Uri((await GetPageAsync(link)).Url).AbsolutePath);   // opens for this user
         foreach (var other in AllDashboards.Where(path => path != expectedDashboard))
-            Assert.Contains($"{name} can't open {other}.", TextOf(await GetPageAsync(other)));
+            Assert.Equal("/Account/AccessDenied", new Uri((await GetPageAsync(other)).Url).AbsolutePath);
     }
 }

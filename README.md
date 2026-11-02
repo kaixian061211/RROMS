@@ -92,3 +92,25 @@ stripe listen --forward-to https://localhost:7116/webhooks/stripe --events "chec
 Add `Stripe__WebhookSecret` to your existing `secrets.local.json` using the `whsec_...` value shown by the listener. Keep your other settings, restart the app and leave the listener running. Each teammate uses their own listener secret.
 
 Keep `secrets.shared.json` and `secrets.local.json` out of Git. Share only the shared file privately; each teammate keeps their own local file.
+
+## Notifications and tracking
+
+Order and reservation updates appear in the customer's inbox. Tracking pages refresh while open and update immediately when a live notification arrives. Failed email or push delivery does not remove the inbox notification.
+
+Order updates do not send email. Confirmed reservations send confirmation emails. Payments send receipt emails, and refunds send refund confirmation emails. Promotions reach active customers with order or reservation history; announcements reach active customers.
+
+For browser push, use **https://localhost:7116**, sign in as the customer, and allow notifications. OneSignal must be configured for that exact origin. A saved browser subscription is required. Permission denials and explicit opt-outs are preserved; temporary subscription failures can retry when the page regains focus.
+
+## Run the regression checks
+
+Run these from the project folder. The .NET tests reset only the guarded test database; provider calls use test responses or local receivers.
+
+```powershell
+$env:RROMS_TEST_CONNECTION = 'Server=localhost;Database=RROMS_NotificationTracking_Tests;Trusted_Connection=True;TrustServerCertificate=True'
+dotnet test Tests/RROMS.Tests/RROMS.Tests.csproj
+node --test Tests/Browser/*.test.cjs Tests/Configuration/*.test.cjs
+```
+
+Confirm actual email and browser delivery separately with a customer account. See the [OneSignal web push setup guide](https://documentation.onesignal.com/docs/en/web-push-setup) for HTTPS, service worker and browser permission requirements.
+
+An SMTP app password was previously committed. Rotate it before using or sharing the account. Removing it from the current files does not remove it from Git history. For deployment, configure the settings through the hosting provider's secret environment settings.

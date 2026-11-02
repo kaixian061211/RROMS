@@ -11,7 +11,6 @@ using RROMS.Web.Services.Payments.Notifications;
 using RROMS.Web.Services.OrdersAndReservations;
 using RROMS.Web.Services.Payments.Receipts;
 using RROMS.Web.Services.Notifications;
-using RROMS.Web.Services.Tracking;
 using RROMS.Web.Services.Restaurant;
 using RROMS.Web.Services.Accounts;
 
@@ -70,7 +69,6 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
 builder.Services.AddScoped<IAccountService, AccountService>();
 builder.Services.AddScoped<IAccountMailer, AccountMailer>();   // sends through the shared Smtp settings (see Notification module)
 builder.Services.AddScoped<IRestaurantLookup, RestaurantLookup>();
-builder.Services.AddScoped<TrackingQueries>();
 builder.Services.AddScoped<IReservationService, ReservationService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
 builder.Services.AddScoped<IMenuItemLookup, MenuItemLookup>();
@@ -89,6 +87,7 @@ builder.Services.AddScoped<INotificationRealtime, NotificationRealtime>();
 builder.Services.AddScoped<INotificationEmailSender, NotificationEmailSender>();
 builder.Services.AddScoped<INotificationDelivery, NotificationDelivery>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
+builder.Services.AddScoped<NotificationPublisher>();
 builder.Services.Configure<WebPushSettings>(builder.Configuration.GetSection(WebPushSettings.SectionName));
 builder.Services.AddSingleton<WebPushIdentity>();
 builder.Services.AddHttpClient<INotificationPushSender, OneSignalPushSender>(http => http.Timeout = TimeSpan.FromSeconds(15));

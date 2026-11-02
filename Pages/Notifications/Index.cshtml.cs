@@ -9,6 +9,7 @@ using RROMS.Web.Services.Payments;
 namespace RROMS.Web.Pages.Notifications;
 
 [Authorize(Roles = PaymentRoles.Customer)]
+[ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
 public class IndexModel : PageModel
 {
     private const int PageSize = 20;
@@ -70,6 +71,7 @@ public class IndexModel : PageModel
         if (!updated)
             return NotFound();
 
+        TempData["NotificationFeedback"] = "Notification marked as read.";
         return RedirectToPage("./Index", new { beforeId = BeforeId });
     }
 
@@ -81,8 +83,11 @@ public class IndexModel : PageModel
         if (!ModelState.IsValid || BeforeId is <= 0)
             return BadRequest();
 
-        await _notifications.MarkAllAsReadAsync(userId, ct);
+        var updated = await _notifications.MarkAllAsReadAsync(userId, ct);
 
+        TempData["NotificationFeedback"] = updated == 0
+            ? "All your notifications are already read."
+            : "All your notifications are now marked as read.";
         return RedirectToPage("./Index", new { beforeId = BeforeId });
     }
 

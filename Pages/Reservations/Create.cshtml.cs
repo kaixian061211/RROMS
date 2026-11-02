@@ -1,4 +1,3 @@
-using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -38,10 +37,7 @@ public class CreateModel : PageModel
         if (!ModelState.IsValid)
             return Page();
 
-        var result = await _reservations.CreateAsync(
-            User.GetPaymentUserId(),
-            Input,
-            User.FindFirst(ClaimTypes.Email)?.Value);
+        var result = await _reservations.CreateAsync(User.GetPaymentUserId(), Input);
         if (!result.Succeeded)
         {
             ModelState.AddModelError(string.Empty, result.ErrorMessage!);

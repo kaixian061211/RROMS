@@ -2,6 +2,8 @@ using Microsoft.EntityFrameworkCore;
 using MimeKit;
 using RROMS.Web.Data;
 using RROMS.Web.Models.Notifications;
+using RROMS.Web.Models.Accounts;
+using System.ComponentModel.DataAnnotations;
 
 namespace RROMS.Web.Services.Notifications;
 
@@ -61,41 +63,20 @@ public sealed class NotificationDelivery : INotificationDelivery
                 return;
             }
 
-            await _realtime.PublishAsync(notification, ct);
-
-            try
+            var deliveries = new List<Task>
             {
-                await _push.SendAsync(notification, ct);
-            }
-            catch (Exception ex)
+                DeliverChannelAsync("SignalR", notificationId,
+                    token => _realtime.PublishAsync(notification, token), ct),
+                DeliverChannelAsync("Web Push", notificationId,
+                    token => _push.SendAsync(notification, token), ct)
+            };
+            if (sendEmail)
             {
-                _logger.LogWarning(
-                    ex,
-                    "Web Push failed for notification {NotificationId}.",
-                    notificationId);
-            }
-
-            if (!sendEmail)
-                return;
-
-            if (recipient is null
-                || recipient.UserId != notification.UserId
-                || !MailboxAddress.TryParse(recipient.Email, out var mailbox)
-                || mailbox is null)
-            {
-                _logger.LogWarning(
-                    "Email skipped for notification {NotificationId}: " +
-                    "a valid recipient matching its owner is required.",
-                    notificationId);
-
-                return;
+                deliveries.Add(DeliverChannelAsync("Email", notificationId,
+                    token => DeliverEmailAsync(notification, recipient, token), ct));
             }
 
-            await _email.SendAsync(
-                mailbox,
-                notification.Title,
-                notification.Message,
-                ct);
+            await Task.WhenAll(deliveries);
         }
         catch (Exception ex)
         {
@@ -105,6 +86,54 @@ public sealed class NotificationDelivery : INotificationDelivery
                 "Delivery failed for notification {NotificationId}; " +
                 "its saved inbox record remains available.",
                 notificationId);
+        }
+    }
+
+    private async Task DeliverEmailAsync(
+        Notification notification, NotificationEmailRecipient? recipient, CancellationToken ct)
+    {
+        if (recipient is not null && recipient.UserId != notification.UserId)
+        {
+            _logger.LogWarning(
+                "Email skipped for notification {NotificationId}: recipient does not match its owner.",
+                notification.NotificationId);
+            return;
+        }
+
+        recipient ??= await _db.Set<UserAccount>().AsNoTracking()
+            .Where(u => u.UserId == notification.UserId && u.IsActive && u.Role == UserRoles.Customer)
+            .Select(u => new NotificationEmailRecipient(u.UserId, u.Email))
+            .SingleOrDefaultAsync(ct);
+
+        if (recipient is null
+            || !MailboxAddress.TryParse(recipient.Email, out var mailbox)
+            || mailbox is null
+            || !new EmailAddressAttribute().IsValid(mailbox.Address))
+        {
+            _logger.LogWarning(
+                "Email skipped for notification {NotificationId}: a valid customer email is required.",
+                notification.NotificationId);
+            return;
+        }
+
+        await _email.SendAsync(mailbox, notification.Title, notification.Message, ct);
+    }
+
+    private async Task DeliverChannelAsync(
+        string channel, int notificationId,
+        Func<CancellationToken, Task> send, CancellationToken ct)
+    {
+        using var deadline = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        deadline.CancelAfter(TimeSpan.FromSeconds(30));
+        try
+        {
+            await send(deadline.Token);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex,
+                "{Channel} delivery failed or timed out for notification {NotificationId}; its inbox record remains available.",
+                channel, notificationId);
         }
     }
 }

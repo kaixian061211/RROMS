@@ -21,7 +21,7 @@ public static class DashboardCards
         new("Place orders", "Order food and drinks to your table.", 12, "Cheah", Customer, "/Orders"),
         new("Browse menu", "See what's on the menu.", 13, "Lim", Customer, null),
         new("History", "Look back at your past visits.", 15, "Vishalinii", Customer, null),
-        new("Live tracking", "Follow your order as it's prepared.", 19, "Chang", Customer, null),
+        new("Live tracking", "Follow your orders and bookings as their status changes.", 19, "Chang", Customer, "/Tracking"),
         new("Notifications", "Messages about your bookings and orders.", 20, "Chang", Customer, "/Notifications/Index"),
         new("Chatbot", "Ask a question and get help.", 21, "Vishalinii", Customer, null),
 

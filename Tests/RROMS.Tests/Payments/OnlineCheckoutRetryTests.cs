@@ -221,6 +221,64 @@ public class OnlineCheckoutRetryTests : IAsyncLifetime
         Assert.Empty(delivery.NotificationIds);
     }
 
+    [Fact]
+    public async Task CancellationDuringStripeLookupPreventsReopeningPayment()
+    {
+        await using var db = NewContext();
+        var original = await SavedPaymentAsync(db);
+        var stripe = new RecordingStripe
+        {
+            CanExpire = true,
+            BeforeLookup = async () =>
+            {
+                await using var otherRequest = NewContext();
+                await otherRequest.Set<Order>().Where(o => o.OrderId == _orderId)
+                    .ExecuteUpdateAsync(s => s.SetProperty(o => o.Status, OrderStatus.Cancelled));
+            }
+        };
+        var delivery = new CounterPaymentTestServices.RecordingDelivery();
+        var service = CreateService(db, stripe, delivery);
+
+        await Assert.ThrowsAsync<PaymentException>(() =>
+            service.StartCheckoutAsync(_orderId, CustomerId, PaymentMethod.Card, "https://localhost"));
+
+        await AssertPendingAttemptUnchangedAsync(db, original, stripe, delivery);
+        Assert.Equal(OrderStatus.Cancelled,
+            await db.Set<Order>().Where(o => o.OrderId == _orderId).Select(o => o.Status).SingleAsync());
+    }
+
+    [Fact]
+    public async Task AttemptChangedDuringStripeExpiryCannotBeReplaced()
+    {
+        await using var db = NewContext();
+        var original = await SavedPaymentAsync(db);
+        var newerAttempt = original.CreatedAt.AddSeconds(1);
+        var stripe = new RecordingStripe
+        {
+            CanExpire = true,
+            BeforeExpiry = async () =>
+            {
+                await using var otherRequest = NewContext();
+                await otherRequest.Payments.Where(p => p.PaymentId == _paymentId)
+                    .ExecuteUpdateAsync(s => s
+                        .SetProperty(p => p.CreatedAt, newerAttempt)
+                        .SetProperty(p => p.TransactionRef, "cs_test_newer_attempt"));
+            }
+        };
+        var delivery = new CounterPaymentTestServices.RecordingDelivery();
+        var service = CreateService(db, stripe, delivery);
+
+        await Assert.ThrowsAsync<PaymentException>(() =>
+            service.StartCheckoutAsync(_orderId, CustomerId, PaymentMethod.Card, "https://localhost"));
+
+        var saved = await SavedPaymentAsync(db);
+        Assert.Equal(newerAttempt, saved.CreatedAt);
+        Assert.Equal("cs_test_newer_attempt", saved.TransactionRef);
+        Assert.Equal(PaymentStatus.Pending, saved.PaymentStatus);
+        Assert.Equal(0, stripe.CreateCalls);
+        Assert.Empty(delivery.NotificationIds);
+    }
+
     private Task<Payment> SavedPaymentAsync(AppDbContext db) =>
         db.Payments.AsNoTracking().SingleAsync(p => p.PaymentId == _paymentId);
 
@@ -248,6 +306,7 @@ public class OnlineCheckoutRetryTests : IAsyncLifetime
         AppDbContext db, RecordingStripe stripe, INotificationDelivery delivery)
     {
         var orders = new PaymentOrderProvider(db);
+        stripe.Db = db;
         return new PaymentService(
             db,
             new NotificationService(db, new NoopRealtime()),
@@ -268,6 +327,9 @@ public class OnlineCheckoutRetryTests : IAsyncLifetime
 
     private sealed class RecordingStripe : IStripeGateway
     {
+        public AppDbContext? Db { get; set; }
+        public Func<Task>? BeforeLookup { get; init; }
+        public Func<Task>? BeforeExpiry { get; init; }
         public OnlinePaymentConfirmation? Confirmation { get; init; }
         public PaymentException? LookupError { get; init; }
         public bool CanExpire { get; init; }
@@ -275,23 +337,30 @@ public class OnlineCheckoutRetryTests : IAsyncLifetime
         public int ExpireCalls { get; private set; }
         public int CreateCalls { get; private set; }
 
-        public Task<OnlinePaymentConfirmation?> GetPaidConfirmationAsync(string sessionId)
+        public async Task<OnlinePaymentConfirmation?> GetPaidConfirmationAsync(string sessionId)
         {
+            Assert.Null(Db!.Database.CurrentTransaction);
             LookupCalls++;
+            if (BeforeLookup is not null)
+                await BeforeLookup();
             if (LookupError is not null)
                 throw LookupError;
-            return Task.FromResult(Confirmation);
+            return Confirmation;
         }
 
-        public Task<bool> TryExpireSessionAsync(string sessionId)
+        public async Task<bool> TryExpireSessionAsync(string sessionId)
         {
+            Assert.Null(Db!.Database.CurrentTransaction);
             ExpireCalls++;
-            return Task.FromResult(CanExpire);
+            if (BeforeExpiry is not null)
+                await BeforeExpiry();
+            return CanExpire;
         }
 
         public Task<StripeSessionInfo> CreateCheckoutSessionAsync(
             Payment payment, string customerEmail, string successUrl, string cancelUrl)
         {
+            Assert.Null(Db!.Database.CurrentTransaction);
             CreateCalls++;
             return Task.FromResult(new StripeSessionInfo("cs_test_replacement", "https://checkout.stripe.test/retry"));
         }

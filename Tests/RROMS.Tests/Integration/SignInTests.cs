@@ -29,13 +29,11 @@ public class SignInTests : PageTest
         if (path == url)
             return "opens";
 
-        Assert.Equal("/Dev/SwitchUser", path);
-        var text = TextOf(page);
-        if (text.Contains($"Choose a test user to open {url}."))
+        if (path == "/Account/Login")
             return "sent to sign in";
-        if (text.Contains($"can't open {url}. Choose a user who can."))
+        if (path == "/Account/AccessDenied")
             return "refused";
-        return $"unexpected: {text}";
+        return $"unexpected redirect: {path}";
     }
 
     [Theory(DisplayName = "TC-05-30 Who can open the customer pages: customers get in, a visitor is sent to sign in, staff and admin are refused")]
@@ -90,7 +88,7 @@ public class SignInTests : PageTest
         await SignInAsAsync(TestUsers.CustomerA);
         var response = await SendFormAsync(startPreparing);
 
-        Assert.Equal("/Dev/SwitchUser", response.RequestMessage!.RequestUri!.AbsolutePath);   // the "can't open" page
+        Assert.Equal("/Account/AccessDenied", response.RequestMessage!.RequestUri!.AbsolutePath);
         Assert.Equal(OrderStatus.Pending,
             await WithDatabaseAsync(db => db.Set<Order>().Where(o => o.OrderId == order.OrderId).Select(o => o.Status).SingleAsync()));
     }

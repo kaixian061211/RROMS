@@ -8,39 +8,43 @@ using RROMS.Web.Models.Restaurant;
 namespace RROMS.Tests;
 
 /// <summary>
-/// The tests' own database, RROMS_Tests on the local SQL Server. Every way into it goes through
+/// The tests' own databases on the local SQL Server. Every way into them goes through
 /// CheckIsTestDatabase, so the tests refuse to run, and never empty a table, anywhere else.
 /// </summary>
 public static class TestDatabase
 {
     public const string Name = "RROMS_Tests";
+    public const string NotificationTrackingName = "RROMS_NotificationTracking_Tests";
 
     private const string DefaultConnectionString =
         "Server=localhost;Database=RROMS_Tests;Trusted_Connection=True;TrustServerCertificate=True";
 
     private static readonly Lazy<Task> Prepared = new(PrepareAsync);
 
-    /// <summary>Set RROMS_TEST_CONNECTION to use another server. The database must still be RROMS_Tests.</summary>
+    /// <summary>Set RROMS_TEST_CONNECTION to select a server and one of the two explicitly allowed test databases.</summary>
     public static string ConnectionString =>
         CheckIsTestDatabase(Environment.GetEnvironmentVariable("RROMS_TEST_CONNECTION") ?? DefaultConnectionString);
 
-    /// <summary>Throws unless the connection string names exactly the RROMS_Tests database.</summary>
+    /// <summary>Throws unless the connection string names an explicitly allowed test database.</summary>
     public static string CheckIsTestDatabase(string connectionString)
     {
         var database = new SqlConnectionStringBuilder(connectionString).InitialCatalog;
-        if (database != Name)
+        if (!IsTestDatabase(database))
             throw new InvalidOperationException(
-                $"The tests only run against the {Name} database, but the connection string names '{database}'. Nothing was changed.");
+                $"The tests only run against {Name} or {NotificationTrackingName}, but the connection string names '{database}'. Nothing was changed.");
         return connectionString;
     }
 
     /// <summary>The same check on an open connection, so it's the database the server actually put us in.</summary>
     public static void CheckIsTestDatabase(SqlConnection connection)
     {
-        if (connection.Database != Name)
+        if (!IsTestDatabase(connection.Database))
             throw new InvalidOperationException(
-                $"The tests only run against the {Name} database, but the connection is using '{connection.Database}'. Nothing was changed.");
+                $"The tests only run against {Name} or {NotificationTrackingName}, but the connection is using '{connection.Database}'. Nothing was changed.");
     }
+
+    private static bool IsTestDatabase(string database) =>
+        database is Name or NotificationTrackingName;
 
     /// <summary>Runs PrepareAsync the first time any test asks, and only once per test run.</summary>
     public static Task PrepareOnceAsync() => Prepared.Value;
@@ -55,9 +59,40 @@ public static class TestDatabase
         await using var db = new AppDbContext(options);
         await db.Database.MigrateAsync();
         await EmptyAsync(db);
+        await AddNotificationRecipientsOnceAsync(db);
         await db.Set<OperatingHour>().ExecuteDeleteAsync();
         await db.Set<RestaurantInfo>().ExecuteDeleteAsync();
         await AddTablesOnceAsync(db);
+    }
+
+    // These IDs belong only to the isolated fixtures/Development test principals,
+    // not to application account registration. Give them real account rows so
+    // notifications obey the same FK as production, without remapping existing users.
+    private static async Task AddNotificationRecipientsOnceAsync(AppDbContext db)
+    {
+        await db.Database.OpenConnectionAsync();
+        CheckIsTestDatabase((SqlConnection)db.Database.GetDbConnection());
+        await db.Database.ExecuteSqlRawAsync("""
+            SET IDENTITY_INSERT [UserAccount] ON;
+            BEGIN TRY
+                INSERT INTO [UserAccount]
+                    ([UserId], [FullName], [Email], [Role], [PasswordHash], [IsActive], [ResetOtpAttempts])
+                SELECT fixture.[UserId], fixture.[Name], fixture.[Email], 'Customer',
+                       'not-used-for-authentication', 1, 0
+                FROM (VALUES
+                    (1, 'Fixture Customer A', 'fixture-customer-1@example.invalid'),
+                    (2, 'Fixture Customer B', 'fixture-customer-2@example.invalid'),
+                    (9001, 'Fixture Alice', 'fixture-customer-9001@example.invalid'),
+                    (9002, 'Fixture Bob', 'fixture-customer-9002@example.invalid')
+                ) fixture ([UserId], [Name], [Email])
+                WHERE NOT EXISTS (SELECT 1 FROM [UserAccount] u WHERE u.[UserId] = fixture.[UserId]);
+            END TRY
+            BEGIN CATCH
+                SET IDENTITY_INSERT [UserAccount] OFF;
+                THROW;
+            END CATCH;
+            SET IDENTITY_INSERT [UserAccount] OFF;
+            """);
     }
 
     /// <summary>

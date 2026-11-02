@@ -6,8 +6,7 @@
     const toast = document.getElementById("notification-toast");
     const title = document.getElementById("notification-toast-title");
     const message = document.getElementById("notification-toast-message");
-    const trackingBanner = document.getElementById("tracking-updates-banner");
-    const trackingRefreshButton = document.getElementById("tracking-refresh-button");
+
     const refreshPage = root.dataset.refreshPage === "true";
 
     const connection = new signalR.HubConnectionBuilder()
@@ -15,16 +14,39 @@
         .withAutomaticReconnect()
         .build();
 
+    const tracking = window.RromsTracking;
+
     let submitting = false;
     let reloadTimer;
     let retryTimer;
     let connectedBefore = false;
     let startFailed = false;
+    let unreadRequest = 0;
+    const seenNotifications = new Set();
     const toastQueue = [];
     let toastShowing = false;
     const toastInstance = window.bootstrap?.Toast && toast
         ? window.bootstrap.Toast.getOrCreateInstance(toast, { delay: 8000 })
         : null;
+
+    function showNextToast() {
+        if (toastShowing || toastQueue.length === 0) return;
+        if (!toastInstance) {
+            toastQueue.length = 0;
+            return;
+        }
+        const notification = toastQueue.shift();
+        title.textContent = notification.title;
+        message.textContent = notification.message;
+        toastShowing = true;
+        toastInstance.show();
+    }
+
+    toast?.addEventListener("hidden.bs.toast", () => {
+        toastShowing = false;
+        showNextToast();
+        refreshPageSoon();
+    });
 
     document.addEventListener("submit", event => {
         const form = event.target;
@@ -36,9 +58,29 @@
         }
     });
 
+    window.addEventListener("pageshow", event => {
+        submitting = false;
+        if (event.persisted && connectedBefore) {
+            void updateUnreadCount();
+            refreshPageSoon();
+        }
+    });
+
     function refreshPageSoon() {
-        if (!refreshPage || submitting) return;
-        if (toastShowing || toastQueue.length > 0) return;
+        if (tracking) {
+            tracking.refresh();
+            return;
+        }
+
+        // The inbox updates in place, so visible toasts no longer delay the list.
+        // Razor loads page-section scripts after this shared live script.
+        const inbox = window.RromsNotificationInbox;
+        if (inbox) {
+            if (!submitting) inbox.refresh();
+            return;
+        }
+
+        if (!refreshPage || submitting || toastShowing || toastQueue.length > 0) return;
 
         clearTimeout(reloadTimer);
 
@@ -47,41 +89,17 @@
         }, 500);
     }
 
-    function showNextToast() {
-        if (toastShowing || toastQueue.length === 0)
-            return;
-
-        if (!toastInstance) {
-            toastQueue.length = 0;
-            refreshPageSoon();
-            return;
-        }
-
-        const notification = toastQueue.shift();
-        title.textContent = notification.title;
-        message.textContent = notification.message;
-        toastShowing = true;
-        toastInstance.show();
-    }
-
-    function queueToast(notification) {
-        clearTimeout(reloadTimer);
-        toastQueue.push(notification);
-        showNextToast();
-    }
-
-    function showTrackingUpdates() {
-        if (trackingBanner) trackingBanner.hidden = false;
-    }
-
     async function updateUnreadCount() {
         if (!badge) return;
 
+        const request = ++unreadRequest;
         try {
             const count = await connection.invoke("GetUnreadCount");
+            if (request !== unreadRequest || !Number.isSafeInteger(count) || count < 0) return;
 
             badge.textContent = String(count);
             badge.hidden = count === 0;
+
             badge.setAttribute(
                 "aria-label",
                 `${count} unread notifications`
@@ -92,21 +110,21 @@
     }
 
     connection.on("NotificationReceived", notification => {
-        queueToast(notification);
+        // SignalR may replay a delivered notice after reconnecting. Keep a small
+        // bounded set so replayed IDs cannot queue duplicate toasts or reloads.
+        if (Number.isSafeInteger(notification.notificationId) && notification.notificationId > 0) {
+            if (seenNotifications.has(notification.notificationId)) return;
+            seenNotifications.add(notification.notificationId);
+            if (seenNotifications.size > 100) {
+                seenNotifications.delete(seenNotifications.values().next().value);
+            }
+        }
+        clearTimeout(reloadTimer);
+        toastQueue.push(notification);
+        showNextToast();
 
         void updateUnreadCount();
-        showTrackingUpdates();
         refreshPageSoon();
-    });
-
-    toast?.addEventListener("hidden.bs.toast", () => {
-        toastShowing = false;
-        showNextToast();
-        refreshPageSoon();
-    });
-
-    trackingRefreshButton?.addEventListener("click", () => {
-        window.location.reload();
     });
 
     connection.on("NotificationReadStateChanged", () => {
@@ -119,7 +137,7 @@
 
     connection.onreconnected(() => {
         void updateUnreadCount();
-        showTrackingUpdates();
+
         refreshPageSoon();
     });
 
@@ -133,8 +151,9 @@
             await connection.start();
             void updateUnreadCount();
 
-            if (connectedBefore || startFailed) {
-                showTrackingUpdates();
+            tracking?.refresh();
+
+            if (!tracking && (connectedBefore || startFailed)) {
                 refreshPageSoon();
             }
 
@@ -146,6 +165,9 @@
         }
     }
 
-    connection.onclose(retryStart);
+    connection.onclose(() => {
+        retryStart();
+    });
+
     void start();
 })();

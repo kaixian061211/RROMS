@@ -713,6 +713,12 @@ namespace RROMS.Web.Data.Migrations
                     .WithMany()
                     .HasForeignKey("ReservationId")
                     .OnDelete(DeleteBehavior.Restrict);
+
+                b.HasOne("RROMS.Web.Models.Accounts.UserAccount", null)
+                    .WithMany()
+                    .HasForeignKey("UserId")
+                    .OnDelete(DeleteBehavior.Restrict)
+                    .IsRequired();
             });
 
             modelBuilder.Entity("RROMS.Web.Models.OrdersAndReservations.OrderItem", b =>
