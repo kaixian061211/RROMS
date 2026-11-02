@@ -4,106 +4,59 @@
 dotnet restore
 ```
 
-## 2. Add the shared settings file
+## 2. Configure settings
 
-Get the filled `secrets.shared.json` from the team and place it beside `PaymentModule.csproj`. It contains the Stripe test key and the shared email/push settings.
+Place the team's filled `secrets.shared.json` beside `PaymentModule.csproj` (Stripe, SMTP and OneSignal).
 
-The `.example.json` files are only templates. They do not contain working keys.
-
-Stripe uses these settings in `secrets.shared.json`:
-
-```json
-{
-  "Stripe__SecretKey": "sk_test_YOUR_TEST_SECRET_KEY",
-  "Stripe__WebhookSecret": "",
-  "Stripe__Currency": "MYR",
-  "Stripe__CheckoutExpiryMinutes": "35"
-}
-```
-
-If you received the filled file, keep its existing values. The key above is only a placeholder. Normal card testing does not need a publishable key or Stripe CLI.
-
-## 3. Set your database connection
-
-Create your own local settings file. Run this only if you have not created it yet:
+Create your personal file if missing:
 
 ```powershell
 Copy-Item .\secrets.local.example.json .\secrets.local.json
 ```
 
-Open `secrets.local.json` and change the server/database to your own:
+Set `ConnectionStrings__DefaultConnection` to your database. For a new Admin, fill both `DefaultAdmin__*` fields; change the password and clear them after login.
 
-```json
-{
-  "ConnectionStrings__DefaultConnection": "Server=localhost;Database=RROMS_Dev;Trusted_Connection=True;TrustServerCertificate=True;MultipleActiveResultSets=true",
-  "DefaultAdmin__Email": "",
-  "DefaultAdmin__Password": ""
-}
-```
+Startup applies migrations. Back up existing databases and reconcile old Stripe checkouts before the Payment UTC conversion.
 
-Fill both Admin fields if you need an initial Admin account. After signing in, change its password and clear these fields.
+Never commit either private file. Rotate the exposed SMTP app password.
 
-Use a local development database. Startup creates the tables and applies migrations automatically. For an existing database, back it up and read the [Payment migration notes](Services/Payments/README.md#utc-migration-review-before-deployment) before running.
+## 3. Run
 
-A new database has no menu items or restaurant tables. Add them through the Admin pages before testing orders. Existing demo data and uploaded images can be shared separately by the module owners.
-
-## 4. Run the project
-
-Trust the local HTTPS certificate once:
+Trust HTTPS once:
 
 ```powershell
 dotnet dev-certs https --trust
 ```
 
-Check the settings, then start the app:
+Check settings, then start:
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\Start-Local.ps1 -Check
 powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\Start-Local.ps1
 ```
 
-Open **https://localhost:7116**.
+Open **https://localhost:7116**. Use the launcher; plain `dotnet run` ignores these private files. Add menu items/tables through Admin.
 
-Use this launcher because plain `dotnet run` does not read the two private JSON files. Restart the app after changing them. The check command checks the files; it does not test the database or Stripe connection.
+## 4. Test a payment
 
-## 5. Test a Stripe payment
+Create a customer order and choose Card. Test with `4242 4242 4242 4242`, a future expiry and any three-digit CVC. Return and check **Paid** and the receipt. If pending, select **Check payment status**.
 
-Sign in as a customer, create an order and choose Card. Use these test details:
+Webhooks are optional for local testing. Never use real card details.
 
-```text
-Card number: 4242 4242 4242 4242
-Expiry:      Any future date
-CVC:         Any 3 digits
-```
+## 5. Notifications and tracking
 
-Return to RROMS after checkout. Check that the payment is marked Paid and the receipt opens. If it is still pending, choose **Check payment status** before paying again. Do not use real card details.
+Open `/Notifications` for the inbox and `/Tracking` for orders/bookings. Tracking uses live events and five-second polling while visible.
 
-## Optional: Stripe webhooks
+In `secrets.shared.json`:
 
-You can test payments without this step. Webhooks update RROMS even when the customer does not return from Stripe.
+- Email: fill `Smtp__*` with matching sender credentials.
+- Push: fill `Notifications__WebPush__*`: AppId, ApiKey, stable AliasSecret (32+ characters), PublicBaseUrl `https://localhost:7116`.
 
-Install the [Stripe CLI](https://docs.stripe.com/cli/install), then run these commands in another terminal using the same team sandbox:
+Match that origin in OneSignal. Sign in and allow browser notifications.
 
-```powershell
-stripe login
-stripe listen --forward-to https://localhost:7116/webhooks/stripe --events "checkout.session.completed,checkout.session.async_payment_succeeded,checkout.session.async_payment_failed,checkout.session.expired"
-```
+Email: confirmed reservations, receipts and refunds. Orders: inbox/live/push. Promotions: active customers with order/booking history. Announcements: all active customers. Delivery failures keep inbox records.
 
-Add `Stripe__WebhookSecret` to your existing `secrets.local.json` using the `whsec_...` value shown by the listener. Keep your other settings, restart the app and leave the listener running. Each teammate uses their own listener secret.
-
-Keep `secrets.shared.json` and `secrets.local.json` out of Git. Share only the shared file privately; each teammate keeps their own local file.
-
-## Notifications and tracking
-
-Order and reservation updates appear in the customer's inbox. Tracking pages refresh while open and update immediately when a live notification arrives. Failed email or push delivery does not remove the inbox notification.
-
-Order updates do not send email. Confirmed reservations send confirmation emails. Payments send receipt emails, and refunds send refund confirmation emails. Promotions reach active customers with order or reservation history; announcements reach active customers.
-
-For browser push, use **https://localhost:7116**, sign in as the customer, and allow notifications. OneSignal must be configured for that exact origin. A saved browser subscription is required. Permission denials and explicit opt-outs are preserved; temporary subscription failures can retry when the page regains focus.
-
-## Run the regression checks
-
-Run these from the project folder. The .NET tests reset only the guarded test database; provider calls use test responses or local receivers.
+## 6. Tests
 
 ```powershell
 $env:RROMS_TEST_CONNECTION = 'Server=localhost;Database=RROMS_NotificationTracking_Tests;Trusted_Connection=True;TrustServerCertificate=True'
@@ -111,6 +64,4 @@ dotnet test Tests/RROMS.Tests/RROMS.Tests.csproj
 node --test Tests/Browser/*.test.cjs Tests/Configuration/*.test.cjs
 ```
 
-Confirm actual email and browser delivery separately with a customer account. See the [OneSignal web push setup guide](https://documentation.onesignal.com/docs/en/web-push-setup) for HTTPS, service worker and browser permission requirements.
-
-An SMTP app password was previously committed. Rotate it before using or sharing the account. Removing it from the current files does not remove it from Git history. For deployment, configure the settings through the hosting provider's secret environment settings.
+Tests reset the isolated database and use fake/local providers. Verify actual delivery separately.
