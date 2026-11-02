@@ -75,6 +75,26 @@ configured. Failed delivery does not remove the saved inbox notification.
 Order and reservation tracking pages refresh status while open and can also
 update immediately when a real-time notification arrives.
 
+Open the notification inbox at `/Notifications`. Click an order, reservation,
+or payment notification to track it at `/Tracking`. You can also open the
+inbox from the notification bell.
+
+To turn on browser push notifications, add these values to
+`secrets.shared.json`:
+
+- `Notifications__WebPush__AppId` and
+  `Notifications__WebPush__ApiKey` from OneSignal.
+- `Notifications__WebPush__AliasSecret`: a private random value with at least
+  32 characters. Keep it secret and use the same value on every app instance.
+- `Notifications__WebPush__PublicBaseUrl`: your site's HTTPS address, without
+  an extra path. For the local HTTPS profile, use `https://localhost:7116`.
+
+Customers must use a supported browser and allow notifications. Leave the
+OneSignal settings blank to turn off push; the inbox and live updates will
+still work. See OneSignal's
+[web push setup guide](https://documentation.onesignal.com/docs/en/web-push-setup)
+for app and site setup.
+
 Delivery by event:
 
 | Event | Inbox, live update and subscribed browser push | Email |
