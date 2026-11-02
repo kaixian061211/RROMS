@@ -4,65 +4,41 @@
     ViewData["Title"] = "Collect payment";
     var payment = Model.Payment!;
 }
-
 <partial name="_PaymentPageHeader" />
-
-<div class="row g-4">
-    <div class="col-lg-7">
-        <h1 class="h3 mb-1">Collect payment</h1>
-
-        <p class="text-muted">
-            Receive the payment first, then record how the customer paid.
-        </p>
-
-        <form method="post">
-            <div asp-validation-summary="All"
-                 class="text-danger mb-3"></div>
-
-            <div class="d-grid gap-2 mb-3">
+<header class="rr-page-header">
+    <div>
+        <span class="rr-ref d-block mb-2">@payment.ReceiptNo</span>
+        <h1>Collect payment</h1>
+        <p class="rr-lede">Receive the full amount, then record how the customer paid.</p>
+    </div>
+    <div class="rr-page-actions"><a class="btn btn-outline-secondary" asp-page="Counter">Back to queue</a></div>
+</header>
+<div class="payment-workspace">
+    <article class="rr-docket payment-docket" aria-labelledby="collection-title">
+        <div class="rr-docket__head"><div><h2 id="collection-title" class="rr-docket__title">At the counter</h2><span class="rr-ref">@PaymentFormatter.OrderReference(payment.OrderId)</span></div><span class="rr-status rr-status--attention">Waiting</span></div>
+        <dl class="payment-meta">
+            <div><dt>Customer</dt><dd>@payment.CustomerName</dd></div>
+            <div><dt>Waiting since · MYT</dt><dd>@PaymentFormatter.WhenUtc(payment.CreatedAt)</dd></div>
+        </dl>
+        <div class="rr-docket__total payment-total"><span>Receive</span><strong class="rr-money">@PaymentFormatter.Money(payment.Amount)</strong></div>
+        <p class="payment-note mt-2 mb-0">Recording confirms that this money has been received.</p>
+    </article>
+    <form method="post" data-payment-submit data-payment-confirm="Record @PaymentFormatter.Money(payment.Amount) as received?" data-payment-confirm-description="Confirm that you have received the full amount for @PaymentFormatter.OrderReference(payment.OrderId). This records the payment; it does not charge a card or wallet." data-payment-confirm-label="Record payment" data-payment-busy="Recording payment…">
+        <div asp-validation-summary="All" class="alert alert-danger" role="alert"></div>
+        <fieldset class="rr-panel payment-picker">
+            <legend>How did the customer pay?</legend>
+            <div class="rr-tiles rr-tiles--wide payment-methods">
                 @foreach (var method in PaymentMethod.CounterMethods)
                 {
-                    <label class="method-option">
-                        <input type="radio"
-                               name="Method"
-                               value="@method"
-                               checked="@(method == Model.Method)" />
-
-                        <strong>@PaymentFormatter.MethodLabel(method)</strong>
-                    </label>
+                    var id = "counter-" + method;
+                    <div class="payment-choice-wrap">
+                        <input asp-for="Method" type="radio" class="btn-check" id="@id" value="@method" required />
+                        <label for="@id" class="rr-tile payment-method"><span class="payment-method__mark" aria-hidden="true"></span><strong>@PaymentFormatter.MethodLabel(method)</strong></label>
+                    </div>
                 }
             </div>
-
-            <button type="submit" class="btn btn-primary btn-lg">
-                Record payment
-            </button>
-
-            <a class="btn btn-link" asp-page="Counter">
-                Back to queue
-            </a>
-        </form>
-    </div>
-
-    <div class="col-lg-5">
-        <div class="bill p-4">
-            <h2 class="h6 text-muted mb-3">
-                Payment @payment.ReceiptNo
-            </h2>
-
-            <div class="bill-row">
-                <span class="label">Customer</span>
-                <span>@payment.CustomerName</span>
-            </div>
-
-            <div class="bill-row">
-                <span class="label">Order</span>
-                <span>@payment.OrderLabel</span>
-            </div>
-
-            <div class="bill-total">
-                <span>Amount due</span>
-                <span>@PaymentFormatter.Money(payment.Amount)</span>
-            </div>
-        </div>
-    </div>
+            <span asp-validation-for="Method" class="text-danger"></span>
+        </fieldset>
+        <div class="rr-actionbar"><button type="submit" class="btn btn-primary">Record payment</button><a class="btn btn-outline-secondary" asp-page="Counter">Go back</a></div>
+    </form>
 </div>

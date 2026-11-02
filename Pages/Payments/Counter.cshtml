@@ -2,84 +2,49 @@
 @model RROMS.Web.Pages.Payments.CounterModel
 @{
     ViewData["Title"] = "Counter payments";
+    var waiting = Model.Queue.Where(payment => payment.CanCollectAtCounter).ToList();
 }
-
 <partial name="_PaymentPageHeader" />
-
-<div class="d-flex justify-content-between align-items-end mb-3">
-    <div>
-        <h1 class="h3 mb-1">Counter payments</h1>
-        <p class="text-muted mb-0">
-            Orders waiting to be paid at the restaurant, oldest first.
-        </p>
-    </div>
-    <a class="btn btn-outline-secondary btn-sm"
-       asp-page="Counter">Refresh</a>
-</div>
-
+<header class="rr-page-header">
+    <div><h1>Counter payments</h1><p class="rr-lede">Collect at the restaurant. The oldest request appears first.</p></div>
+    <div class="rr-page-actions"><a class="btn btn-outline-secondary" asp-page="Counter">Refresh queue</a></div>
+</header>
+<dl class="payment-metrics payment-metrics--two mb-4" aria-label="Counter queue summary">
+    <div class="rr-panel"><dt>Waiting to pay</dt><dd>@waiting.Count <span class="payment-metric-unit">@(waiting.Count == 1 ? "order" : "orders")</span></dd><p>Ready for staff to collect.</p></div>
+    <div class="rr-panel"><dt>Amount to collect</dt><dd class="rr-money">@PaymentFormatter.Money(waiting.Sum(payment => payment.Amount))</dd><p>Pending counter payments only.</p></div>
+</dl>
 @if (Model.Queue.Count == 0)
 {
-    <div class="alert alert-success">
-        Nothing is waiting to be collected.
-    </div>
+    <div class="rr-empty"><h2 class="rr-empty__title">The counter queue is clear</h2><p>Orders appear here when customers choose to pay at the counter.</p><a class="btn btn-outline-secondary" asp-page="Index">View transactions</a></div>
 }
 else
 {
-    <div class="table-responsive bg-white border rounded">
-        <table class="table mb-0">
-            <thead>
-                <tr>
-                    <th>Reference</th>
-                    <th>Order</th>
-                    <th>Customer</th>
-                    <th>Waiting since</th>
-                    <th class="num">Amount</th>
-                    <th></th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var payment in Model.Queue)
-                {
-                    <tr>
-                        <td>@payment.ReceiptNo</td>
-                        <td>@payment.OrderLabel</td>
-                        <td>@payment.CustomerName</td>
-                        <td>
-                            @PaymentFormatter.When(payment.CreatedAt)
-                        </td>
-                        <td class="num">
-                            @PaymentFormatter.Money(payment.Amount)
-                        </td>
-                        <td class="text-end">
-                            <form method="post"
-                                  asp-page-handler="Void"
-                                  asp-route-paymentId="@payment.PaymentId"
-                                  class="d-inline"
-                                  onsubmit="return confirm('Cancel this payment? The customer will need to choose a payment method again.');">
-                                <button type="submit"
-                                        class="btn btn-sm btn-outline-danger">
-                                    Cancel
-                                </button>
-                            </form>
-
-                            @if (payment.CanCollectAtCounter)
-                            {
-                                <a class="btn btn-sm btn-primary"
-                                   asp-page="Collect"
-                                   asp-route-id="@payment.PaymentId">
-                                    Collect
-                                </a>
-                            }
-                            else
-                            {
-                                <span class="text-muted ms-2">
-                                    Order cancelled
-                                </span>
-                            }
-                        </td>
-                    </tr>
-                }
-            </tbody>
-        </table>
+    <div class="payment-section-head"><h2>Waiting at the counter</h2><span class="payment-note">@Model.Queue.Count @(Model.Queue.Count == 1 ? "record" : "records") · times in MYT</span></div>
+    <div class="rr-list">
+        @foreach (var payment in Model.Queue)
+        {
+            <article class="rr-list__item payment-queue-row @(payment.CanCollectAtCounter ? "is-attention" : "")" aria-labelledby="queue-@payment.PaymentId">
+                <div class="rr-list__main">
+                    <span class="rr-ref">@payment.ReceiptNo</span>
+                    <h3 id="queue-@payment.PaymentId" class="payment-card-title">@PaymentFormatter.OrderReference(payment.OrderId)</h3>
+                    <p class="mb-1">@payment.CustomerName</p>
+                    <p class="payment-note mb-0">Waiting since @PaymentFormatter.WhenUtc(payment.CreatedAt)</p>
+                </div>
+                <strong class="rr-money payment-queue-amount">@PaymentFormatter.Money(payment.Amount)</strong>
+                <div class="rr-list__actions payment-actions">
+                    @if (payment.CanCollectAtCounter)
+                    {
+                        <a class="btn btn-outline-secondary" asp-page="Collect" asp-route-id="@payment.PaymentId" aria-label="Collect payment for @PaymentFormatter.OrderReference(payment.OrderId)">Collect payment</a>
+                    }
+                    else
+                    {
+                        <span class="rr-status rr-status--off">Order cancelled</span>
+                    }
+                    <form method="post" asp-page-handler="Void" asp-route-paymentId="@payment.PaymentId" data-payment-submit data-payment-confirm="Cancel this counter payment?" data-payment-confirm-description="This cancels the waiting payment for @PaymentFormatter.OrderReference(payment.OrderId), not the order. The customer can choose how to pay again. No money will be refunded." data-payment-confirm-label="Cancel payment" data-payment-danger="true" data-payment-busy="Cancelling…">
+                        <button type="submit" class="btn btn-outline-danger" aria-label="Cancel waiting payment for @PaymentFormatter.OrderReference(payment.OrderId)">Cancel</button>
+                    </form>
+                </div>
+            </article>
+        }
     </div>
 }

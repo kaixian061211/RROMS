@@ -92,7 +92,7 @@ public class PaymentQueries : IPaymentQueries
             .OrderByDescending(p => p.PaymentId)
             .ToListAsync();
 
-        return await ToDetailsAsync(payments);
+        return await ToDetailsAsync(payments, orders.ToDictionary(order => order.OrderId));
     }
 
     public async Task<List<PaymentDetails>> GetCounterQueueAsync()
@@ -145,11 +145,17 @@ public class PaymentQueries : IPaymentQueries
         {
             var search = filter.Search.Trim();
 
-            if (int.TryParse(search, out var number))
+            var paymentReference = search.StartsWith("RCP-", StringComparison.OrdinalIgnoreCase);
+            var orderReference = search.StartsWith("ORD-", StringComparison.OrdinalIgnoreCase);
+            var digits = paymentReference || orderReference ? search[4..] : search;
+
+            if (int.TryParse(digits, out var number))
             {
-                query = query.Where(
-                    p => p.PaymentId == number ||
-                         p.OrderId == number);
+                query = paymentReference
+                    ? query.Where(p => p.PaymentId == number)
+                    : orderReference
+                        ? query.Where(p => p.OrderId == number)
+                        : query.Where(p => p.PaymentId == number || p.OrderId == number);
             }
             else
             {
@@ -185,7 +191,8 @@ public class PaymentQueries : IPaymentQueries
     }
 
     private async Task<List<PaymentDetails>> ToDetailsAsync(
-        IReadOnlyList<Payment> payments)
+        IReadOnlyList<Payment> payments,
+        IReadOnlyDictionary<int, PaymentOrderInfo>? knownOrders = null)
     {
         if (payments.Count == 0)
         {
@@ -197,11 +204,12 @@ public class PaymentQueries : IPaymentQueries
             .Distinct()
             .ToList();
 
-        var orders = await _orders.GetOrdersAsync(orderIds);
+        var orders = knownOrders ?? await _orders.GetOrdersAsync(orderIds);
 
         var staffIds = payments
-            .Where(p => p.RecordedByStaffId.HasValue)
-            .Select(p => p.RecordedByStaffId!.Value)
+            .SelectMany(p => new[] { p.RecordedByStaffId, p.RefundedByStaffId })
+            .Where(id => id.HasValue)
+            .Select(id => id!.Value)
             .Distinct()
             .ToList();
 
@@ -248,6 +256,9 @@ public class PaymentQueries : IPaymentQueries
 
                 RefundedAt = payment.RefundedAt,
                 RefundedByStaffId = payment.RefundedByStaffId,
+                RefundedByStaffName = payment.RefundedByStaffId is int refunderId
+                    && staffNames.TryGetValue(refunderId, out var refunderName)
+                        ? refunderName : "-",
                 RefundReason = payment.RefundReason
             });
         }

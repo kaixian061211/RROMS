@@ -49,6 +49,7 @@ public class MyOrdersModel : PageModel
                 TotalAmount = o.TotalAmount,
                 PaymentId = payment?.PaymentId,
                 Status = payment?.Status,
+                Method = payment?.Method,
                 IsAwaitingCounter =
                     payment?.IsAwaitingCounter ?? false,
                 CanCheckOnlineStatus =
@@ -65,6 +66,7 @@ public class MyOrdersModel : PageModel
         public decimal TotalAmount { get; set; }
         public int? PaymentId { get; set; }
         public string? Status { get; set; }
+        public string? Method { get; set; }
         public bool IsAwaitingCounter { get; set; }
         public bool CanCheckOnlineStatus { get; set; }
     }

@@ -1,13 +1,17 @@
-// Payment list and report filters: only show the From/To dates when "Custom range" is selected.
+// Local payment-date filters. Values remain available when switching back to Custom.
 (function () {
-    var preset = document.querySelector('[data-preset-select]');
-    var boxes = document.querySelectorAll('[data-custom-range]');
-    if (!preset) { return; }
-
+    'use strict';
+    var root = document.querySelector('.payment-page');
+    var preset = root && root.querySelector('[data-preset-select]');
+    if (!preset) return;
+    var ranges = root.querySelectorAll('[data-custom-range]');
     function toggle() {
-        boxes.forEach(function (box) { box.style.display = preset.value === 'Custom' ? '' : 'none'; });
+        var custom = preset.value === 'Custom';
+        ranges.forEach(function (range) {
+            range.hidden = !custom;
+            range.querySelectorAll('input').forEach(function (input) { input.disabled = !custom; });
+        });
     }
-
     preset.addEventListener('change', toggle);
     toggle();
 })();

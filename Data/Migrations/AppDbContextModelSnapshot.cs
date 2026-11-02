@@ -308,7 +308,7 @@ namespace RROMS.Web.Data.Migrations
                 b.Property<DateTime>("CreatedAt")
                     .ValueGeneratedOnAdd()
                     .HasColumnType("datetime2")
-                    .HasDefaultValueSql("SYSDATETIME()");
+                    .HasDefaultValueSql("SYSUTCDATETIME()");
 
                 b.Property<int>("OrderId")
                     .HasColumnType("int");

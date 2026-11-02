@@ -284,7 +284,7 @@ public class OnlineCheckoutRetryTests : IAsyncLifetime
 
     private OnlinePaymentConfirmation Confirm(Payment payment) => new(
         payment.PaymentId, payment.OrderId, _sessionId, $"pi_test_retry_{_orderId}",
-        2580, "MYR", payment.CreatedAt.Ticks);
+        2580, "MYR", payment.CreatedAt.Ticks, DateTime.UtcNow);
 
     private async Task AssertPendingAttemptUnchangedAsync(
         AppDbContext db,

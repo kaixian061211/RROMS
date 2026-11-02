@@ -83,6 +83,7 @@ public class StripeWebhookHandler
                 {
                     if (!TryGetConfirmation(
                             session,
+                            stripeEvent.Created,
                             paymentId,
                             out var confirmation))
                     {
@@ -109,10 +110,11 @@ public class StripeWebhookHandler
 
     private bool TryGetConfirmation(
         Session session,
+        DateTime paidAtUtc,
         int paymentId,
         out OnlinePaymentConfirmation? confirmation)
     {
-        if (StripePaymentConfirmation.TryCreate(session, out confirmation)
+        if (StripePaymentConfirmation.TryCreate(session, paidAtUtc, out confirmation)
             && confirmation!.PaymentId == paymentId)
         {
             return true;

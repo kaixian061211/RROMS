@@ -1,55 +1,25 @@
 @page
 @model RROMS.Web.Pages.Payments.CancelModel
-@using RROMS.Web.Models.Payments
-
-@{
-    ViewData["Title"] = Model.Cancelled
-        ? "Checkout cancelled"
-        : "Checkout status";
-}
-
-<partial name="_PaymentPageHeader" />
-
-<div class="status-panel text-center">
-    <div class="status-icon pending mb-3" aria-hidden="true">!</div>
-
-    <h1 class="h3">@ViewData["Title"]</h1>
-
-    <p class="text-muted">
-        Order #@Model.Payment.OrderId
-    </p>
-
-    <p>@Model.Message</p>
-
-    <div asp-validation-summary="All"
-         class="text-danger mb-3"
-         role="alert"></div>
-
+@{ ViewData["Title"] = Model.Cancelled ? "Checkout cancelled" : "Checkout status"; }
+<div class="rr-narrow">
+    <partial name="_PaymentPageHeader" />
+    <header class="rr-page-header"><div><span class="rr-ref d-block mb-2">@Model.Payment.ReceiptNo</span><h1>@ViewData["Title"]</h1><p class="rr-lede">@PaymentFormatter.OrderReference(Model.Payment.OrderId)</p></div></header>
+    <div asp-validation-summary="All" class="alert alert-danger" role="alert"></div>
+    <article class="rr-docket payment-docket">
+        <div class="rr-docket__head"><h2 class="rr-docket__title">Checkout outcome</h2><span class="@PaymentFormatter.StatusPill(Model.Payment.Status, Model.Payment.Method)">@PaymentFormatter.StatusText(Model.Payment.Status, Model.Payment.Method)</span></div>
+        <p role="status" class="mt-3">@Model.Message</p>
+        <div class="rr-docket__total payment-total"><span>Order total</span><strong class="rr-money">@PaymentFormatter.Money(Model.Payment.Amount)</strong></div>
+    </article>
     @if (Model.CanCancel)
     {
-        <form method="post" class="mb-3">
-            <input type="hidden" asp-for="PaymentId" />
-            <input type="hidden" asp-for="Attempt" />
-
-            <button type="submit" class="btn btn-outline-danger">
-                Cancel this checkout
-            </button>
+        <form method="post" class="mt-4" data-payment-submit data-payment-confirm="Cancel this online checkout?" data-payment-confirm-description="We will ask Stripe to close the current attempt. If Stripe cannot confirm cancellation, the payment will stay pending. This does not cancel your food order." data-payment-confirm-label="Cancel checkout" data-payment-danger="true" data-payment-busy="Checking cancellation…">
+            <input type="hidden" asp-for="PaymentId" /><input type="hidden" asp-for="Attempt" />
+            <button type="submit" class="btn btn-outline-danger">Cancel this checkout</button>
         </form>
     }
-
-    <div class="d-flex justify-content-center gap-2">
-        @if (Model.Payment.Status == PaymentStatus.Failed)
-        {
-            <a class="btn btn-primary"
-               asp-page="CheckOut"
-               asp-route-orderId="@Model.Payment.OrderId">
-                Choose how to pay
-            </a>
-        }
-
-        <a class="btn btn-outline-secondary"
-           asp-page="MyOrders">
-            My orders
-        </a>
+    <div class="payment-actions mt-4">
+        @if (Model.Payment.Status == PaymentStatus.Failed && Model.Payment.OrderStatus != RROMS.Web.Models.OrdersAndReservations.OrderStatus.Cancelled) { <a class="btn btn-primary" asp-page="CheckOut" asp-route-orderId="@Model.Payment.OrderId">Choose how to pay</a> }
+        @if (Model.Payment.Status == PaymentStatus.Pending && !Model.Payment.IsAwaitingCounter) { <a class="btn btn-outline-secondary" asp-page="Success" asp-route-paymentId="@Model.Payment.PaymentId">Check payment status</a> }
+        <a class="btn btn-outline-secondary" asp-page="MyOrders">Back to orders</a>
     </div>
 </div>

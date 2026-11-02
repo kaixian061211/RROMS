@@ -37,7 +37,8 @@ public class SuccessModel : PageModel
             Status: PaymentStatus.Pending,
             RecordedByStaffId: null
         }
-        && PaymentMethod.IsOnline(Payment.Method);
+        && PaymentMethod.IsOnline(Payment.Method)
+        && !string.IsNullOrWhiteSpace(Payment.TransactionRef);
 
     public bool CanRefreshFromStripe =>
         Payment is not null

@@ -10,7 +10,7 @@ public static class PaymentUserIdentity
         return int.TryParse(value, out var id)
             ? id
             : throw new InvalidOperationException(
-                "The signed-in user has no numeric user id in the NameIdentifier claim (see PAYMENT_SETUP.md).");
+                "The signed-in user has no numeric user id in the NameIdentifier claim.");
     }
 
     public static bool TryGetPaymentUserId(this ClaimsPrincipal user, out int id) =>

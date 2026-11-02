@@ -31,6 +31,7 @@ public class PaymentDetails
 
     public DateTime? RefundedAt { get; set; }
     public int? RefundedByStaffId { get; set; }
+    public string RefundedByStaffName { get; set; } = "-";
     public string? RefundReason { get; set; }
 
     public string ReceiptNo => $"RCP-{PaymentId:D6}";
