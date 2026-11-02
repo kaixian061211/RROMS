@@ -1,124 +1,94 @@
 1. Restore packages
 
-Run inside the project folder:
-
 ```powershell
 dotnet restore
 ```
 
-2. Shared team secrets
+## 2. Add the shared settings file
 
-Use `secrets.shared.json` for the team's Stripe sandbox key, SMTP account and
-OneSignal settings. The team member managing these accounts fills the file once
-and shares it privately with teammates. Everyone places their copy beside
-`PaymentModule.csproj`.
+Get the filled `secrets.shared.json` from the team and place it beside `PaymentModule.csproj`. It contains the Stripe test key and the shared email/push settings.
 
-To prepare the file from the blank template:
+The `.example.json` files are only templates. They do not contain working keys.
 
-```powershell
-Copy-Item secrets.shared.example.json secrets.shared.json
-```
-
-Edit the values in `secrets.shared.json`. Use the actual sandbox key for
-`Stripe__SecretKey`. For email, set `Smtp__Host`, `Smtp__UserName`,
-`Smtp__Password` and `Smtp__FromEmail`; the username and app password must belong
-to the same account. Leave SMTP Host empty to disable email. OneSignal settings
-are optional. Keep the push alias secret at least 32 characters long and stable.
-
-No Stripe CLI, listener, webhook secret or extra package is needed for the
-return-page payment flow. Set `Stripe__WebhookSecret` only when using webhooks.
-
-3. Each teammate's database
-
-Each teammate creates their own `secrets.local.json`:
-
-```powershell
-Copy-Item secrets.local.example.json secrets.local.json
-```
-
-Edit `ConnectionStrings__DefaultConnection` to use that teammate's SQL Server
-instance and database. Everyone can use a different connection. Do not put a
-database connection in the shared file.
-
-For example, a local SQL Server connection has this form:
+Stripe uses these settings in `secrets.shared.json`:
 
 ```json
 {
-  "ConnectionStrings__DefaultConnection": "Server=YOUR_SQL_SERVER;Database=YOUR_DATABASE;Trusted_Connection=True;TrustServerCertificate=True;MultipleActiveResultSets=true",
+  "Stripe__SecretKey": "sk_test_YOUR_TEST_SECRET_KEY",
+  "Stripe__WebhookSecret": "",
+  "Stripe__Currency": "MYR",
+  "Stripe__CheckoutExpiryMinutes": "35"
+}
+```
+
+If you received the filled file, keep its existing values. The key above is only a placeholder. Normal card testing does not need a publishable key or Stripe CLI.
+
+## 3. Set your database connection
+
+Create your own local settings file. Run this only if you have not created it yet:
+
+```powershell
+Copy-Item .\secrets.local.example.json .\secrets.local.json
+```
+
+Open `secrets.local.json` and change the server/database to your own:
+
+```json
+{
+  "ConnectionStrings__DefaultConnection": "Server=localhost;Database=RROMS_Dev;Trusted_Connection=True;TrustServerCertificate=True;MultipleActiveResultSets=true",
   "DefaultAdmin__Email": "",
   "DefaultAdmin__Password": ""
 }
 ```
 
-For a new database, fill both `DefaultAdmin` values to create the initial
-administrator in Development. Existing accounts are unchanged. Change the
-bootstrap password after the first login, then clear it from this file.
-Optional settings such as `Notifications__WebPush__PublicBaseUrl` can also go in
-this local file when a teammate needs a different value.
+Fill both Admin fields if you need an initial Admin account. After signing in, change its password and clear these fields.
 
-4. Run locally
+Use a local development database. Startup creates the tables and applies migrations automatically. For an existing database, back it up and read the [Payment migration notes](Services/Payments/README.md#utc-migration-review-before-deployment) before running.
+
+A new database has no menu items or restaurant tables. Add them through the Admin pages before testing orders. Existing demo data and uploaded images can be shared separately by the module owners.
+
+## 4. Run the project
+
+Trust the local HTTPS certificate once:
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\Start-Local.ps1
+dotnet dev-certs https --trust
 ```
 
-This command reads both private files, passes their values to the app as process
-environment variables and starts the HTTPS launch profile. Local values override
-shared values. It does not change Windows user environment variables or require
-an IDE restart. The execution policy option applies only to this PowerShell
-process.
-
-To check the files without starting the app or connecting to the database:
+Check the settings, then start the app:
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\Start-Local.ps1 -Check
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\Start-Local.ps1
 ```
 
-Use this launcher for the file-based team setup. Plain `dotnet run` does not read
-these two files; it uses existing environment variables and Development User
-Secrets instead. A missing, empty or unchanged template database connection is
-rejected by the launcher.
+Open **https://localhost:7116**.
 
-## Test a Stripe payment
+Use this launcher because plain `dotnet run` does not read the two private JSON files. Restart the app after changing them. The check command checks the files; it does not test the database or Stripe connection.
 
-Sign in as a customer, create an order and choose online card payment.
+## 5. Test a Stripe payment
+
+Sign in as a customer, create an order and choose Card. Use these test details:
 
 ```text
-Card:   4242 4242 4242 4242
-Expiry: Any future date
-CVC:    Any three digits
+Card number: 4242 4242 4242 4242
+Expiry:      Any future date
+CVC:         Any 3 digits
 ```
 
-Complete checkout and return to the app. Confirm **Payment received**, **Paid**
-in history and receipt download. If still unconfirmed, use **Check payment
-status** before trying another payment. Internet access is required. Without
-webhooks, leaving before returning or a delayed payment can leave the local
-record pending until the customer revisits and checks again.
+Return to RROMS after checkout. Check that the payment is marked Paid and the receipt opens. If it is still pending, choose **Check payment status** before paying again. Do not use real card details.
 
-## Keeping private files out of Git
+## Optional: Stripe webhooks
 
-`secrets.shared.json` and `secrets.local.json` are ignored by Git and excluded
-from build and publish output. Only the empty `.example.json` templates belong
-in the repository. Share the real shared file through your team's private
-credential-sharing channel. Keep each teammate's database/admin file local.
-These JSON files are not encrypted.
+You can test payments without this step. Webhooks update RROMS even when the customer does not return from Stripe.
 
-Rotate the SMTP app password previously committed to this repository before
-sharing it, then update `Smtp__Password` in the private shared file. Removing the
-old value from the current source does not remove it from Git history.
+Install the [Stripe CLI](https://docs.stripe.com/cli/install), then run these commands in another terminal using the same team sandbox:
 
-For deployment, use the hosting provider's secret environment settings with the
-same names. ASP.NET Core maps `__` to `:`; see Microsoft's
-[configuration guidance](https://learn.microsoft.com/en-us/aspnet/core/fundamentals/configuration/).
+```powershell
+stripe login
+stripe listen --forward-to https://localhost:7116/webhooks/stripe --events "checkout.session.completed,checkout.session.async_payment_succeeded,checkout.session.async_payment_failed,checkout.session.expired"
+```
 
-## Order and reservation notifications
+Add `Stripe__WebhookSecret` to your existing `secrets.local.json` using the `whsec_...` value shown by the listener. Keep your other settings, restart the app and leave the listener running. Each teammate uses their own listener secret.
 
-Order placement and status changes create in-app notifications and are delivered
-in real time and through Web Push when the customer has a push subscription.
-Order notifications do not send email.
-
-Reservation requests and customer-triggered reservation status changes also send
-email to the signed-in customer's `ClaimTypes.Email` claim. Staff-triggered
-reservation status changes are in-app, real-time, and Web Push only; the app
-does not store customer email addresses on reservations. The authentication
-provider must issue an email claim for customer email notifications to work.
+Keep `secrets.shared.json` and `secrets.local.json` out of Git. Share only the shared file privately; each teammate keeps their own local file.
