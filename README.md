@@ -1,97 +1,62 @@
-# RROMS
-
-## Restore packages
-
-Run from the project folder:
+1. Restore packages
 
 ```powershell
 dotnet restore
 ```
 
-## Configure a local development environment
+## 2. Configure settings
 
-The local launcher reads two private JSON files beside `PaymentModule.csproj`.
-Create them from the blank templates:
+Place the team's filled `secrets.shared.json` beside `PaymentModule.csproj` (Stripe, SMTP and OneSignal).
 
-```powershell
-Copy-Item secrets.shared.example.json secrets.shared.json
-Copy-Item secrets.local.example.json secrets.local.json
-```
-
-In `secrets.shared.json`, configure the shared Stripe sandbox key, SMTP
-credentials and optional OneSignal settings. Keep this file private and share it
-only through your team's private credential-sharing channel. Leave SMTP host
-empty to disable email. `Stripe__WebhookSecret` is only needed when using
-webhooks; the return-page payment flow does not require a Stripe CLI listener.
-
-In `secrets.local.json`, set `ConnectionStrings__DefaultConnection` to your own
-SQL Server database. Each teammate should use their own connection. For a new
-Development database, also set `DefaultAdmin__Email` and
-`DefaultAdmin__Password` to create the initial administrator. Existing
-accounts are not changed. Change the bootstrap password after the first login
-and remove it from the file.
-
-Start the app with:
+Create your personal file if missing:
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\Start-Local.ps1
+Copy-Item .\secrets.local.example.json .\secrets.local.json
 ```
 
-To validate the files without starting the app or connecting to the database:
+Set `ConnectionStrings__DefaultConnection` to your database. For a new Admin, fill both `DefaultAdmin__*` fields; change the password and clear them after login.
+
+Startup applies migrations. Back up existing databases and reconcile old Stripe checkouts before the Payment UTC conversion.
+
+Never commit either private file. Rotate the exposed SMTP app password.
+
+## 3. Run
+
+Trust HTTPS once:
+
+```powershell
+dotnet dev-certs https --trust
+```
+
+Check settings, then start:
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\Start-Local.ps1 -Check
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\Start-Local.ps1
 ```
 
-The launcher loads the shared and local files as process environment variables;
-local values take precedence. It does not change Windows user environment
-variables. Plain `dotnet run` does not read these files; it uses environment
-variables and Development User Secrets instead.
+Open **https://localhost:7116**. Use the launcher; plain `dotnet run` ignores these private files. Add menu items/tables through Admin.
 
-## Test an online payment
+## 4. Test a payment
 
-Sign in as a customer, create an order and choose online card payment. Use these
-Stripe sandbox card details:
+Create a customer order and choose Card. Test with `4242 4242 4242 4242`, a future expiry and any three-digit CVC. Return and check **Paid** and the receipt. If pending, select **Check payment status**.
 
-```text
-Card:   4242 4242 4242 4242
-Expiry: Any future date
-CVC:    Any three digits
-```
+Webhooks are optional for local testing. Never use real card details.
 
-Complete checkout and return to the app. Check for **Payment received**, a
-**Paid** status in payment history, and a downloadable receipt. If the payment
-is not yet confirmed, use **Check payment status** before attempting another
-payment. Internet access is required. Without webhooks, a payment may remain
-pending until the customer returns and checks its status.
+## 5. Notifications and tracking
 
-## Notifications and order tracking
+Open `/Notifications` for the inbox and `/Tracking` for orders/bookings. Tracking uses live events and five-second polling while visible.
 
-Order and reservation events create in-app notifications. Notifications can
-also be delivered in real time and through Web Push when the customer has a
-push subscription. Email delivery depends on the event and on SMTP being
-configured. Failed delivery does not remove the saved inbox notification.
+In `secrets.shared.json`:
 
-Order and reservation tracking pages refresh status while open and can also
-update immediately when a real-time notification arrives.
+- Email: fill `Smtp__*` with matching sender credentials.
+- Push: fill `Notifications__WebPush__*`: AppId, ApiKey, stable AliasSecret (32+ characters), PublicBaseUrl `https://localhost:7116`.
 
-Delivery by event:
+Match that origin in OneSignal. Sign in and allow browser notifications.
 
-| Event | Inbox, live update and subscribed browser push | Email |
-| --- | --- | --- |
-| Order created or status changed | Yes | No |
-| Reservation created, changed or cancelled | Yes | Only when confirmed |
-| Payment confirmed | Yes | Receipt PDF |
-| Payment refunded | Yes | Refund confirmation |
-| Promotion published | Active customers with order or reservation history | No |
-| Announcement published | Active customers | No |
+Email: confirmed reservations, receipts and refunds. Orders: inbox/live/push. Promotions: active customers with order/booking history. Announcements: all active customers. Delivery failures keep inbox records.
 
-Receipt email addresses are resolved from active customer accounts. Browser
-push uses an opaque customer identity, preserves permission denials and explicit
-opt-outs, and checks the current login again after a page is restored with Back.
-Temporary subscription failures can retry when the page regains focus.
-
-Run the regression checks from the project folder:
+## 6. Tests
 
 ```powershell
 $env:RROMS_TEST_CONNECTION = 'Server=localhost;Database=RROMS_NotificationTracking_Tests;Trusted_Connection=True;TrustServerCertificate=True'
@@ -99,24 +64,4 @@ dotnet test Tests/RROMS.Tests/RROMS.Tests.csproj
 node --test Tests/Browser/*.test.cjs Tests/Configuration/*.test.cjs
 ```
 
-The .NET tests create and reset only a guarded test database. They exercise real
-SignalR transport, owner-only events, unread/read synchronization, SMTP message
-transport against a local receiver, delivery failures and tracking ownership.
-Provider calls in these tests use local receivers or recorded responses.
-Confirm delivery to an actual inbox and browser separately using a customer
-account and a browser that has allowed notifications. OneSignal's
-[web push setup guide](https://documentation.onesignal.com/docs/en/web-push-setup)
-describes the HTTPS, service worker and browser permission requirements.
-
-## Keep private configuration out of Git
-
-`secrets.shared.json` and `secrets.local.json` are private and ignored by Git.
-Only the blank `.example.json` templates belong in the repository. These files
-are not encrypted. For deployment, configure the same setting names in the
-hosting provider's secret environment settings. ASP.NET Core maps `__` to `:`;
-see Microsoft's
-[configuration guidance](https://learn.microsoft.com/en-us/aspnet/core/fundamentals/configuration/).
-
-An SMTP app password was previously committed to this repository. Rotate it
-before using or sharing the account. Removing a secret from the current source
-does not remove it from Git history.
+Tests reset the isolated database and use fake/local providers. Verify actual delivery separately.
