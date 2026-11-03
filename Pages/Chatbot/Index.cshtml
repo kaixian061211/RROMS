@@ -1,0 +1,64 @@
+@page
+@model IndexModel
+@{
+    ViewData["Title"] = "Ask the assistant";
+}
+
+<div class="rr-narrow">
+    <header class="rr-page-header">
+        <div>
+            <h1>Ask the assistant</h1>
+            <p class="rr-lede">Ask about the menu, our opening hours, your reservations, or what you ordered before.</p>
+        </div>
+        @if (Model.Conversation.Count > 0)
+        {
+            <div class="rr-page-actions">
+                <form method="post" asp-page-handler="New">
+                    <button type="submit" class="btn btn-outline-secondary">Start a new chat</button>
+                </form>
+            </div>
+        }
+    </header>
+
+    @if (Model.Conversation.Count == 0)
+    {
+        <div class="rr-empty">
+            <p class="rr-empty__title">No messages yet.</p>
+            <p class="mb-0">You could ask: What are your opening hours? What did I order last time? Do I have a reservation coming up?</p>
+        </div>
+    }
+    else
+    {
+        <ul class="chat list-unstyled" aria-label="Conversation">
+            @foreach (var turn in Model.Conversation)
+            {
+                var fromCustomer = turn.Sender == ChatSender.Customer;
+                <li class="chat-message @(fromCustomer ? "chat-message--customer" : "chat-message--bot")">
+                    <span class="chat-message__who">@(fromCustomer ? "You" : "Assistant")</span>
+                    <p class="chat-message__text">@turn.Text</p>
+                </li>
+            }
+        </ul>
+    }
+
+    <form method="post" class="mt-4">
+        <div class="mb-3">
+            <label asp-for="Message" class="form-label">Your question</label>
+            <textarea asp-for="Message" class="form-control" rows="3" maxlength="500" required
+                      data-msg-required="Please type a question."></textarea>
+            <span asp-validation-for="Message" class="text-danger"></span>
+        </div>
+        <div class="rr-actionbar">
+            <button type="submit" class="btn btn-primary">Send</button>
+        </div>
+    </form>
+
+    <p class="small text-muted mt-4 mb-0">
+        The assistant is an AI and can make mistakes, so check anything important with staff. To write its answer,
+        your question and your recent orders and reservations are sent to an AI service.
+    </p>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

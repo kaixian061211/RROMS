@@ -13,6 +13,7 @@ using RROMS.Web.Services.Payments.Receipts;
 using RROMS.Web.Services.Notifications;
 using RROMS.Web.Services.Restaurant;
 using RROMS.Web.Services.Accounts;
+using RROMS.Web.Services.CustomerSupportAndFeedback;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -103,6 +104,12 @@ builder.Services.AddScoped<IPaymentService, PaymentService>();
 QuestPDF.Settings.License = LicenseType.Community;
 builder.Services.AddSingleton<IReceiptService, ReceiptService>();
 builder.Services.AddScoped<StripeWebhookHandler>();
+
+// ---- Customer support and feedback module ----
+builder.Services.AddScoped<IFeedbackService, FeedbackService>();
+builder.Services.AddHttpClient<IChatModelClient, GeminiChatClient>(client => client.Timeout = TimeSpan.FromSeconds(25));
+builder.Services.AddScoped<IChatContextProvider, ChatContextProvider>();
+builder.Services.AddScoped<IChatbotService, ChatbotService>();
 
 var app = builder.Build();
 
