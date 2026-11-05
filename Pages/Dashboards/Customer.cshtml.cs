@@ -6,5 +6,5 @@ namespace RROMS.Web.Pages.Dashboards;
 [Authorize(Roles = PaymentRoles.Customer)]
 public class CustomerModel : DashboardModel
 {
-    public CustomerModel(IWebHostEnvironment environment) : base(environment, PaymentRoles.Customer) { }
+    public CustomerModel() : base(PaymentRoles.Customer) { }
 }

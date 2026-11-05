@@ -1,53 +1,27 @@
-@model RROMS.Web.Pages.Dashboards.DashboardModel
-@* The cards of one role's dashboard (rr-feature). A built feature is a card you can click; in Development the
-   features not built yet follow, dashed, with their story and owner. *@
-@{
-    var built = Model.Cards.Where(card => card.IsBuilt).ToList();
-    var notBuilt = Model.Cards.Where(card => !card.IsBuilt).ToList();
-}
+@model IReadOnlyList<RROMS.Web.Models.Dashboards.DashboardCard>
+@* A grid of feature cards (rr-feature). A built feature links to its page; one that isn't built yet is a
+   "Coming soon" placeholder: a button that does nothing when clicked. *@
 
-@if (Model.Cards.Count == 0)
-{
-    <div class="rr-empty">
-        <p class="rr-empty__title">Nothing here yet.</p>
-        <p class="mb-0">These features are still being built.</p>
-    </div>
-}
-
-@if (built.Count > 0)
-{
-    <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-3">
-        @foreach (var card in built)
-        {
-            <div class="col">
+<div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-3">
+    @foreach (var card in Model)
+    {
+        <div class="col">
+            @if (card.IsBuilt)
+            {
                 <div class="rr-feature">
                     @* The link covers the whole card (rr-feature__title a::after). *@
                     <h2 class="rr-feature__title"><a href="@card.PagePath">@card.Title</a></h2>
                     <p class="text-muted mb-0">@card.Description</p>
-                    @if (Model.IsDevelopment)
-                    {
-                        <div class="rr-feature__meta">Story @card.Story · @card.Owner</div>
-                    }
                 </div>
-            </div>
-        }
-    </div>
-}
-
-@if (notBuilt.Count > 0)
-{
-    <h2 class="h4 mt-5 mb-1">Not built yet</h2>
-    <p class="small text-muted mb-3">Development only. Outside Development these cards are hidden.</p>
-    <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-3">
-        @foreach (var card in notBuilt)
-        {
-            <div class="col">
-                <div class="rr-feature rr-feature--soon" aria-disabled="true">
-                    <h3 class="rr-feature__title">@card.Title</h3>
-                    <p class="mb-0">@card.Description</p>
-                    <div class="rr-feature__meta">Not built yet · Story @card.Story · @card.Owner</div>
-                </div>
-            </div>
-        }
-    </div>
-}
+            }
+            else
+            {
+                <button type="button" class="rr-feature rr-feature--soon">
+                    <span class="rr-feature__title">@card.Title</span>
+                    <span class="text-muted">@card.Description</span>
+                    <span class="rr-soon mt-3">Coming soon</span>
+                </button>
+            }
+        </div>
+    }
+</div>

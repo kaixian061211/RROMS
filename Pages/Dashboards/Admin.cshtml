@@ -7,56 +7,13 @@
 <header class="rr-page-header">
     <div>
         <span class="rr-label">Admin</span>
-        <h1>Dashboard</h1>
+        <h1>Welcome, @User.Identity?.Name</h1>
+        <p class="rr-lede">Set up the restaurant, manage accounts and see how it's doing.</p>
     </div>
-    <a asp-page="/Restaurant/Manage/Details"
-        class="btn btn-primary">
-        Manage Details
-        </a>
-
-        <a asp-page="/Restaurant/Manage/Announcements"
-           class="btn btn-outline-primary">
-            Manage Announcements
-        </a>
 </header>
 
-<partial name="_Cards" model="Model" />
+<h2 class="rr-group-title">Restaurant and accounts</h2>
+<partial name="_Cards" model="Model.Cards" />
 
-<!-- Menu Management Links -->
-<div class="mt-4">
-    <h2 class="h4 mb-3">Menu Management</h2>
-    <div class="d-flex gap-2">
-        <a asp-page="/Menu/Manage/Index" class="btn btn-primary">
-            Manage Menu Items
-        </a>
-        <a asp-page="/Menu/Manage/Categories" class="btn btn-outline-primary">
-            Manage Categories
-        </a>
-    </div>
-</div>
-
-<!-- Promotions Management Links -->
-<div class="mt-4">
-    <h2 class="h4 mb-3">Promotions Management</h2>
-    <div class="d-flex gap-2">
-        <a asp-page="/Promotions/Manage/Index" class="btn btn-primary">
-            Manage Promotions
-        </a>
-    </div>
-</div>
-
-<!-- Restaurant Management Links -->
-<div class="mt-4">
-    <h2 class="h4 mb-3">Restaurant Management</h2>
-    <div class="d-flex flex-wrap gap-2">
-        <a asp-page="/Restaurant/Manage/DiningAreas"
-           class="btn btn-primary">
-            Manage Dining Areas
-        </a>
-
-        <a asp-page="/Restaurant/Manage/Tables"
-           class="btn btn-outline-primary">
-            Manage Tables
-        </a>
-    </div>
-</div>
+<h2 class="rr-group-title mt-5">Daily operations</h2>
+<partial name="_Cards" model="Model.Operations" />
