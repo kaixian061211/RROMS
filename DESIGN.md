@@ -150,7 +150,7 @@ Copy the markup from `/Dev/StyleGuide`. What each one is for:
 | Panel | `rr-panel` | A white surface for a form |
 | Action bar | `rr-actionbar` | A form's buttons; it stays at the bottom of a phone screen |
 | Empty state | `rr-empty`, `rr-empty__title` | A list with nothing in it |
-| Feature card | `rr-feature`, `__title`, `__meta`; `rr-feature--soon` | Dashboard cards, and choices that are buttons |
+| Feature card | `rr-feature`, `__title`, `__meta`; `rr-feature--soon` + `rr-soon` tag | Dashboard cards, and choices that are buttons. A feature not built yet is a `button.rr-feature--soon` with a "Coming soon" `rr-soon` tag: it can be clicked, but does nothing |
 | Filters | Bootstrap `nav nav-pills` links | Status filters: one tap, kept in the address. No "Show" button |
 
 A docket, for example:

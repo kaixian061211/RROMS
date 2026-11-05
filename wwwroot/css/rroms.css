@@ -525,6 +525,179 @@ a {
     background: var(--rr-pandan-tint);
 }
 
+.rr-header .nav-link {
+    white-space: nowrap;
+}
+
+@media (min-width: 1200px) {
+    .rr-nav {
+        gap: .125rem;
+        align-items: center;
+    }
+}
+
+/* Dropdowns in the header: one white sheet, items with a soft highlight, the current page in pandan. */
+.rr-header .dropdown-menu {
+    --bs-dropdown-min-width: 14rem;
+    --bs-dropdown-padding-x: .375rem;
+    --bs-dropdown-padding-y: .375rem;
+    --bs-dropdown-border-color: var(--rr-line);
+    --bs-dropdown-border-radius: var(--rr-radius-card);
+    --bs-dropdown-inner-border-radius: .375rem;
+    --bs-dropdown-link-color: var(--rr-kopi);
+    --bs-dropdown-link-hover-color: var(--rr-kopi);
+    --bs-dropdown-link-hover-bg: var(--rr-marble);
+    --bs-dropdown-link-active-color: var(--rr-pandan-dark);
+    --bs-dropdown-link-active-bg: var(--rr-pandan-tint);
+    --bs-dropdown-item-padding-x: .75rem;
+    --bs-dropdown-item-padding-y: .5rem;
+    --bs-dropdown-header-color: var(--rr-muted);
+    --bs-dropdown-header-padding-x: .75rem;
+    --bs-dropdown-divider-bg: var(--rr-line);
+    box-shadow: 0 12px 28px -14px rgba(29, 26, 23, .35);
+}
+
+.rr-header .dropdown-item {
+    border-radius: .375rem;
+    font-weight: 500;
+}
+
+.rr-header .dropdown-item.active {
+    font-weight: 600;
+}
+
+.rr-header .dropdown-header {
+    margin-top: .25rem;
+    font-family: var(--rr-font-body);
+    font-size: .6875rem;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+}
+
+.rr-header .dropdown-item-text {
+    padding: .375rem .75rem;
+}
+
+/* A feature that isn't built yet: it can be clicked, but nothing happens. */
+.rr-soon {
+    display: inline-flex;
+    align-items: center;
+    padding: .125rem .5rem;
+    border-radius: 999px;
+    background: var(--rr-teh-tint);
+    color: var(--rr-teh-ink);
+    font-size: .6875rem;
+    font-weight: 700;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.rr-soon-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: .75rem;
+}
+
+.rr-header .nav-link.rr-soon-item {
+    justify-content: flex-start;
+    gap: .5rem;
+}
+
+/* Notifications: a bell with the unread count. On a wide screen the word is only for screen readers. */
+.rr-nav-bell {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: .5rem;
+}
+
+.rr-nav-bell__count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.125rem;
+    height: 1.125rem;
+    padding: 0 .3rem;
+    border-radius: 999px;
+    background: var(--rr-sambal);
+    color: #fff;
+    font-size: .6875rem;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.rr-nav-bell__count[hidden] {
+    display: none;
+}
+
+@media (min-width: 1200px) {
+    .rr-nav-bell__label {
+        position: absolute !important;
+        width: 1px !important;
+        height: 1px !important;
+        overflow: hidden !important;
+        clip: rect(0, 0, 0, 0) !important;
+        white-space: nowrap !important;
+    }
+
+    .rr-nav-bell__count {
+        position: absolute;
+        top: .125rem;
+        right: .125rem;
+    }
+}
+
+/* The account menu: a round initial and the name. */
+.rr-nav-account {
+    display: inline-flex;
+    align-items: center;
+    gap: .5rem;
+}
+
+.rr-nav-account__avatar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.875rem;
+    height: 1.875rem;
+    border-radius: 50%;
+    background: var(--rr-pandan);
+    color: #fff;
+    font-size: .8125rem;
+    font-weight: 700;
+}
+
+.rr-nav-account__role {
+    font-size: .8125rem;
+    color: var(--rr-muted);
+}
+
+.rr-nav-cta {
+    margin-left: .25rem;
+    padding: .4375rem 1.125rem;
+}
+
+/* Below 1200px the links fold into the menu button and open as one list. */
+@media (max-width: 1199.98px) {
+    .rr-header .navbar-collapse {
+        padding: .5rem 0 .75rem;
+    }
+
+    .rr-header .dropdown-menu {
+        margin: 0 0 .25rem .75rem;
+        border: 0;
+        box-shadow: none;
+        background: transparent;
+    }
+
+    .rr-nav-cta {
+        margin: .5rem 0 0;
+    }
+}
+
 .rr-main {
     flex: 1 0 auto;
     padding-top: 2rem;
@@ -1267,18 +1440,18 @@ a {
     color: var(--rr-muted);
 }
 
+/* A feature not built yet: the same card with a "Coming soon" tag. It's a button that does nothing. */
 .rr-feature--soon {
-    background: transparent;
-    border-style: dashed;
-    color: var(--rr-muted);
+    cursor: pointer;
 }
 
 .rr-feature--soon:hover {
-    border-color: var(--rr-line);
+    border-color: var(--rr-line-strong);
 }
 
 .rr-feature--soon .rr-feature__title {
-    color: var(--rr-muted);
+    color: var(--rr-kopi);
+    line-height: 1.2;
 }
 
 /* A feature card that is a button, such as a test user to sign in as. */
