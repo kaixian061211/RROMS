@@ -10,9 +10,20 @@
     var signedIn = User.Identity?.IsAuthenticated == true;
     var isCustomer = User.IsInRole(PaymentRoles.Customer);
     var isStaff = User.IsInRole(PaymentRoles.Staff) || User.IsInRole(PaymentRoles.Admin);
+    var isAdmin = User.IsInRole(PaymentRoles.Admin);
+    var isStaffOnly = isStaff && !isAdmin;   // an Admin gets the same pages under Operations
+
     var onMyReservations = Under("/Reservations") && !Under("/Reservations/Manage");
     var onMyOrders = Under("/Orders") && currentPage != "/Orders/Queue";
-    var isAdmin = User.IsInRole(PaymentRoles.Admin);
+    var onCustomerMore = currentPage is "/Payments/History" or "/Restaurant/Index";
+    var onStaffPayments = currentPage is "/Payments/Counter" or "/Payments/Index" or "/Payments/Collect" or "/Payments/Details";
+    var onOperations = Under("/Reservations/Manage") || currentPage == "/Orders/Queue" || onStaffPayments;
+    var onRestaurantSetup = Under("/Restaurant/Manage") || Under("/Menu/Manage") || Under("/Promotions/Manage");
+
+    // The account menu: a round initial, the name, and the role it signed in with.
+    var userName = User.Identity?.Name ?? string.Empty;
+    var initial = userName.Length > 0 ? char.ToUpperInvariant(userName[0]).ToString() : "?";
+    var roleName = isAdmin ? "Admin" : isStaff ? "Staff" : "Customer";
 }
 <!DOCTYPE html>
 <html lang="en">
@@ -45,97 +56,149 @@
                     <span class="navbar-toggler-icon"></span>
                 </button>
                 <div class="collapse navbar-collapse" id="rr-nav">
-                    <ul class="navbar-nav ms-xl-3 gap-xl-1">
-                        <li class="nav-item">
-        <a class="nav-link @Active(currentPage == "/Menu/Index")" aria-current="@Current(currentPage == "/Menu/Index")" asp-page="/Menu/Index">Menu</a>
-    </li>
-    <li class="nav-item">
-        <a class="nav-link @Active(currentPage == "/Restaurant/Index")" aria-current="@Current(currentPage == "/Restaurant/Index")" asp-page="/Restaurant/Index">Restaurant</a>
-    </li>
+                    <ul class="navbar-nav rr-nav ms-xl-3">
                         @if (signedIn)
                         {
                             <li class="nav-item">
-                                <a class="nav-link @Active(Under("/Dashboards"))" aria-current="@Current(Under("/Dashboards"))" asp-page="/Dashboards/Index">Dashboard</a>
+                                <a class="nav-link @Active(Under("/Dashboards"))" aria-current="@Current(Under("/Dashboards"))" asp-area="" asp-page="/Dashboards/Index">Dashboard</a>
                             </li>
                         }
+
+                        @if (!signedIn)
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link @Active(currentPage == "/Menu/Index")" aria-current="@Current(currentPage == "/Menu/Index")" asp-area="" asp-page="/Menu/Index">Menu</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link @Active(currentPage == "/Restaurant/Index")" aria-current="@Current(currentPage == "/Restaurant/Index")" asp-area="" asp-page="/Restaurant/Index">Restaurant</a>
+                            </li>
+                        }
+
                         @if (isCustomer)
                         {
+                            <li class="nav-item">
+                                <a class="nav-link @Active(currentPage == "/Menu/Index")" aria-current="@Current(currentPage == "/Menu/Index")" asp-area="" asp-page="/Menu/Index">Menu</a>
+                            </li>
                             <li class="nav-item">
                                 <a class="nav-link @Active(onMyReservations)" aria-current="@Current(onMyReservations)" asp-area="" asp-page="/Reservations/Index">Reservations</a>
                             </li>
                             <li class="nav-item">
                                 <a class="nav-link @Active(onMyOrders)" aria-current="@Current(onMyOrders)" asp-area="" asp-page="/Orders/Index">My orders</a>
                             </li>
+                            <li class="nav-item">
+                                <a class="nav-link @Active(Under("/Tracking"))" aria-current="@Current(Under("/Tracking"))" asp-area="" asp-page="/Tracking/Index">Tracking</a>
+                            </li>
+                            <li class="nav-item dropdown">
+                                <button class="nav-link dropdown-toggle @Active(onCustomerMore)" type="button" data-bs-toggle="dropdown" aria-expanded="false">More</button>
+                                <ul class="dropdown-menu">
+                                    <li><a class="dropdown-item @Active(currentPage == "/Payments/History")" aria-current="@Current(currentPage == "/Payments/History")" asp-area="" asp-page="/Payments/History">My payments</a></li>
+                                    <li><a class="dropdown-item @Active(currentPage == "/Restaurant/Index")" aria-current="@Current(currentPage == "/Restaurant/Index")" asp-area="" asp-page="/Restaurant/Index">About the restaurant</a></li>
+                                    <li><hr class="dropdown-divider" /></li>
+                                    <li><button type="button" class="dropdown-item rr-soon-item">Feedback <span class="rr-soon">Coming soon</span></button></li>
+                                    <li><button type="button" class="dropdown-item rr-soon-item">Visit history <span class="rr-soon">Coming soon</span></button></li>
+                                    <li><button type="button" class="dropdown-item rr-soon-item">Chatbot <span class="rr-soon">Coming soon</span></button></li>
+                                </ul>
+                            </li>
                         }
-                        @if (isAdmin)
+
+                        @if (isStaffOnly)
                         {
                             <li class="nav-item">
-                                <a class="nav-link @Active(Under("/Menu/Manage"))" aria-current="@Current(Under("/Menu/Manage"))" asp-page="/Menu/Manage/Index">Manage menu</a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link @Active(Under("/Restaurant/Manage") || Under("/Promotions/Manage"))" aria-current="@Current(Under("/Restaurant/Manage") || Under("/Promotions/Manage"))" asp-page="/Restaurant/Manage/Index">Restaurant setup</a>
-                                <a class="nav-link @Active(Under("/Reports"))" aria-current="@Current(Under("/Reports"))" asp-page="/Reports/Index">Reports</a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link @Active(Under("/Admin/Accounts"))" aria-current="@Current(Under("/Admin/Accounts"))" asp-page="/Admin/Accounts/Index">Manage accounts</a>
-                            </li>
-                        }
-                        @if (isStaff)
-                        {
-                            <li class="nav-item">
-                                <a class="nav-link @Active(Under("/Reservations/Manage"))" aria-current="@Current(Under("/Reservations/Manage"))" asp-area="" asp-page="/Reservations/Manage/Index">Manage reservations</a>
+                                <a class="nav-link @Active(Under("/Reservations/Manage"))" aria-current="@Current(Under("/Reservations/Manage"))" asp-area="" asp-page="/Reservations/Manage/Index">Reservations</a>
                             </li>
                             <li class="nav-item">
                                 <a class="nav-link @Active(currentPage == "/Orders/Queue")" aria-current="@Current(currentPage == "/Orders/Queue")" asp-area="" asp-page="/Orders/Queue">Order queue</a>
                             </li>
-                        }
-                        @if (HostEnvironment.IsDevelopment())
-                        {
-                            <li class="nav-item"><a class="nav-link @Active(currentPage == "/Payments/Demo")" asp-page="/Payments/Demo">Payments</a></li>
-                        }
-                        @if (isCustomer)
-                        {
-                            <li class="nav-item"><a class="nav-link @Active(currentPage == "/Payments/MyOrders")" asp-page="/Payments/MyOrders">Orders for payment</a></li>
-                            <li class="nav-item"><a class="nav-link @Active(currentPage == "/Payments/History")" asp-page="/Payments/History">My payments</a></li>
+                            <li class="nav-item dropdown">
+                                <button class="nav-link dropdown-toggle @Active(onStaffPayments)" type="button" data-bs-toggle="dropdown" aria-expanded="false">Payments</button>
+                                <ul class="dropdown-menu">
+                                    <li><a class="dropdown-item @Active(currentPage == "/Payments/Counter")" aria-current="@Current(currentPage == "/Payments/Counter")" asp-area="" asp-page="/Payments/Counter">Counter payments</a></li>
+                                    <li><a class="dropdown-item @Active(currentPage == "/Payments/Index")" aria-current="@Current(currentPage == "/Payments/Index")" asp-area="" asp-page="/Payments/Index">Manage payments</a></li>
+                                </ul>
+                            </li>
                             <li class="nav-item">
-                                <a class="nav-link @Active(Under("/Notifications"))"
-                                   aria-current="@Current(Under("/Notifications"))"
-                                   asp-area=""
-                                   asp-page="/Notifications/Index">
-                                    Notifications
-                                    <span id="notification-unread-count"
-                                          class="badge text-bg-primary"
-                                          aria-live="polite"
-                                          hidden></span>
-                                </a>
+                                <button type="button" class="nav-link rr-soon-item">Customer preferences <span class="rr-soon">Coming soon</span></button>
                             </li>
                         }
-                        @if (isStaff)
+
+                        @if (isAdmin)
                         {
-                            <li class="nav-item"><a class="nav-link @Active(currentPage == "/Payments/Counter")" asp-page="/Payments/Counter">Counter payments</a></li>
-                            <li class="nav-item"><a class="nav-link @Active(currentPage == "/Payments/Index")" asp-page="/Payments/Index">Manage payments</a></li>
+                            <li class="nav-item dropdown">
+                                <button class="nav-link dropdown-toggle @Active(onOperations)" type="button" data-bs-toggle="dropdown" aria-expanded="false">Operations</button>
+                                <ul class="dropdown-menu">
+                                    <li><a class="dropdown-item @Active(Under("/Reservations/Manage"))" aria-current="@Current(Under("/Reservations/Manage"))" asp-area="" asp-page="/Reservations/Manage/Index">Reservations</a></li>
+                                    <li><a class="dropdown-item @Active(currentPage == "/Orders/Queue")" aria-current="@Current(currentPage == "/Orders/Queue")" asp-area="" asp-page="/Orders/Queue">Order queue</a></li>
+                                    <li><hr class="dropdown-divider" /></li>
+                                    <li><a class="dropdown-item @Active(currentPage == "/Payments/Counter")" aria-current="@Current(currentPage == "/Payments/Counter")" asp-area="" asp-page="/Payments/Counter">Counter payments</a></li>
+                                    <li><a class="dropdown-item @Active(currentPage == "/Payments/Index")" aria-current="@Current(currentPage == "/Payments/Index")" asp-area="" asp-page="/Payments/Index">Manage payments</a></li>
+                                </ul>
+                            </li>
+                            <li class="nav-item dropdown">
+                                <button class="nav-link dropdown-toggle @Active(onRestaurantSetup)" type="button" data-bs-toggle="dropdown" aria-expanded="false">Restaurant</button>
+                                <ul class="dropdown-menu">
+                                    <li><h2 class="dropdown-header">The restaurant</h2></li>
+                                    <li><a class="dropdown-item @Active(currentPage == "/Restaurant/Manage/Index")" aria-current="@Current(currentPage == "/Restaurant/Manage/Index")" asp-area="" asp-page="/Restaurant/Manage/Index">Restaurant setup</a></li>
+                                    <li><a class="dropdown-item @Active(currentPage == "/Restaurant/Manage/Hours")" aria-current="@Current(currentPage == "/Restaurant/Manage/Hours")" asp-area="" asp-page="/Restaurant/Manage/Hours">Opening hours</a></li>
+                                    <li><a class="dropdown-item @Active(currentPage == "/Restaurant/Manage/Tables")" aria-current="@Current(currentPage == "/Restaurant/Manage/Tables")" asp-area="" asp-page="/Restaurant/Manage/Tables">Tables</a></li>
+                                    <li><h2 class="dropdown-header">Menu</h2></li>
+                                    <li><a class="dropdown-item @Active(currentPage == "/Menu/Manage/Index")" aria-current="@Current(currentPage == "/Menu/Manage/Index")" asp-area="" asp-page="/Menu/Manage/Index">Menu items</a></li>
+                                    <li><a class="dropdown-item @Active(currentPage == "/Menu/Manage/Categories")" aria-current="@Current(currentPage == "/Menu/Manage/Categories")" asp-area="" asp-page="/Menu/Manage/Categories">Categories</a></li>
+                                    <li><h2 class="dropdown-header">Customers</h2></li>
+                                    <li><a class="dropdown-item @Active(Under("/Promotions/Manage"))" aria-current="@Current(Under("/Promotions/Manage"))" asp-area="" asp-page="/Promotions/Manage/Index">Promotions</a></li>
+                                    <li><a class="dropdown-item @Active(currentPage == "/Restaurant/Manage/Announcements")" aria-current="@Current(currentPage == "/Restaurant/Manage/Announcements")" asp-area="" asp-page="/Restaurant/Manage/Announcements">Announcements</a></li>
+                                </ul>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link @Active(Under("/Reports"))" aria-current="@Current(Under("/Reports"))" asp-area="" asp-page="/Reports/Index">Reports</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link @Active(Under("/Admin/Accounts"))" aria-current="@Current(Under("/Admin/Accounts"))" asp-area="" asp-page="/Admin/Accounts/Index">Accounts</a>
+                            </li>
                         }
                     </ul>
 
-                    <ul class="navbar-nav ms-xl-auto gap-xl-1">
+                    <ul class="navbar-nav rr-nav ms-xl-auto">
                         @if (signedIn)
                         {
-                            <li class="nav-item">
-                                <a class="nav-link @Active(Under("/Account"))" aria-current="@Current(Under("/Account"))" asp-page="/Account/Profile">@User.Identity!.Name</a>
-                            </li>
-                            <li class="nav-item">
-                                <form method="post" asp-page="/Account/Logout" class="d-xl-flex">
-                                    <button type="submit" class="nav-link btn btn-link text-start">Log out</button>
-                                </form>
+                            @if (isCustomer)
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link rr-nav-bell @Active(Under("/Notifications"))" aria-current="@Current(Under("/Notifications"))" asp-area="" asp-page="/Notifications/Index" title="Notifications">
+                                        <svg class="rr-nav-bell__icon" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false">
+                                            <path fill="currentColor" d="M12 22a2.5 2.5 0 0 0 2.45-2h-4.9A2.5 2.5 0 0 0 12 22Zm7-5-1.5-1.5V11a5.5 5.5 0 0 0-4.5-5.41V4.5a1 1 0 1 0-2 0v1.09A5.5 5.5 0 0 0 6.5 11v4.5L5 17v1h14v-1Z" />
+                                        </svg>
+                                        <span class="rr-nav-bell__label">Notifications</span>
+                                        <span id="notification-unread-count"
+                                              class="rr-nav-bell__count"
+                                              aria-live="polite"
+                                              hidden></span>
+                                    </a>
+                                </li>
+                            }
+                            <li class="nav-item dropdown">
+                                <button class="nav-link dropdown-toggle rr-nav-account @Active(Under("/Account"))" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <span class="rr-nav-account__avatar" aria-hidden="true">@initial</span>
+                                    <span>@userName</span>
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-xl-end">
+                                    <li><span class="dropdown-item-text rr-nav-account__role">Signed in as @roleName</span></li>
+                                    <li><a class="dropdown-item @Active(currentPage == "/Account/Profile")" aria-current="@Current(currentPage == "/Account/Profile")" asp-area="" asp-page="/Account/Profile">Profile</a></li>
+                                    <li><hr class="dropdown-divider" /></li>
+                                    <li>
+                                        <form method="post" asp-area="" asp-page="/Account/Logout">
+                                            <button type="submit" class="dropdown-item">Log out</button>
+                                        </form>
+                                    </li>
+                                </ul>
                             </li>
                         }
                         else
                         {
                             <li class="nav-item">
-                                <a class="nav-link @Active(currentPage == "/Account/Register")" asp-page="/Account/Register">Register</a>
+                                <a class="nav-link @Active(currentPage == "/Account/Login")" aria-current="@Current(currentPage == "/Account/Login")" asp-area="" asp-page="/Account/Login">Log in</a>
                             </li>
-                            <li class="nav-item">
-                                <a class="nav-link @Active(currentPage == "/Account/Login")" asp-page="/Account/Login">Log in</a>
+                            <li class="nav-item d-flex align-items-center">
+                                <a class="btn btn-primary rr-nav-cta" asp-area="" asp-page="/Account/Register">Register</a>
                             </li>
                         }
                     </ul>
