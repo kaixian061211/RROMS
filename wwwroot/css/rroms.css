@@ -235,7 +235,10 @@ a {
 /* A small label above a value. Only for real labels ("Special request", "Lunch"), in sentence case. */
 .rr-label {
     display: block;
+    font-family: var(--rr-font-body);
     font-size: .8125rem;
+    letter-spacing: 0;
+    line-height: 1.4;
     font-weight: 700;
     color: var(--rr-muted);
 }
@@ -1561,6 +1564,278 @@ button.rr-feature {
 .rr-feature.is-current {
     border-color: var(--rr-pandan);
     box-shadow: inset 0 0 0 1px var(--rr-pandan);
+}
+
+/* A feature's link covers the whole card, so the whole card shows the focus ring. */
+.rr-feature:has(.rr-feature__title a:focus-visible) {
+    outline: 3px solid var(--rr-pandan);
+    outline-offset: 2px;
+}
+
+.rr-feature__title a:focus-visible {
+    outline: 0;
+}
+
+/* Dashboard: what the role needs now comes first (dockets, counts, facts); the shelf of everything else
+   comes after. Markup: .rr-dash > .rr-dash__slot > h2.rr-dash__title + docket or empty state. */
+.rr-dash {
+    display: grid;
+    gap: 2.5rem;
+    margin-bottom: 3rem;
+}
+
+@media (min-width: 992px) {
+    .rr-dash {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        align-items: start;
+    }
+}
+
+.rr-dash__title {
+    margin-bottom: 1rem;
+}
+
+.rr-dash__head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: .5rem 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.rr-dash__more {
+    margin: .875rem 0 0;
+    font-weight: 600;
+}
+
+.rr-dash__when {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.rr-dash__time {
+    min-width: 5.5rem;
+    font-family: var(--rr-font-display);
+    font-variant-numeric: lining-nums tabular-nums;
+    font-size: 1.25rem;
+    font-weight: 700;
+}
+
+/* Shelf: a role's features as one white sheet of links, divided by hairlines, with the ones not built
+   yet in a quieter row under it. The cells are rr-feature, so the dashboards' tests still find them. */
+.rr-shelf__sheet {
+    background: var(--rr-enamel);
+    border: 1px solid var(--rr-line);
+    border-radius: var(--rr-radius-card);
+    overflow: hidden;
+}
+
+/* Each cell draws a line on its right and bottom; the sheet clips the ones on its outer edge. */
+.rr-shelf__list {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    margin: 0 -1px -1px 0;
+    padding: 0;
+    list-style: none;
+}
+
+@media (min-width: 576px) {
+    .rr-shelf__list {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (min-width: 992px) {
+    .rr-shelf__list {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+.rr-shelf .rr-feature {
+    height: auto;
+    padding: 1rem 1.25rem 1.125rem;
+    border: 0;
+    border-right: 1px solid var(--rr-line);
+    border-bottom: 1px solid var(--rr-line);
+    border-radius: 0;
+}
+
+.rr-shelf .rr-feature:hover {
+    background: #f7f9f7;
+}
+
+.rr-shelf .rr-feature:has(.rr-feature__title a:focus-visible) {
+    outline-offset: -3px;
+}
+
+.rr-shelf .rr-feature__title {
+    margin: 0 0 .125rem;
+    font-size: 1.125rem;
+}
+
+.rr-shelf .rr-feature:hover .rr-feature__title a {
+    color: var(--rr-pandan);
+}
+
+.rr-shelf .rr-feature__meta {
+    margin: 0;
+    font-size: .875rem;
+}
+
+.rr-shelf__soon {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .5rem;
+    margin-top: .75rem;
+}
+
+.rr-shelf .rr-feature--soon {
+    flex-direction: row;
+    align-items: center;
+    gap: .5rem;
+    width: auto;
+    min-height: var(--rr-touch);
+    padding: .375rem .5rem .375rem 1rem;
+    border: 1px dashed var(--rr-line-strong);
+    border-radius: 999px;
+    background: transparent;
+}
+
+.rr-shelf .rr-feature--soon:hover {
+    background: transparent;
+    border-color: #a9b0a9;
+}
+
+.rr-shelf .rr-feature--soon .rr-feature__title {
+    margin: 0;
+    font-family: var(--rr-font-body);
+    font-size: .9375rem;
+    font-weight: 600;
+    color: var(--rr-muted);
+}
+
+/* Tally: counts that need someone, each a link to the list behind it (the staff dashboard's kitchen and
+   bookings to confirm). A count that needs attention gets a kaya top edge (is-attention). */
+.rr-now__groups {
+    display: grid;
+    gap: 1.25rem;
+}
+
+.rr-now__group .rr-label {
+    margin-bottom: .375rem;
+}
+
+@media (min-width: 992px) {
+    .rr-now__groups {
+        grid-template-columns: minmax(0, 1fr) minmax(0, 4fr);
+    }
+}
+
+.rr-tally {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    background: var(--rr-enamel);
+    border: 1px solid var(--rr-line);
+    border-radius: var(--rr-radius-card);
+    overflow: hidden;
+}
+
+@media (min-width: 768px) {
+    .rr-tally {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+}
+
+.rr-tally.rr-tally--one {
+    grid-template-columns: minmax(0, 1fr);
+}
+
+/* The shadow draws a line on each cell's top and left; the tally clips the ones on its outer edge. */
+.rr-tally__item {
+    display: flex;
+    flex-direction: column;
+    gap: .375rem;
+    padding: 1rem 1.25rem 1.125rem;
+    color: var(--rr-kopi);
+    text-decoration: none;
+    box-shadow: -1px -1px 0 var(--rr-line);
+}
+
+.rr-tally__item:hover {
+    color: var(--rr-kopi);
+    background: #f7f9f7;
+}
+
+.rr-tally__item:focus-visible {
+    outline-offset: -3px;
+}
+
+.rr-tally__item.is-attention {
+    box-shadow: -1px -1px 0 var(--rr-line), inset 0 4px 0 var(--rr-kaya);
+}
+
+.rr-tally__count {
+    font-family: var(--rr-font-display);
+    font-variant-numeric: lining-nums tabular-nums;
+    font-size: 2.4375rem;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.rr-tally__label {
+    font-size: .875rem;
+    font-weight: 600;
+    color: var(--rr-muted);
+}
+
+/* Facts: how something is set up, as plain statements, each with the page that changes it (the admin
+   dashboard). Markup: dl.rr-facts > .rr-facts__item > dt + dd (the fact) + dd (the link). */
+.rr-facts {
+    display: grid;
+    margin: 0;
+}
+
+@media (min-width: 768px) {
+    .rr-facts {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        column-gap: 2.5rem;
+    }
+}
+
+@media (min-width: 1200px) {
+    .rr-facts {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+}
+
+.rr-facts__item {
+    padding: .875rem 0 .25rem;
+    border-top: 1px solid var(--rr-line);
+}
+
+.rr-facts__item.is-attention {
+    border-top: 3px solid var(--rr-kaya);
+}
+
+.rr-facts__item dt {
+    font-size: .8125rem;
+    font-weight: 700;
+    color: var(--rr-muted);
+}
+
+.rr-facts__item dd {
+    margin: .125rem 0 0;
+    font-size: .875rem;
+}
+
+.rr-facts__item dd:first-of-type {
+    font-family: var(--rr-font-display);
+    font-variant-numeric: lining-nums;
+    font-size: 1.25rem;
+    font-weight: 700;
+    line-height: 1.25;
 }
 
 /* Panel: a plain white surface for a form or a group of details. */

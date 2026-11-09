@@ -1,25 +1,32 @@
 @model IReadOnlyList<RROMS.Web.Models.Dashboards.DashboardCard>
-@* A grid of feature cards (rr-feature). A built feature links to its page; one that isn't built yet is a
-   "Coming soon" placeholder: a button that does nothing when clicked. *@
+@* A role's features as a shelf of links (rr-shelf, each one an rr-feature), in story order. Features that
+   aren't built yet follow in a quieter row: "Coming soon" buttons that do nothing when clicked. *@
+@{
+    var built = Model.Where(card => card.IsBuilt).ToList();
+    var soon = Model.Where(card => !card.IsBuilt).ToList();
+}
 
-<div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-3">
-    @foreach (var card in Model)
-    {
-        <div class="col">
-            @if (card.IsBuilt)
+<div class="rr-shelf">
+    <div class="rr-shelf__sheet">
+        <ul class="rr-shelf__list">
+            @foreach (var card in built)
             {
-                <div class="rr-feature">
-                    @* The link covers the whole card (rr-feature__title a::after). *@
-                    <h2 class="rr-feature__title"><a href="@card.PagePath">@card.Title</a></h2>
-                    <p class="text-muted mb-0">@card.Description</p>
-                </div>
+                <li class="rr-feature">
+                    @* The link covers the whole cell (rr-feature__title a::after). *@
+                    <h3 class="rr-feature__title"><a href="@card.PagePath">@card.Title</a></h3>
+                    <p class="rr-feature__meta">@card.Description</p>
+                </li>
             }
-            else
+        </ul>
+    </div>
+    @if (soon.Count > 0)
+    {
+        <div class="rr-shelf__soon">
+            @foreach (var card in soon)
             {
-                <button type="button" class="rr-feature rr-feature--soon">
+                <button type="button" class="rr-feature rr-feature--soon" title="@card.Description">
                     <span class="rr-feature__title">@card.Title</span>
-                    <span class="text-muted">@card.Description</span>
-                    <span class="rr-soon mt-3">Coming soon</span>
+                    <span class="rr-soon">Coming soon</span>
                 </button>
             }
         </div>

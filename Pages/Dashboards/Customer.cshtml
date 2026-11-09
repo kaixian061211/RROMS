@@ -1,14 +1,129 @@
 @page
 @model RROMS.Web.Pages.Dashboards.CustomerModel
+@using RROMS.Web.Models.OrdersAndReservations
 @{
     ViewData["Title"] = "Customer dashboard";
+    var booking = Model.NextBooking;
+    var current = Model.CurrentOrder;
 }
 
 <header class="rr-page-header">
     <div>
-        <span class="rr-label">Customer</span>
-        <h1>Welcome, @User.Identity?.Name</h1>
-        <p class="rr-lede">Book a table, order to it, and follow it all here.</p>
+        <h1>@Model.Greeting, @User.Identity?.Name</h1>
+    </div>
+    <div class="rr-page-actions">
+        <a asp-page="/Reservations/Create" class="btn btn-primary">Book a table</a>
     </div>
 </header>
-<partial name="_Cards" model="Model.Cards" />
+
+<div class="rr-dash">
+    <section class="rr-dash__slot" aria-labelledby="next-table">
+        <h2 class="rr-dash__title" id="next-table">Your next table</h2>
+        @if (booking is null)
+        {
+            <div class="rr-empty">
+                <p class="rr-empty__title">No table booked.</p>
+                <p class="mb-0">Book a lunch or dinner seating and it shows up here.</p>
+            </div>
+        }
+        else
+        {
+            var reference = ReservationFormatter.Reference(booking.ReservationId);
+            <article class="rr-docket" aria-label="Booking @reference">
+                <div class="rr-docket__head">
+                    <div class="rr-dash__when">
+                        <partial name="/Pages/Reservations/_DateBlock.cshtml" model="booking.ReservationDate" />
+                        <div>
+                            <span class="rr-docket__title">@ReservationFormatter.Time(booking.TimeSlot)</span>
+                            <span class="d-block fw-semibold mt-1">
+                                @ReservationFormatter.Table(booking.TableId, Model.Tables) for @ReservationFormatter.PartySize(booking.PartySize)
+                            </span>
+                        </div>
+                    </div>
+                    <span class="@ReservationFormatter.StatusBadge(booking.Status)">@ReservationFormatter.StatusLabel(booking.Status)</span>
+                </div>
+                @if (booking.SpecialRequest is not null)
+                {
+                    <span class="rr-label">Special request</span>
+                    <p class="mb-0">@booking.SpecialRequest</p>
+                }
+                <div class="rr-docket__total">
+                    <span>Reference</span>
+                    <span class="rr-ref">@reference</span>
+                </div>
+                <div class="rr-docket__actions">
+                    <a asp-page="/Reservations/Edit" asp-route-id="@booking.ReservationId" class="btn btn-outline-secondary">Change</a>
+                    <a asp-page="/Reservations/Cancel" asp-route-id="@booking.ReservationId" class="btn btn-outline-danger">Cancel</a>
+                </div>
+            </article>
+        }
+        <p class="rr-dash__more">
+            <a asp-page="/Reservations/Index">
+                @(Model.UpcomingCount > 1 ? $"All {Model.UpcomingCount} upcoming bookings" : "My reservations")
+            </a>
+        </p>
+    </section>
+
+    <section class="rr-dash__slot" aria-labelledby="your-order">
+        <h2 class="rr-dash__title" id="your-order">Your order</h2>
+        @if (current is null)
+        {
+            <div class="rr-empty">
+                <p class="rr-empty__title">Nothing on order.</p>
+                <p class="mb-0">Sitting at a table? <a asp-page="/Orders/Create">Order food</a> and follow it here.</p>
+            </div>
+        }
+        else
+        {
+            var order = current.Order;
+            <article class="rr-docket" aria-label="Order @OrderFormatter.Reference(order.OrderId)">
+                <div class="rr-docket__head">
+                    <div>
+                        <span class="rr-docket__title">@OrderFormatter.Table(order.TableId, Model.Tables)</span>
+                        <span class="rr-ref d-block">@OrderFormatter.Reference(order.OrderId)</span>
+                    </div>
+                    <span class="@OrderFormatter.StatusBadge(order.Status)">@OrderFormatter.StatusLabel(order.Status)</span>
+                </div>
+                <ol class="rr-steps mb-3" aria-label="Order progress">
+                    @foreach (var step in OrderFormatter.Steps)
+                    {
+                        var stepClass = OrderFormatter.StepClass(order.Status, step);
+                        <li class="@stepClass" aria-current="@(stepClass == "is-current" ? "step" : null)">@OrderFormatter.StatusLabel(step)</li>
+                    }
+                </ol>
+                <ol class="rr-docket__lines">
+                    @foreach (var line in current.Lines)
+                    {
+                        <li class="rr-docket__line">
+                            <span class="rr-docket__qty">@line.Item.Quantity ×</span>
+                            <span>@line.MenuItemName</span>
+                            <span class="rr-docket__amount">@OrderFormatter.Money(line.Item.LineTotal)</span>
+                        </li>
+                    }
+                </ol>
+                <div class="rr-docket__total">
+                    <span>Total</span>
+                    <span class="rr-money">@OrderFormatter.Money(order.Total)</span>
+                </div>
+                <div class="rr-docket__actions">
+                    @* Payment until the order is paid; then its receipt (the same links as My orders). *@
+                    @if (current.CanPay)
+                    {
+                        <a asp-page="/Payments/CheckOut" asp-route-orderId="@order.OrderId" class="btn btn-outline-primary">Go to payment</a>
+                    }
+                    else if (current.Payment is { HasReceipt: true } payment)
+                    {
+                        <a asp-page="/Payments/Receipt" asp-route-id="@payment.PaymentId" class="btn btn-outline-secondary">Download receipt</a>
+                    }
+                    <a asp-page="/Orders/Details" asp-route-id="@order.OrderId" class="btn btn-outline-secondary">Open order</a>
+                </div>
+            </article>
+        }
+        <p class="rr-dash__more"><a asp-page="/Orders/Index">My orders</a></p>
+    </section>
+</div>
+
+<section aria-labelledby="more-title">
+    <h2 class="rr-dash__title" id="more-title">Everything else</h2>
+    <partial name="_Cards" model="Model.Cards" />
+</section>

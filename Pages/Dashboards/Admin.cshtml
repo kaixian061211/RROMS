@@ -2,18 +2,57 @@
 @model RROMS.Web.Pages.Dashboards.AdminModel
 @{
     ViewData["Title"] = "Admin dashboard";
+    string Count(int n, string one, string many) => n == 1 ? $"1 {one}" : $"{n} {many}";
+    var hours = Model.ClosedDays.Count switch
+    {
+        0 => "Open every day",
+        7 => "Closed every day",
+        _ => $"Closed on {string.Join(" and ", Model.ClosedDays.Select(day => day + "s"))}"
+    };
 }
 
 <header class="rr-page-header">
     <div>
-        <span class="rr-label">Admin</span>
-        <h1>Welcome, @User.Identity?.Name</h1>
-        <p class="rr-lede">Set up the restaurant, manage accounts and see how it's doing.</p>
+        <h1>@Model.Greeting, @User.Identity?.Name</h1>
     </div>
 </header>
 
-<h2 class="rr-group-title">Restaurant and accounts</h2>
-<partial name="_Cards" model="Model.Cards" />
+@* The restaurant's setup as plain facts, each with the page that changes it. *@
+<section class="rr-panel" aria-labelledby="setup-title">
+    <h2 class="rr-dash__title" id="setup-title">Restaurant setup</h2>
+    <dl class="rr-facts">
+        <div class="rr-facts__item @(Model.ActiveTables == 0 ? "is-attention" : null)">
+            <dt>Tables</dt>
+            <dd>@Count(Model.ActiveTables, "table", "tables") in @Count(Model.DiningAreas, "dining area", "dining areas")</dd>
+            <dd><a asp-page="/Restaurant/Manage/Tables">Tables</a></dd>
+        </div>
+        <div class="rr-facts__item @(Model.ClosedDays.Count == 7 ? "is-attention" : null)">
+            <dt>Opening hours</dt>
+            <dd>@hours</dd>
+            <dd><a asp-page="/Restaurant/Manage/Hours">Opening hours</a></dd>
+        </div>
+        <div class="rr-facts__item @(Model.DishesAvailable == 0 ? "is-attention" : null)">
+            <dt>Menu</dt>
+            <dd>@Count(Model.Dishes, "dish", "dishes"), @Model.DishesAvailable available</dd>
+            <dd><a asp-page="/Menu/Manage/Index">Menu items</a></dd>
+        </div>
+        <div class="rr-facts__item @(Model.TakingBookings && Model.TakingOrders ? null : "is-attention")">
+            <dt>Online</dt>
+            <dd>
+                @(Model.TakingBookings ? "Taking bookings" : "Bookings paused"),
+                @(Model.TakingOrders ? "taking orders" : "orders paused")
+            </dd>
+            <dd><a asp-page="/Restaurant/Manage/Details">Restaurant details</a></dd>
+        </div>
+    </dl>
+</section>
 
-<h2 class="rr-group-title mt-5">Daily operations</h2>
-<partial name="_Cards" model="Model.Operations" />
+<section class="mt-5" aria-labelledby="restaurant-title">
+    <h2 class="rr-dash__title" id="restaurant-title">Restaurant and accounts</h2>
+    <partial name="_Cards" model="Model.Cards" />
+</section>
+
+<section class="mt-5" aria-labelledby="operations-title">
+    <h2 class="rr-dash__title" id="operations-title">Daily operations</h2>
+    <partial name="_Cards" model="Model.Operations" />
+</section>
