@@ -1843,8 +1843,10 @@ button.rr-feature {
     border-top: 1px solid var(--rr-line);
 }
 
+/* The kaya edge is the border plus an inset shadow, so the fact doesn't move down. */
 .rr-facts__item.is-attention {
-    border-top: 3px solid var(--rr-kaya);
+    border-top-color: var(--rr-kaya);
+    box-shadow: inset 0 2px 0 var(--rr-kaya);
 }
 
 .rr-facts__item dt {
