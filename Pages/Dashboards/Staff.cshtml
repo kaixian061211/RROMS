@@ -1,14 +1,89 @@
 @page
 @model RROMS.Web.Pages.Dashboards.StaffModel
+@using RROMS.Web.Models.OrdersAndReservations
 @{
     ViewData["Title"] = "Staff dashboard";
+
+    // What each kitchen count means, in the order the dockets move along the rail: "3 new orders".
+    var kitchen = new (string Status, string One, string Many)[]
+    {
+        (OrderStatus.Pending, "new order", "new orders"),
+        (OrderStatus.Preparing, "being prepared", "being prepared"),
+        (OrderStatus.Ready, "ready to serve", "ready to serve"),
+        (OrderStatus.Served, "served, not completed", "served, not completed")
+    };
 }
 
 <header class="rr-page-header">
     <div>
-        <span class="rr-label">Staff</span>
-        <h1>Welcome, @User.Identity?.Name</h1>
-        <p class="rr-lede">Today's bookings, the order queue and the counter.</p>
+        <h1>@Model.Greeting, @User.Identity?.Name</h1>
+        <p class="rr-lede">@ReservationFormatter.DayMonth(Model.Today)</p>
+    </div>
+    <div class="rr-page-actions">
+        <a asp-page="/Orders/Queue" class="btn btn-primary">Open the order queue</a>
     </div>
 </header>
-<partial name="_Cards" model="Model.Cards" />
+
+<section class="rr-now" aria-labelledby="now-title">
+    <h2 class="rr-dash__title" id="now-title">Needs you now</h2>
+    <div class="rr-now__groups">
+        <div class="rr-now__group">
+            <h3 class="rr-label" id="now-bookings">Bookings</h3>
+            <div class="rr-tally rr-tally--one" role="group" aria-labelledby="now-bookings">
+                <a asp-page="/Reservations/Manage/Upcoming" class="rr-tally__item @(Model.BookingsToConfirm > 0 ? "is-attention" : null)">
+                    <span class="rr-tally__count">@Model.BookingsToConfirm</span>
+                    <span class="rr-tally__label">to confirm</span>
+                </a>
+            </div>
+        </div>
+        <div class="rr-now__group">
+            <h3 class="rr-label" id="now-kitchen">Kitchen</h3>
+            <div class="rr-tally" role="group" aria-labelledby="now-kitchen">
+                @foreach (var (status, one, many) in kitchen)
+                {
+                    var count = Model.OrdersByStatus.TryGetValue(status, out var n) ? n : 0;
+                    <a asp-page="/Orders/Queue" asp-route-status="@status"
+                       class="rr-tally__item @(status == OrderStatus.Pending && count > 0 ? "is-attention" : null)">
+                        <span class="rr-tally__count">@count</span>
+                        <span class="rr-tally__label">@(count == 1 ? one : many)</span>
+                    </a>
+                }
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="mt-5" aria-labelledby="today-title">
+    <div class="rr-dash__head">
+        <h2 class="rr-dash__title mb-0" id="today-title">Today's bookings</h2>
+        <a asp-page="/Reservations/Manage/Index">Open the day's list</a>
+    </div>
+    @if (Model.TodaysBookings.Count == 0)
+    {
+        <div class="rr-empty">
+            <p class="rr-empty__title">No bookings today.</p>
+            <p class="mb-0">Bookings customers make for today show up here.</p>
+        </div>
+    }
+    else
+    {
+        <ul class="rr-list">
+            @foreach (var r in Model.TodaysBookings)
+            {
+                <li class="rr-list__item @(r.Status == ReservationStatus.Pending ? "is-attention" : null)">
+                    <span class="rr-dash__time">@ReservationFormatter.Time(r.TimeSlot)</span>
+                    <div class="rr-list__main">
+                        <span class="fw-semibold">@ReservationFormatter.Table(r.TableId, Model.Tables) for @ReservationFormatter.PartySize(r.PartySize)</span>
+                        <span class="d-block small text-muted">@ReservationFormatter.Customer(r.CustomerUserId)</span>
+                    </div>
+                    <span class="@ReservationFormatter.StatusBadge(r.Status)">@ReservationFormatter.StatusLabel(r.Status)</span>
+                </li>
+            }
+        </ul>
+    }
+</section>
+
+<section class="mt-5" aria-labelledby="tools-title">
+    <h2 class="rr-dash__title" id="tools-title">Your tools</h2>
+    <partial name="_Cards" model="Model.Cards" />
+</section>

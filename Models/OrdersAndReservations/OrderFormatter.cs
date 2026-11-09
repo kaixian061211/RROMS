@@ -98,6 +98,15 @@ public static class OrderFormatter
         return $"{minutes / 60} h {minutes % 60} min ago";
     }
 
+    /// <summary>
+    /// When an order on the queue came in: "7:45 PM, 12 min ago" for today's, and the day and time for one
+    /// left over from an earlier day ("28 Oct, 9:33 PM"), where "283 h ago" would mean nothing.
+    /// </summary>
+    public static string QueuedAt(DateTime createdAt) =>
+        createdAt.Date == DateTime.Today
+            ? $"{Time(createdAt)}, {Waiting(createdAt)}"
+            : createdAt.ToString("d MMM, h:mm tt", CultureInfo.InvariantCulture);
+
     /// <summary>The payment module's format, so amounts look the same everywhere: "RM 12.90".</summary>
     public static string Money(decimal amount) => PaymentFormatter.Money(amount);
 

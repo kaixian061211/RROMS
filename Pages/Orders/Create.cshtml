@@ -53,7 +53,7 @@
                         @foreach (var group in groupedMenu)
                         {
                             <fieldset class="mb-4">
-                                <legend class="form-label fs-6">@group.Key</legend>
+                                <legend class="rr-dish-group">@group.Key</legend>
                                 <ul class="rr-dishes">
                                     @foreach (var item in group)
                                     {
@@ -125,7 +125,7 @@
             @* Below 992px the Place order button is here instead, and on a phone it stays at the bottom of the screen. *@
             <div class="rr-actionbar d-lg-none">
                 <span class="me-auto" data-needs-script hidden>
-                    <span data-order-count></span> · <strong class="rr-money" data-order-total></strong>
+                    <span data-order-count></span>, <strong class="rr-money" data-order-total></strong>
                 </span>
                 <button type="submit" class="btn btn-primary">Place order</button>
             </div>

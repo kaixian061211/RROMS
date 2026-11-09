@@ -44,9 +44,8 @@
                     <partial name="_DateBlock" model="r.ReservationDate" />
                     <div class="rr-slip__body">
                         <div>
-                            <div class="rr-slip__title">
-                                @ReservationFormatter.Time(r.TimeSlot) · @ReservationFormatter.Table(r.TableId, Model.Tables) · @ReservationFormatter.PartySize(r.PartySize)
-                            </div>
+                            <span class="rr-slip__title rr-slip__title--lead">@ReservationFormatter.Time(r.TimeSlot)</span>
+                            <span class="d-block fw-semibold">@ReservationFormatter.Table(r.TableId, Model.Tables) for @ReservationFormatter.PartySize(r.PartySize)</span>
                             <span class="rr-ref">@reference</span>
                             @if (r.SpecialRequest is not null)
                             {

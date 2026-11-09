@@ -49,6 +49,9 @@ public static class ReservationFormatter
     /// <summary>"Sunday, 18 Oct 2026", for page headings.</summary>
     public static string LongDate(DateOnly date) => date.ToString("dddd, dd MMM yyyy", CultureInfo.InvariantCulture);
 
+    /// <summary>"Monday 9 Nov", for a day close enough that the year goes without saying.</summary>
+    public static string DayMonth(DateOnly date) => date.ToString("dddd d MMM", CultureInfo.InvariantCulture);
+
     /// <summary>The yyyy-MM-dd form that date inputs and links use.</summary>
     public static string InputDate(DateOnly date) => date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
 
@@ -81,13 +84,14 @@ public static class ReservationFormatter
 
     public static string PartySize(int partySize) => partySize == 1 ? "1 person" : $"{partySize} people";
 
-    /// <summary>The staff day list's summary: "4 bookings · 2 pending · 14 people". Cancelled bookings don't count.</summary>
+    /// <summary>The staff day list's summary: "4 bookings for 14 people, 2 to confirm". Cancelled bookings don't count.</summary>
     public static string DaySummary(IEnumerable<Reservation> reservations)
     {
         var booked = reservations.Where(r => r.Status != ReservationStatus.Cancelled).ToList();
         var bookings = booked.Count == 1 ? "1 booking" : $"{booked.Count} bookings";
         var pending = booked.Count(r => r.Status == ReservationStatus.Pending);
-        return $"{bookings} · {pending} pending · {PartySize(booked.Sum(r => r.PartySize))}";
+        var summary = $"{bookings} for {PartySize(booked.Sum(r => r.PartySize))}";
+        return pending == 0 ? summary : $"{summary}, {pending} to confirm";
     }
 
     // TODO: show the customer's name once the user table exists.
