@@ -1,8 +1,9 @@
 /* =============================================================================
    RROMS design system ("kopitiam")
-   The look of a Malaysian coffee shop: marble tabletops, white enamel, painted
-   shop signs, and the order docket that goes to the kitchen. Bootstrap stays;
-   this file re-themes it and adds a few RROMS components (rr-*).
+   The look of a Malaysian coffee shop: a painted signboard over the door, mint
+   wall tiles, marble tabletops, white enamel, and the order docket that goes to
+   the kitchen. Bootstrap stays; this file re-themes it and adds a few RROMS
+   components (rr-*).
    Live examples: /Dev/StyleGuide (Development only). Rules: DESIGN.md.
    ========================================================================== */
 
@@ -38,7 +39,7 @@
 
 :root {
     /* Palette */
-    --rr-marble: #f1f3f1;        /* page background: the tabletop */
+    --rr-marble: #eef1ee;        /* page background: the tabletop */
     --rr-marble-deep: #e3e8e4;   /* the kitchen pass behind the order rail, pressed states */
     --rr-enamel: #ffffff;        /* cards, dockets, header */
     --rr-kopi: #1d1a17;          /* text */
@@ -57,6 +58,11 @@
     --rr-teh: #a86b3c;           /* in progress: preparing */
     --rr-teh-ink: #6e4220;
     --rr-teh-tint: #f3e6da;
+    --rr-signboard: #143b2f;     /* the shop sign: the header, painted deep green */
+    --rr-signboard-ink: #e6eee8; /* lettering on the signboard */
+    --rr-gilt: #d4a72c;          /* gilt sign lettering. Only on the signboard, never on white */
+    --rr-tile: #b9dccd;          /* the mint wall tiles under the sign */
+    --rr-grout: #f6faf7;
 
     /* Type */
     --rr-font-display: "Zilla Slab", Rockwell, "Roboto Slab", Georgia, serif;
@@ -76,8 +82,8 @@
     --bs-body-line-height: 1.55;
     --bs-body-color: #1d1a17;
     --bs-body-color-rgb: 29, 26, 23;
-    --bs-body-bg: #f1f3f1;
-    --bs-body-bg-rgb: 241, 243, 241;
+    --bs-body-bg: #eef1ee;
+    --bs-body-bg-rgb: 238, 241, 238;
     --bs-emphasis-color: #1d1a17;
     --bs-emphasis-color-rgb: 29, 26, 23;
     --bs-secondary-color: #5d625c;
@@ -167,8 +173,9 @@ h1, h2, h3, .h1, .h2, .h3 {
     text-wrap: balance;
 }
 
-h1, .h1 { font-size: clamp(1.875rem, 1.45rem + 1.4vw, 2.5rem); }
-h2, .h2 { font-size: clamp(1.375rem, 1.2rem + .6vw, 1.625rem); }
+/* A 1.25 scale: 13, 14, 16, 20, 25, 31 and 39px (61px for the front page's sign). */
+h1, .h1 { font-size: clamp(1.9375rem, 1.6rem + 1.1vw, 2.4375rem); }
+h2, .h2 { font-size: clamp(1.375rem, 1.25rem + .45vw, 1.5625rem); }
 h3, .h3 { font-size: 1.25rem; }
 
 h4, h5, h6, .h4, .h5, .h6 {
@@ -193,12 +200,19 @@ a {
     outline-offset: 2px;
 }
 
-/* Reference numbers (RES-001841, ORD-001256) look like what the kitchen printer prints. */
+/* Reference numbers (RES-001841, ORD-001256). On a docket they're printed like the kitchen printer
+   prints them (monospace); anywhere else they're plain text with even digits. */
 .rr-ref {
-    font-family: var(--rr-font-mono);
     font-size: .875em;
-    letter-spacing: .02em;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: .01em;
     color: var(--rr-muted);
+}
+
+.rr-docket .rr-ref {
+    font-family: var(--rr-font-mono);
+    font-weight: 400;
 }
 
 /* Money and anything that lines up in columns. */
@@ -212,20 +226,18 @@ a {
     white-space: nowrap;
 }
 
-/* A small label above a heading or a value. Only for real labels ("Seating", "Table"). */
+/* A small label above a value. Only for real labels ("Special request", "Lunch"), in sentence case. */
 .rr-label {
     display: block;
-    font-size: .75rem;
+    font-size: .8125rem;
     font-weight: 700;
-    letter-spacing: .08em;
-    text-transform: uppercase;
     color: var(--rr-muted);
 }
 
 .rr-lede {
     font-size: 1.0625rem;
     color: var(--rr-muted);
-    max-width: 38rem;
+    max-width: 40rem;
 }
 
 /* Customer pages are one comfortable column; staff pages use the full width. */
@@ -445,10 +457,8 @@ a {
 }
 
 .table > thead th {
-    font-size: .75rem;
+    font-size: .8125rem;
     font-weight: 700;
-    letter-spacing: .08em;
-    text-transform: uppercase;
     color: var(--rr-muted);
     border-bottom-color: var(--rr-line-strong);
 }
@@ -463,7 +473,6 @@ a {
     --bs-badge-padding-x: .6em;
     --bs-badge-padding-y: .4em;
     --bs-badge-border-radius: 999px;
-    letter-spacing: .02em;
 }
 
 
@@ -587,10 +596,8 @@ a {
     border-radius: 999px;
     background: var(--rr-teh-tint);
     color: var(--rr-teh-ink);
-    font-size: .6875rem;
+    font-size: .75rem;
     font-weight: 700;
-    letter-spacing: .06em;
-    text-transform: uppercase;
     white-space: nowrap;
 }
 
@@ -772,14 +779,12 @@ a {
     display: inline-flex;
     align-items: center;
     gap: .4em;
-    padding: .3em .7em .3em .6em;
+    padding: .25em .7em .25em .6em;
     border-radius: 999px;
-    font-size: .75rem;
+    font-size: .8125rem;
     font-weight: 700;
-    letter-spacing: .06em;
-    text-transform: uppercase;
     white-space: nowrap;
-    line-height: 1.2;
+    line-height: 1.25;
 }
 
 .rr-status::before {
@@ -943,11 +948,7 @@ a {
     gap: .5rem;
     margin: 0;
     padding-bottom: .625rem;
-    font-family: var(--rr-font-body);
-    font-size: .8125rem;
-    font-weight: 700;
-    letter-spacing: .08em;
-    text-transform: uppercase;
+    font-size: 1.25rem;
 }
 
 /* Count chip beside a heading: how many are in this column or group. */
@@ -958,9 +959,10 @@ a {
     border-radius: 999px;
     background: var(--rr-enamel);
     text-align: center;
-    font-family: var(--rr-font-mono);
+    font-family: var(--rr-font-body);
     font-size: .8125rem;
     font-weight: 700;
+    font-variant-numeric: tabular-nums;
     line-height: 1.4;
     letter-spacing: 0;
     color: var(--rr-kopi);
@@ -1079,12 +1081,10 @@ a {
 .rr-dateblock__day {
     width: 100%;
     padding: .3rem 0;
-    background: var(--rr-kopi);
-    color: #fff;
-    font-size: .6875rem;
+    background: var(--rr-signboard);
+    color: var(--rr-signboard-ink);
+    font-size: .8125rem;
     font-weight: 700;
-    letter-spacing: .1em;
-    text-transform: uppercase;
 }
 
 .rr-dateblock__date {
@@ -1097,10 +1097,8 @@ a {
 
 .rr-dateblock__month {
     padding: .125rem 0 .4rem;
-    font-size: .6875rem;
+    font-size: .8125rem;
     font-weight: 700;
-    letter-spacing: .1em;
-    text-transform: uppercase;
     color: var(--rr-muted);
 }
 
@@ -1257,7 +1255,6 @@ a {
     border-left: 1px solid var(--rr-line);
     border-right: 1px solid var(--rr-line);
     text-align: center;
-    font-family: var(--rr-font-mono);
     font-weight: 700;
     font-variant-numeric: tabular-nums;
     -moz-appearance: textfield;
@@ -1311,7 +1308,6 @@ a {
 
 .rr-dish__price {
     display: block;
-    font-family: var(--rr-font-mono);
     font-size: .875rem;
     font-variant-numeric: tabular-nums;
     color: var(--rr-muted);
