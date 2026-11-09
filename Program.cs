@@ -130,16 +130,12 @@ if (app.Environment.IsDevelopment())
     using var scope = app.Services.CreateScope();
     await scope.ServiceProvider.GetRequiredService<AppDbContext>().Database.MigrateAsync();
 
-    // Bootstrap an administrator only when credentials were supplied explicitly.
-    // Environment variables: DefaultAdmin__Email and DefaultAdmin__Password.
-    var adminEmail = builder.Configuration["DefaultAdmin:Email"];
-    var adminPassword = builder.Configuration["DefaultAdmin:Password"];
-    if (!string.IsNullOrWhiteSpace(adminEmail)
-        && !string.IsNullOrWhiteSpace(adminPassword))
-    {
-        await scope.ServiceProvider.GetRequiredService<IAccountService>()
-            .EnsureDefaultAdminAsync(adminEmail, adminPassword);
-    }
+    // The first administrator, so someone can log in and create the other accounts.
+    // Override with DefaultAdmin:Email / DefaultAdmin:Password in user-secrets, and change the password after the first login.
+    await scope.ServiceProvider.GetRequiredService<IAccountService>().EnsureDefaultAdminAsync(
+        builder.Configuration["DefaultAdmin:Email"] ?? "admin@gmail.com",
+        builder.Configuration["DefaultAdmin:Password"] ?? "admin123");
+
 }
 
 app.Run();
