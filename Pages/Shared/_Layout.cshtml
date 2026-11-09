@@ -30,7 +30,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#ffffff" />
+    <meta name="theme-color" content="#143b2f" />
     <title>@ViewData["Title"] · RROMS</title>
     <script type="importmap"></script>
     <link rel="preload" href="~/fonts/PlusJakartaSans-latin.woff2" as="font" type="font/woff2" crossorigin />
@@ -51,9 +51,10 @@
         <nav class="navbar navbar-expand-xl" aria-label="Main">
             <div class="container-xxl">
                 <a class="navbar-brand rr-wordmark" asp-area="" asp-page="/Index">RROMS</a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#rr-nav"
-                        aria-controls="rr-nav" aria-expanded="false" aria-label="Show the menu">
-                    <span class="navbar-toggler-icon"></span>
+                <button class="navbar-toggler rr-nav-toggle" type="button" data-bs-toggle="collapse" data-bs-target="#rr-nav"
+                        aria-controls="rr-nav" aria-expanded="false">
+                    <span class="navbar-toggler-icon" aria-hidden="true"></span>
+                    Menu
                 </button>
                 <div class="collapse navbar-collapse" id="rr-nav">
                     <ul class="navbar-nav rr-nav ms-xl-3">
@@ -215,7 +216,7 @@
 
     <footer class="rr-footer">
         <div class="container-xxl d-flex flex-wrap justify-content-between column-gap-4 row-gap-1">
-            <span>&copy; 2026 RROMS · Restaurant Reservation and Order Management System</span>
+            <span>&copy; 2026 RROMS, the Restaurant Reservation and Order Management System</span>
             <a asp-area="" asp-page="/Privacy">Privacy</a>
         </div>
     </footer>

@@ -195,9 +195,15 @@ a {
     text-underline-offset: .18em;
 }
 
-:focus-visible {
-    outline: 3px solid rgba(11, 107, 79, .45);
+/* Keyboard focus: a solid pandan ring, at least 3:1 against the marble and the enamel. Bootstrap's own
+   focus glow on buttons, links in a nav and checkboxes is too faint for that, so they get the ring too. */
+:focus-visible,
+.btn:focus-visible,
+.nav-link:focus-visible,
+.form-check-input:focus-visible {
+    outline: 3px solid var(--rr-pandan);
     outline-offset: 2px;
+    box-shadow: none;
 }
 
 /* Reference numbers (RES-001841, ORD-001256). On a docket they're printed like the kitchen printer
@@ -478,64 +484,93 @@ a {
 
 /* 5. Shell: header, navigation, footer, test-login bar --------------------- */
 
+/* The header is the shop's signboard: deep green, the name in gilt, and a row of mint wall tiles
+   under it. It's the one bold thing on every page; everything below it stays plain. */
 .rr-header {
-    background: var(--rr-enamel);
-    border-bottom: 1px solid var(--rr-line);
+    background: var(--rr-signboard);
+    color: var(--rr-signboard-ink);
+}
+
+.rr-header::after {
+    content: "";
+    display: block;
+    height: .75rem;
+    background:
+        linear-gradient(90deg, transparent .625rem, var(--rr-grout) .625rem) 0 0 / .75rem .75rem,
+        linear-gradient(transparent .625rem, var(--rr-grout) .625rem) 0 0 / .75rem .75rem,
+        var(--rr-tile);
+    border-top: 2px solid var(--rr-grout);
 }
 
 .rr-header .navbar {
     --bs-navbar-padding-y: .625rem;
-    --bs-navbar-color: var(--rr-muted);
-    --bs-navbar-hover-color: var(--rr-kopi);
-    --bs-navbar-active-color: var(--rr-pandan);
+    --bs-navbar-color: rgba(230, 238, 232, .86);
+    --bs-navbar-hover-color: #fff;
+    --bs-navbar-active-color: #fff;
     --bs-navbar-nav-link-padding-x: .75rem;
-    --bs-navbar-toggler-border-color: var(--rr-line-strong);
-    --bs-navbar-toggler-focus-width: .2rem;
+    --bs-navbar-toggler-border-color: rgba(230, 238, 232, .4);
+    --bs-navbar-toggler-focus-width: 0;
+    --bs-navbar-toggler-icon-bg: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba%28230, 238, 232, 0.95%29' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+}
+
+/* On the sign, focus shows in gilt, which stands out on the green. */
+.rr-header :focus-visible,
+.rr-header .nav-link:focus-visible,
+.rr-header .btn:focus-visible {
+    outline-color: var(--rr-gilt);
 }
 
 .rr-wordmark {
     font-family: var(--rr-font-display);
     font-variant-numeric: lining-nums;
     font-weight: 700;
-    font-size: 1.625rem;
-    letter-spacing: .04em;
-    color: var(--rr-kopi);
+    font-size: 1.75rem;
+    letter-spacing: .08em;
+    color: var(--rr-gilt);
     line-height: 1;
+}
+
+.rr-wordmark:hover,
+.rr-wordmark:focus {
+    color: var(--rr-gilt);
+}
+
+.rr-nav-toggle {
     display: inline-flex;
-    align-items: baseline;
-    gap: .375rem;
+    align-items: center;
+    gap: .5rem;
+    min-height: var(--rr-touch);
+    color: var(--rr-signboard-ink);
+    font-size: 1rem;
+    font-weight: 600;
 }
 
-.rr-wordmark:hover {
-    color: var(--rr-kopi);
-}
-
-/* The brand mark: a kaya-yellow dot after the name. */
-.rr-wordmark::after {
-    content: "";
-    align-self: flex-start;
-    width: .4375rem;
-    height: .4375rem;
-    margin-top: .0625rem;
-    border-radius: 50%;
-    background: var(--rr-kaya);
+.rr-nav-toggle .navbar-toggler-icon {
+    width: 1.25em;
+    height: 1.25em;
 }
 
 .rr-header .nav-link {
+    position: relative;
     font-weight: 600;
+    white-space: nowrap;
     border-radius: var(--rr-radius-control);
 }
 
 .rr-header .nav-link:hover {
-    background: var(--rr-marble);
+    background: rgba(255, 255, 255, .08);
 }
 
-.rr-header .nav-link.active {
-    background: var(--rr-pandan-tint);
-}
-
-.rr-header .nav-link {
-    white-space: nowrap;
+/* The current page: white lettering with a gilt bar under it (beside it in the phone menu). */
+.rr-header .nav-link.active::before {
+    content: "";
+    position: absolute;
+    left: var(--bs-navbar-nav-link-padding-x);
+    right: var(--bs-navbar-nav-link-padding-x);
+    bottom: .125rem;
+    height: 3px;
+    border-radius: 2px;
+    background: var(--rr-gilt);
 }
 
 @media (min-width: 1200px) {
@@ -578,14 +613,18 @@ a {
 .rr-header .dropdown-header {
     margin-top: .25rem;
     font-family: var(--rr-font-body);
-    font-size: .6875rem;
+    font-size: .8125rem;
     font-weight: 700;
-    letter-spacing: .08em;
-    text-transform: uppercase;
 }
 
 .rr-header .dropdown-item-text {
     padding: .375rem .75rem;
+}
+
+@media (min-width: 1200px) {
+    .rr-header .dropdown-menu :focus-visible {
+        outline-color: var(--rr-pandan);
+    }
 }
 
 /* A feature that isn't built yet: it can be clicked, but nothing happens. */
@@ -657,7 +696,7 @@ a {
     }
 }
 
-/* The account menu: a round initial and the name. */
+/* The account menu: a round gilt initial and the name. */
 .rr-nav-account {
     display: inline-flex;
     align-items: center;
@@ -671,8 +710,8 @@ a {
     width: 1.875rem;
     height: 1.875rem;
     border-radius: 50%;
-    background: var(--rr-pandan);
-    color: #fff;
+    background: var(--rr-gilt);
+    color: var(--rr-signboard);
     font-size: .8125rem;
     font-weight: 700;
 }
@@ -682,25 +721,82 @@ a {
     color: var(--rr-muted);
 }
 
-.rr-nav-cta {
+/* Register: a white enamel button on the green sign. */
+.rr-header .rr-nav-cta {
+    --bs-btn-color: var(--rr-signboard);
+    --bs-btn-bg: var(--rr-enamel);
+    --bs-btn-border-color: var(--rr-enamel);
+    --bs-btn-hover-color: var(--rr-signboard);
+    --bs-btn-hover-bg: var(--rr-signboard-ink);
+    --bs-btn-hover-border-color: var(--rr-signboard-ink);
+    --bs-btn-active-color: var(--rr-signboard);
+    --bs-btn-active-bg: #cfdcd3;
+    --bs-btn-active-border-color: #cfdcd3;
     margin-left: .25rem;
     padding: .4375rem 1.125rem;
 }
 
-/* Below 1200px the links fold into the menu button and open as one list. */
+/* Below 1200px the links fold into the menu button and open as one list on the sign: full-width rows,
+   dropdowns opening in place, the current page marked with a gilt bar on its left. */
 @media (max-width: 1199.98px) {
     .rr-header .navbar-collapse {
         padding: .5rem 0 .75rem;
     }
 
+    .rr-header .navbar-nav + .navbar-nav {
+        margin-top: .5rem;
+        padding-top: .5rem;
+        border-top: 1px solid rgba(230, 238, 232, .2);
+    }
+
+    .rr-header .nav-link {
+        display: flex;
+        align-items: center;
+        min-height: var(--rr-touch);
+        padding-left: .875rem;
+    }
+
+    .rr-header .nav-link.dropdown-toggle::after {
+        margin-left: auto;
+    }
+
+    .rr-header .nav-link.active::before {
+        left: 0;
+        right: auto;
+        top: .5rem;
+        bottom: .5rem;
+        width: 3px;
+        height: auto;
+    }
+
     .rr-header .dropdown-menu {
-        margin: 0 0 .25rem .75rem;
+        --bs-dropdown-link-color: var(--rr-signboard-ink);
+        --bs-dropdown-link-hover-color: #fff;
+        --bs-dropdown-link-hover-bg: rgba(255, 255, 255, .08);
+        --bs-dropdown-link-active-color: #fff;
+        --bs-dropdown-link-active-bg: rgba(255, 255, 255, .1);
+        --bs-dropdown-header-color: rgba(230, 238, 232, .7);
+        --bs-dropdown-divider-bg: rgba(230, 238, 232, .2);
+        margin: 0 0 .25rem .875rem;
+        padding: 0 0 0 .5rem;
         border: 0;
+        border-left: 1px solid rgba(230, 238, 232, .25);
+        border-radius: 0;
         box-shadow: none;
         background: transparent;
     }
 
-    .rr-nav-cta {
+    .rr-header .dropdown-item {
+        display: flex;
+        align-items: center;
+        min-height: var(--rr-touch);
+    }
+
+    .rr-header .rr-nav-account__role {
+        color: rgba(230, 238, 232, .7);
+    }
+
+    .rr-header .rr-nav-cta {
         margin: .5rem 0 0;
     }
 }
@@ -1190,7 +1286,7 @@ a {
 }
 
 .btn-check:focus-visible + .rr-tile {
-    outline: 3px solid rgba(11, 107, 79, .45);
+    outline: 3px solid var(--rr-pandan);
     outline-offset: 2px;
 }
 
