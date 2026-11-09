@@ -19,13 +19,16 @@
     </div>
     <div class="rr-list__main">
         <div class="fw-semibold">
+            @ReservationFormatter.PartySize(r.PartySize)
             @if (showTime)
             {
-                @(ReservationFormatter.Time(r.TimeSlot) + " · ")
+                <span class="fw-normal">at @ReservationFormatter.Time(r.TimeSlot)</span>
             }
-            @ReservationFormatter.PartySize(r.PartySize) · @ReservationFormatter.Customer(r.CustomerUserId)
         </div>
-        <span class="rr-ref">@ReservationFormatter.Reference(r.ReservationId)</span>
+        <div class="rr-row-meta">
+            <span>@ReservationFormatter.Customer(r.CustomerUserId)</span>
+            <span class="rr-ref">@ReservationFormatter.Reference(r.ReservationId)</span>
+        </div>
         @if (r.SpecialRequest is not null)
         {
             <p class="small text-muted mt-1 mb-0">@r.SpecialRequest</p>

@@ -1227,6 +1227,24 @@ a {
     font-size: 1.0625rem;
 }
 
+/* A slip's lead: a booking's time or an order's table, set like the numbers on the board by the door. */
+.rr-slip__title--lead {
+    display: block;
+    font-family: var(--rr-font-display);
+    font-variant-numeric: lining-nums;
+    font-size: 1.5625rem;
+    line-height: 1.15;
+}
+
+/* A row's second line: who it's for and its reference, side by side without separators. */
+.rr-row-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 1rem;
+    font-size: .875rem;
+    color: var(--rr-muted);
+}
+
 .rr-slip__side {
     display: flex;
     flex-direction: column;

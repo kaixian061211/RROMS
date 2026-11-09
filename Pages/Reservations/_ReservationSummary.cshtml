@@ -8,7 +8,7 @@
     <div class="rr-docket__head">
         <div>
             <span class="rr-docket__title">@ReservationFormatter.When(Model.ReservationDate, Model.TimeSlot)</span>
-            <span class="d-block fw-semibold mt-1">@ReservationFormatter.Table(Model.TableId, tables) · @ReservationFormatter.PartySize(Model.PartySize)</span>
+            <span class="d-block fw-semibold mt-1">@ReservationFormatter.Table(Model.TableId, tables) for @ReservationFormatter.PartySize(Model.PartySize)</span>
         </div>
         <span class="@ReservationFormatter.StatusBadge(Model.Status)">@ReservationFormatter.StatusLabel(Model.Status)</span>
     </div>
