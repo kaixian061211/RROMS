@@ -49,6 +49,9 @@ public static class ReservationFormatter
     /// <summary>"Sunday, 18 Oct 2026", for page headings.</summary>
     public static string LongDate(DateOnly date) => date.ToString("dddd, dd MMM yyyy", CultureInfo.InvariantCulture);
 
+    /// <summary>"Monday 9 Nov", for a day close enough that the year goes without saying.</summary>
+    public static string DayMonth(DateOnly date) => date.ToString("dddd d MMM", CultureInfo.InvariantCulture);
+
     /// <summary>The yyyy-MM-dd form that date inputs and links use.</summary>
     public static string InputDate(DateOnly date) => date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
 
