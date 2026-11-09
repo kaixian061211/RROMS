@@ -1389,6 +1389,16 @@ a {
     background: var(--rr-pandan-tint);
 }
 
+/* A group of dishes (a menu category): its name set like a heading on a menu card. */
+.rr-dish-group {
+    margin-bottom: .5rem;
+    font-family: var(--rr-font-display);
+    font-variant-numeric: lining-nums;
+    font-size: 1.25rem;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
 /* Dish rows: what can be ordered, each with its price and a stepper. A chosen dish gets a pandan edge. */
 .rr-dishes {
     margin: 0;
