@@ -373,10 +373,11 @@ a {
     background-color: var(--rr-enamel);
 }
 
+/* A field with focus gets a solid pandan edge (two pixels with its border) and a soft glow around it. */
 .form-control:focus,
 .form-select:focus {
     border-color: var(--rr-pandan);
-    box-shadow: 0 0 0 .2rem rgba(11, 107, 79, .2);
+    box-shadow: 0 0 0 1px var(--rr-pandan), 0 0 0 .25rem rgba(11, 107, 79, .18);
 }
 
 .form-control::placeholder {
@@ -1362,7 +1363,7 @@ a {
 
 .rr-stepper:focus-within {
     border-color: var(--rr-pandan);
-    box-shadow: 0 0 0 .2rem rgba(11, 107, 79, .2);
+    box-shadow: 0 0 0 1px var(--rr-pandan), 0 0 0 .25rem rgba(11, 107, 79, .18);
 }
 
 .rr-stepper:has(.input-validation-error) {
