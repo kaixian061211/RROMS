@@ -231,6 +231,7 @@ The first thing in `rr-docket__actions` takes the width, and anything after it (
 - **Order rail columns:** four from 1200px, two from 576px, one on a phone.
 - **Tap targets:** at least 44px (`--rr-touch`).
 - **Keyboard focus:** a solid pandan ring (gilt on the sign), at least 3:1 against the page; don't remove it.
+  A focused field gets a two-pixel pandan edge. The layout's first link is "Skip to main content".
 - **Before a PR, check your pages at 375px wide:**
   - Nothing scrolls sideways.
   - Buttons don't overflow.
