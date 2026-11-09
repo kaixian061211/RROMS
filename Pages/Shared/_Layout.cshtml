@@ -42,6 +42,9 @@
         <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
 </head>
 <body>
+    @* The first thing a keyboard reaches: jumps past the test bar and the navigation to the page itself. *@
+    <a class="rr-skip visually-hidden-focusable" href="#main">Skip to main content</a>
+
     @if (HostEnvironment.IsDevelopment())
     {
         <partial name="/Pages/Dev/_TestUserBar.cshtml" />
@@ -208,7 +211,7 @@
         </nav>
     </header>
 
-    <main role="main" class="rr-main">
+    <main role="main" class="rr-main" id="main" tabindex="-1">
         <div class="container-xxl">
             @RenderBody()
         </div>

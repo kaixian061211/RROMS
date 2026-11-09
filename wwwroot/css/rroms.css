@@ -804,6 +804,28 @@ a {
     }
 }
 
+/* Skip link: hidden until it has keyboard focus, then a gilt tab at the top left. */
+.rr-skip:focus {
+    position: absolute;
+    top: .5rem;
+    left: .5rem;
+    z-index: 1100;
+    padding: .625rem 1rem;
+    border-radius: var(--rr-radius-control);
+    background: var(--rr-gilt);
+    color: var(--rr-signboard);
+    font-weight: 700;
+}
+
+.rr-skip:focus-visible {
+    outline-color: var(--rr-signboard);
+}
+
+/* The skip link moves focus here; the page itself doesn't need a ring. */
+.rr-main:focus {
+    outline: 0;
+}
+
 .rr-main {
     flex: 1 0 auto;
     padding-top: 2rem;
