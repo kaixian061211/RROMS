@@ -107,9 +107,14 @@ builder.Services.AddSingleton<IReceiptService, ReceiptService>();
 builder.Services.AddScoped<StripeWebhookHandler>();
 
 
+
+
+
 // ---- Customer history and preferences module ----
 builder.Services.AddScoped<ICustomerHistoryService, CustomerHistoryService>();
 builder.Services.AddScoped<ICustomerPreferenceService, CustomerPreferenceService>();
+
+
 
 
 
