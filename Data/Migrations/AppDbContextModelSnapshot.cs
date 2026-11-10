@@ -96,6 +96,45 @@ namespace RROMS.Web.Data.Migrations
                         {
                             t.HasCheckConstraint("CK_UserAccounts_Role", "[Role] IN ('Admin','Staff','Customer')");
                         });
+
+                });
+
+            modelBuilder.Entity("RROMS.Web.Models.CustomerHistoryAndPreferences.CustomerPreference", b =>
+                {
+                    b.Property<int>("CustomerPreferenceId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("CustomerPreferenceId"));
+
+                    b.Property<int>("CustomerUserId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("DietaryNeeds")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("FavouriteCategories")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("SeatingPreferences")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("SYSDATETIME()");
+
+                    b.HasKey("CustomerPreferenceId");
+
+                    b.HasIndex("CustomerUserId")
+                        .IsUnique();
+
+                    b.ToTable("CustomerPreference", (string)null);
+
+ 
                 });
 
             modelBuilder.Entity("RROMS.Web.Models.CustomerHistoryAndPreferences.CustomerPreference", b =>
@@ -222,6 +261,7 @@ namespace RROMS.Web.Data.Migrations
                         .HasColumnType("bit")
                         .HasDefaultValue(false);
 
+
                     b.Property<int?>("OrderId")
                         .HasColumnType("int");
 
@@ -246,6 +286,33 @@ namespace RROMS.Web.Data.Migrations
                         .IsUnique()
                         .HasFilter("[ReservationId] IS NOT NULL");
 
+
+
+                    b.Property<int?>("OrderId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Rating")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("RepliedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("ReservationId")
+                        .HasColumnType("int");
+
+                    b.HasKey("FeedbackId");
+
+                    b.HasIndex("CustomerUserId");
+
+                    b.HasIndex("OrderId")
+                        .IsUnique()
+                        .HasFilter("[OrderId] IS NOT NULL");
+
+                    b.HasIndex("ReservationId")
+                        .IsUnique()
+                        .HasFilter("[ReservationId] IS NOT NULL");
+
+
                     b.ToTable("Feedback", null, t =>
                         {
                             t.HasCheckConstraint("CK_Feedback_Rating", "[Rating] BETWEEN 1 AND 5");
@@ -264,6 +331,7 @@ namespace RROMS.Web.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("datetime2")
                         .HasDefaultValueSql("SYSDATETIME()");
+
 
                     b.Property<bool>("IsRead")
                         .ValueGeneratedOnAdd()
@@ -306,6 +374,51 @@ namespace RROMS.Web.Data.Migrations
                     b.HasIndex("ReservationId");
 
                     b.HasIndex("UserId", "NotificationId");
+
+
+
+                    b.Property<bool>("IsRead")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<int?>("OrderId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("PaymentId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("ReservationId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("NotificationId");
+
+                    b.HasIndex("OrderId");
+
+                    b.HasIndex("PaymentId");
+
+                    b.HasIndex("ReservationId");
+
+                    b.HasIndex("UserId", "NotificationId");
+
 
                     b.ToTable("Notification", null, t =>
                         {

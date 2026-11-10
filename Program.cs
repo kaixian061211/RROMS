@@ -106,9 +106,17 @@ QuestPDF.Settings.License = LicenseType.Community;
 builder.Services.AddSingleton<IReceiptService, ReceiptService>();
 builder.Services.AddScoped<StripeWebhookHandler>();
 
+
+
+
+
 // ---- Customer history and preferences module ----
 builder.Services.AddScoped<ICustomerHistoryService, CustomerHistoryService>();
 builder.Services.AddScoped<ICustomerPreferenceService, CustomerPreferenceService>();
+
+
+
+
 
 // ---- Customer support and feedback module ----
 builder.Services.AddScoped<IFeedbackService, FeedbackService>();
