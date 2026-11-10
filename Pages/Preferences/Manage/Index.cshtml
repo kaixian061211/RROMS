@@ -1,0 +1,60 @@
+@page
+@model IndexModel
+@{
+    ViewData["Title"] = "Customer preferences";
+}
+
+<header class="rr-page-header">
+    <div>
+        <h1>Customer preferences</h1>
+        <p class="rr-lede">What customers have told us they like, most recently changed first.</p>
+    </div>
+</header>
+
+<form method="get" class="d-flex flex-wrap align-items-center gap-2 mb-4" role="search" aria-label="Search preferences">
+    <label for="q" class="visually-hidden">Search</label>
+    <input id="q" name="q" type="search" class="form-control w-auto" value="@Model.Search"
+           placeholder="Name, diet, category or seating" />
+    <button type="submit" class="btn btn-outline-secondary">Search</button>
+    @if (!string.IsNullOrWhiteSpace(Model.Search))
+    {
+        <a asp-page="Index" class="btn btn-link">Clear</a>
+    }
+</form>
+
+@if (Model.Items.Count == 0)
+{
+    <div class="rr-empty">
+        <p class="rr-empty__title">@(string.IsNullOrWhiteSpace(Model.Search) ? "No preferences saved yet." : "No customers match that search.")</p>
+        <p class="mb-0">@(string.IsNullOrWhiteSpace(Model.Search) ? "They show up here once customers fill them in." : "Try a different word, or clear the search.")</p>
+    </div>
+}
+else
+{
+    <ul class="list-unstyled d-grid gap-3 mb-0">
+        @foreach (var p in Model.Items)
+        {
+            <li class="rr-slip">
+                <div class="rr-slip__body">
+                    <div>
+                        <div class="rr-slip__title">@p.CustomerName</div>
+                        <dl class="row small mb-0 mt-2">
+                            <dt class="col-sm-3">Dietary needs</dt>
+                            <dd class="col-sm-9">@(p.DietaryNeeds ?? "None given")</dd>
+                            <dt class="col-sm-3">Favourite categories</dt>
+                            <dd class="col-sm-9">@(p.FavouriteCategories ?? "None given")</dd>
+                            <dt class="col-sm-3">Seating</dt>
+                            <dd class="col-sm-9 mb-0">@(p.SeatingPreferences ?? "No preference")</dd>
+                        </dl>
+                    </div>
+                    <div class="rr-slip__side">
+                        <div class="d-flex flex-wrap align-items-center gap-2">
+                            <span class="small text-muted">Updated @(p.UpdatedAt.ToString("dd MMM yyyy", System.Globalization.CultureInfo.InvariantCulture))</span>
+                            <a asp-page="Details" asp-route-id="@p.CustomerUserId" class="btn btn-sm btn-outline-secondary">View<span class="visually-hidden"> @p.CustomerName</span></a>
+                        </div>
+                    </div>
+                </div>
+            </li>
+        }
+    </ul>
+}

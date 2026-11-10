@@ -9,8 +9,8 @@ public class DashboardCardTests
 {
     [Theory(DisplayName = "TC-00-07 Dashboard cards: each role sees its own features, and features not built yet as placeholders")]
     [Trait("Technique", "Decision table")]
-    [InlineData(PaymentRoles.Customer, "5, 7, 8, 12, 13, 15, 19, 20, 21", "15")]
-    [InlineData(PaymentRoles.Staff, "6, 9, 11, 17, 18", "18")]
+    [InlineData(PaymentRoles.Customer, "5, 7, 8, 12, 13, 15, 19, 20, 21", "")]
+    [InlineData(PaymentRoles.Staff, "6, 9, 11, 17, 18", "")]
     [InlineData(PaymentRoles.Admin, "3, 3, 4, 10, 14, 16", "")]
     public void CardsForEachRole(string role, string expectedStories, string expectedPlaceholders)
     {
