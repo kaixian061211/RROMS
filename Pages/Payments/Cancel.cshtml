@@ -18,7 +18,7 @@
         </form>
     }
     <div class="payment-actions mt-4">
-        @if (Model.Payment.Status == PaymentStatus.Failed && Model.Payment.OrderStatus != RROMS.Web.Models.OrdersAndReservations.OrderStatus.Cancelled) { <a class="btn btn-primary" asp-page="CheckOut" asp-route-orderId="@Model.Payment.OrderId">Choose how to pay</a> }
+        @if (Model.Payment.Status == PaymentStatus.Failed && Model.Payment.OrderStatus != RROMS.Web.Models.OrdersAndReservations.OrderStatus.Cancelled) { <a class="btn btn-primary" asp-page="CheckOut" asp-route-orderId="@Model.Payment.OrderId">Choose Payment method</a> }
         @if (Model.Payment.Status == PaymentStatus.Pending && !Model.Payment.IsAwaitingCounter) { <a class="btn btn-outline-secondary" asp-page="Success" asp-route-paymentId="@Model.Payment.PaymentId">Check payment status</a> }
         <a class="btn btn-outline-secondary" asp-page="MyOrders">Back to orders</a>
     </div>

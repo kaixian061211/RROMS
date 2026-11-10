@@ -40,13 +40,18 @@
 .payment-page ::deep .payment-meta dd { margin: 0; font-weight: 500; overflow-wrap: anywhere; }
 .payment-page ::deep .payment-meta__full { grid-column: 1 / -1; }
 .payment-page ::deep .payment-picker { min-width: 0; }
-.payment-page ::deep .payment-picker legend { float: none; width: auto; margin: 0 0 1rem; padding: 0; font-family: var(--rr-font-display); font-size: 1.25rem; font-weight: 700; }
+/* Floated, full width: the legend sits inside the panel instead of on its top border. */
+.payment-page ::deep .payment-picker legend { float: left; width: 100%; margin: 0 0 1rem; padding: 0; font-family: var(--rr-font-display); font-size: 1.25rem; font-weight: 700; line-height: 1.3; overflow-wrap: anywhere; }
+.payment-page ::deep .payment-picker legend + * { clear: left; }
 .payment-page ::deep .payment-methods { grid-template-columns: 1fr; gap: .75rem; }
 .payment-page ::deep .payment-choice-wrap { position: relative; min-width: 0; }
-.payment-page ::deep .payment-method { display: flex; flex-direction: row; align-items: flex-start; gap: .875rem; width: 100%; min-height: 3.5rem; text-align: left; padding: 1rem; }
-.payment-page ::deep .payment-method small { display: block; margin-top: .25rem; line-height: 1.6; }
-.payment-page ::deep .payment-method__mark { flex: 0 0 1.125rem; width: 1.125rem; height: 1.125rem; border: 1px solid var(--rr-muted); border-radius: 50%; margin-top: .25rem; background: var(--rr-enamel); }
-.payment-page ::deep .btn-check:checked + .payment-method .payment-method__mark { border: .35rem solid var(--rr-pandan); }
+/* One layout for every payment method tile (checkout and counter): radio mark, then the text, left-aligned. */
+.payment-page ::deep .payment-method { display: flex; flex-direction: row; align-items: flex-start; justify-content: flex-start; gap: .875rem; width: 100%; min-height: 3.5rem; text-align: left; padding: 1rem 1.125rem; }
+.payment-page ::deep .payment-method__body { display: flex; flex-direction: column; min-width: 0; }
+.payment-page ::deep .payment-method strong { font-weight: 600; line-height: 1.5; }
+.payment-page ::deep .payment-method small { display: block; margin-top: .125rem; line-height: 1.6; }
+.payment-page ::deep .payment-method__mark { flex: 0 0 1.125rem; width: 1.125rem; height: 1.125rem; border: 1px solid var(--rr-muted); border-radius: 50%; margin-top: .1875rem; background: var(--rr-enamel); }
+.payment-page ::deep .btn-check:checked + .payment-method .payment-method__mark { border: .3125rem solid var(--rr-enamel); background: var(--rr-pandan); }
 .payment-page ::deep .btn-check:focus-visible + .payment-method { outline: 3px solid var(--rr-pandan); outline-offset: 3px; }
 .payment-page ::deep .btn-check:disabled + .payment-method { cursor: not-allowed; }
 .payment-page ::deep .payment-steps { --rr-steps: 3; margin-bottom: 2rem; }
@@ -63,10 +68,22 @@
 .payment-page ::deep .payment-slip__head { margin-bottom: .75rem; align-items: center; }
 .payment-page ::deep .payment-slip__summary { margin-block: .5rem; }
 .payment-page ::deep .payment-slip__summary .rr-money { font-size: 1.125rem; }
+.payment-page ::deep .payment-slip__head .payment-card-title { margin: 0; }
+.payment-page ::deep .payment-slip__actions { margin-top: 1rem; }
 .payment-page ::deep .payment-outcome__message { border-top: 1px solid var(--rr-line); margin-top: 1.5rem; padding-top: 1.25rem; }
 .payment-page ::deep .payment-watching { display: flex; gap: .75rem; align-items: center; }
 .payment-page ::deep .validation-summary-valid { display: none; }
 .payment-page ::deep .modal-title { font-size: 1.5rem; }
+/* Orders for payment, wider screens: every card on the same columns, so references, totals and buttons line up
+   from card to card whatever the status or button text. Phones keep the stacked card. */
+@media (min-width: 768px) {
+    .payment-page ::deep .payment-slip .rr-slip__body { display: grid; grid-template-columns: minmax(0, 12rem) minmax(0, 1fr) auto; grid-template-areas: "head total actions" "note note actions"; align-items: center; gap: .5rem 1.5rem; }
+    /* Reference over status, and "Order total" over the amount, on every card. */
+    .payment-page ::deep .payment-slip__head { grid-area: head; flex-direction: column; align-items: flex-start; gap: .375rem; margin-bottom: 0; }
+    .payment-page ::deep .payment-slip__summary { grid-area: total; flex-direction: column; align-items: flex-start; gap: .125rem; margin-block: 0; }
+    .payment-page ::deep .payment-slip__note { grid-area: note; }
+    .payment-page ::deep .payment-slip__actions { grid-area: actions; justify-content: flex-end; margin-top: 0; }
+}
 @media (max-width: 1199.98px) {
     .payment-page ::deep .payment-filter-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }

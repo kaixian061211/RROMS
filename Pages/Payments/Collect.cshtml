@@ -33,7 +33,10 @@
                     var id = "counter-" + method;
                     <div class="payment-choice-wrap">
                         <input asp-for="Method" type="radio" class="btn-check" id="@id" value="@method" required />
-                        <label for="@id" class="rr-tile payment-method"><span class="payment-method__mark" aria-hidden="true"></span><strong>@PaymentFormatter.MethodLabel(method)</strong></label>
+                        <label for="@id" class="rr-tile payment-method">
+                            <span class="payment-method__mark" aria-hidden="true"></span>
+                            <span class="payment-method__body"><strong>@PaymentFormatter.MethodLabel(method)</strong></span>
+                        </label>
                     </div>
                 }
             </div>
