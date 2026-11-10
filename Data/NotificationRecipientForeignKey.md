@@ -47,10 +47,10 @@ that environment with this version.
 ## Testing and Development identities
 
 The guarded `RROMS_Tests` database is separate from application data. Its fixtures
-create missing account rows for their temporary customer IDs (1, 2, 9001, 9002)
-without changing existing rows. This fixture-only seeding never runs in the app.
-It keeps existing order/reservation/payment tests subject to the real constraint.
+create account rows for their IDs (customers 1, 2, 9001 and 9002, staff 3, admin 4)
+and keep those rows' name, role and active flag as the fixture's. This fixture-only
+seeding never runs in the app. It keeps existing order/reservation/payment tests
+subject to the real constraint, and the page tests sign in as 1 to 4.
 
-Use the real `/Account/Login` for application verification: it issues the actual
-`UserAccount.UserId` in `ClaimTypes.NameIdentifier`. `/Dev/SwitchUser` still uses
-temporary principals and must not be used to establish the ownership of real data.
+Both `/Account/Login` and the Development-only `/Dev/SwitchUser` sign in real
+accounts: they issue the actual `UserAccount.UserId` in `ClaimTypes.NameIdentifier`.

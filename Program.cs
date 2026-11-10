@@ -35,7 +35,8 @@ builder.Services.AddRazorPages(options =>
 });
 
 // Sign-in cookie. Real accounts are signed in by /Account/Login (AccountClaims.CreatePrincipal): a numeric
-// NameIdentifier, Name, Email and Role. In Development the test login (/Dev/SwitchUser) still signs in the test users.
+// NameIdentifier, Name, Email and Role. In Development, Switch user (/Dev/SwitchUser) signs in the same accounts,
+// with the same claims, without a password.
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
     {
@@ -44,14 +45,14 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
         options.Cookie.HttpOnly = true;
 
 
-        // Not signed in, or signed in without the right role: choose a test user (log in with a real account at /Account/Login).
+        // Not signed in: log in at /Account/Login. Signed in without the right role: Access denied.
         
             options.LoginPath = "/Account/Login";
             options.AccessDeniedPath = "/Account/AccessDenied";
         
 
         // On every request: if a real account was deactivated, deleted or had its role changed, force a new login.
-        // The Development test users have no UserAccount row, so only sign-ins marked as real accounts are checked.
+        // Only sign-ins marked as accounts (AccountClaims.AccountClaimType) are checked; nothing issues any other kind.
         options.Events.OnValidatePrincipal = async context =>
         {
             var principal = context.Principal;

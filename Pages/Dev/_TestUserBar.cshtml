@@ -1,4 +1,4 @@
-@* Who the Development test login has signed in. The layout shows this only in Development. *@
+@* Who is signed in, with a link to Switch user (/Dev/SwitchUser). The layout shows this only in Development. *@
 @using System.Security.Claims
 @{
     var signedIn = User.Identity?.IsAuthenticated == true;
@@ -18,7 +18,7 @@
         }
         <span class="ms-auto d-flex gap-3">
             <a asp-page="/Dev/StyleGuide">Style guide</a>
-            <a asp-page="/Dev/SwitchUser">@(signedIn ? "Switch user" : "Choose a test user")</a>
+            <a asp-page="/Dev/SwitchUser">@(signedIn ? "Switch user" : "Choose a user")</a>
         </span>
     </div>
 </div>

@@ -94,7 +94,7 @@ public static class ReservationFormatter
         return pending == 0 ? summary : $"{summary}, {pending} to confirm";
     }
 
-    /// <summary>"Customer #4", for a customer with no account (the Development test users).</summary>
+    /// <summary>"Customer #4", for a customer id with no account row.</summary>
     public static string Customer(int customerUserId) => $"Customer #{customerUserId}";
 
     /// <summary>The customer's name, from IReservationService.GetCustomerNamesAsync; "Customer #4" if they have no account.</summary>

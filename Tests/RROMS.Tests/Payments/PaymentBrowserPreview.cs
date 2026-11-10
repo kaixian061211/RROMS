@@ -2,7 +2,7 @@ using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using RROMS.Web.Data;
-using RROMS.Web.Models.Dev;
+using RROMS.Tests.Integration;
 using RROMS.Web.Models.OrdersAndReservations;
 using RROMS.Web.Models.Payments;
 
