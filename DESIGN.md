@@ -13,8 +13,8 @@ touch old ones.
   - `wwwroot/js/stepper.js`: makes the − / + buttons of a stepper work.
 - `_Layout.cshtml` already loads all of it. Your page only needs Bootstrap classes and `rr-*` classes.
 
-The idea: **a kopitiam**. Marble tabletops, white enamel, painted shop signs, and the paper docket
-that goes to the kitchen.
+The idea: **a kopitiam**. The painted signboard over the door, mint wall tiles under it, marble
+tabletops, white enamel, and the paper docket that goes to the kitchen.
 
 
 ## Principles
@@ -30,8 +30,11 @@ that goes to the kitchen.
 4. **Summary before detail.** Lead with what needs attention (what's pending, what's ready), then the rest.
 5. **Real content only.** Real dishes, prices in RM, real statuses. No placeholder text or invented
    figures.
-6. **One bold thing.** The docket is the signature. Everything around it stays plain: no gradients, no
-   extra shadows, no decoration.
+6. **One bold thing.** The signboard header (deep green, the name in gilt, a row of mint wall tiles) is
+   the one decoration, on every page, and it comes from `_Layout`. Below it the docket is the only paper;
+   everything else stays plain: no gradients, no extra shadows.
+7. **Say it in words.** "Table 3 for 2 people", "2 bookings for 8 people, 1 to confirm". No
+   dot-separated strings (`A · B · C`), no capitals for labels, no arrows in button text.
 
 
 ## Starting a page
@@ -74,8 +77,8 @@ Use the tokens (`var(--rr-pandan)`) or the Bootstrap classes, which already use 
 
 | Name | Token | Hex | Use for |
 |---|---|---|---|
-| Marble | `--rr-marble` | `#F1F3F1` | Page background |
-| Enamel | `--rr-enamel` | `#FFFFFF` | Cards, dockets, the header |
+| Marble | `--rr-marble` | `#EEF1EE` | Page background |
+| Enamel | `--rr-enamel` | `#FFFFFF` | Cards, dockets, forms |
 | Kopi-O | `--rr-kopi` | `#1D1A17` | Text and headings |
 | Muted | `--rr-muted` | `#5D625C` | Secondary text |
 | Line | `--rr-line` | `#D8DCD7` | Borders and rules |
@@ -83,6 +86,9 @@ Use the tokens (`var(--rr-pandan)`) or the Bootstrap classes, which already use 
 | Kaya | `--rr-kaya` | `#E9B23C` | Needs attention (pending). A fill behind dark text, never text on white |
 | Teh | `--rr-teh` | `#A86B3C` | Being worked on (preparing) |
 | Sambal | `--rr-sambal` | `#C2381C` | Cancel, errors, refusals |
+| Signboard | `--rr-signboard` | `#143B2F` | The header, and the top of a date block |
+| Gilt | `--rr-gilt` | `#D4A72C` | Lettering on the signboard only, never on white |
+| Tile | `--rr-tile` | `#B9DCCD` | The wall tiles under the sign |
 
 Bootstrap's `primary` and `success` are both pandan. `warning` is kaya, `danger` is sambal and `info`
 is teh.
@@ -92,12 +98,13 @@ is teh.
 
 | Role | Font | Where |
 |---|---|---|
-| Display | Zilla Slab 600/700 | `h1`–`h3`, table numbers, docket titles, the wordmark |
+| Display | Zilla Slab 600/700 | `h1`–`h3`, times, table numbers, docket titles, the wordmark |
 | Body | Plus Jakarta Sans 400–700 | Everything else |
-| Monospace | Cascadia Mono / Consolas | References (`RES-000123`) and money on dockets |
+| Monospace | Cascadia Mono / Consolas | References (`RES-000123`) and money printed on a docket |
 
-- `rr-label`: a small uppercase label ("SEATING", "TABLE"). Only for real labels.
-- `rr-ref`: a reference number.
+- **Sizes** step by 1.25: 13, 14, 16, 20, 25, 31 and 39px (61px for the front page's headline).
+- `rr-label`: a small bold label in sentence case ("Special request", "Lunch"). Only for real labels.
+- `rr-ref`: a reference number. Plain text with even digits on a page; monospace on a docket.
 - `rr-money`: an amount, so the digits line up and never wrap.
 - `rr-lede`: one line of context under a heading.
 
@@ -150,7 +157,14 @@ Copy the markup from `/Dev/StyleGuide`. What each one is for:
 | Panel | `rr-panel` | A white surface for a form |
 | Action bar | `rr-actionbar` | A form's buttons; it stays at the bottom of a phone screen |
 | Empty state | `rr-empty`, `rr-empty__title` | A list with nothing in it |
-| Feature card | `rr-feature`, `__title`, `__meta`; `rr-feature--soon` | Dashboard cards, and choices that are buttons |
+| Feature card | `rr-feature`, `__title`, `__meta`; `rr-feature--soon` + `rr-soon` tag | A link or a choice that is a button (the test login's users). A feature not built yet is a `button.rr-feature--soon` with a "Coming soon" `rr-soon` tag: it can be clicked, but does nothing |
+| Shelf | `rr-shelf`, `__sheet`, `__list`, `__soon` around `rr-feature` cells | A role's features on its dashboard (`Pages/Dashboards/_Cards.cshtml`): one white sheet of links, with the Coming soon ones in a quieter row |
+| Tally | `rr-tally`, `__item`, `__count`, `__label`; `rr-tally--one`; `is-attention` | Counts that need someone, each a link to its list (the staff dashboard) |
+| Facts | `rr-facts`, `__item` (`dt`, the fact in `dd`, a link in a second `dd`); `is-attention` | How something is set up, each with the page that changes it (the Admin dashboard) |
+| Dashboard | `rr-dash`, `__slot`, `__title`, `__head`, `__more` | The two-up "now" area at the top of a dashboard |
+| Slip lead | `rr-slip__title--lead` | A slip's time (a booking) or table (an order), set large |
+| Row details | `rr-row-meta` | A row's second line: who it's for and its reference, side by side |
+| Dish group | `rr-dish-group` (a `<legend>`) | A menu category's name above its dish rows |
 | Filters | Bootstrap `nav nav-pills` links | Status filters: one tap, kept in the address. No "Show" button |
 
 A docket, for example:
@@ -196,7 +210,8 @@ The first thing in `rr-docket__actions` takes the width, and anything after it (
 ## Words
 
 - Write from the customer's or staff member's side: "My orders", "Order queue", not "Order entities".
-- Sentence case everywhere: "Manage reservations", not "Manage Reservations".
+- Sentence case everywhere: "Manage reservations", not "Manage Reservations". Labels and pills too.
+- Join details with words, not dots: "Table 3 for 2 people", "5 items, RM 39.90".
 - After an action, say what happened: "RES-000123 is now confirmed."
 - Errors say what went wrong and what to do next: "That table is already booked for this time slot.
   Please choose another time or table."
@@ -211,10 +226,12 @@ The first thing in `rr-docket__actions` takes the width, and anything after it (
 
 - **Page margins:** at least 16px on a phone.
 - **Font size:** 15px on a phone, 16px from 768px.
-- **Navigation:** collapses into the menu button below 1200px.
+- **Navigation:** collapses into the Menu button below 1200px. The menu opens on the sign as full-width
+  rows, and the current page has a gilt bar (under the link on a wide screen, beside it in the menu).
 - **Order rail columns:** four from 1200px, two from 576px, one on a phone.
 - **Tap targets:** at least 44px (`--rr-touch`).
-- **Keyboard focus:** shows as a green outline; don't remove it.
+- **Keyboard focus:** a solid pandan ring (gilt on the sign), at least 3:1 against the page; don't remove it.
+  A focused field gets a two-pixel pandan edge. The layout's first link is "Skip to main content".
 - **Before a PR, check your pages at 375px wide:**
   - Nothing scrolls sideways.
   - Buttons don't overflow.

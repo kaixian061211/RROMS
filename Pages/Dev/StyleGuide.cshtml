@@ -9,14 +9,16 @@
         <span class="rr-label">Development only</span>
         <h1>RROMS design system</h1>
         <p class="rr-lede">
-            The look of a kopitiam: marble tabletops, white enamel, painted shop signs, and the docket that goes
-            to the kitchen. Build every page from these pieces. DESIGN.md in the repo has the rules and the markup.
+            The look of a kopitiam: the painted signboard over the door, mint wall tiles, marble tabletops, white
+            enamel, and the docket that goes to the kitchen. Build every page from these pieces. DESIGN.md in the
+            repo has the rules and the markup.
         </p>
     </div>
 </header>
 
 <nav class="nav nav-pills mb-5" aria-label="On this page">
     <a class="nav-link" href="#principles">Principles</a>
+    <a class="nav-link" href="#signboard">Signboard</a>
     <a class="nav-link" href="#colour">Colour</a>
     <a class="nav-link" href="#type">Type</a>
     <a class="nav-link" href="#words">Words</a>
@@ -26,6 +28,7 @@
     <a class="nav-link" href="#dockets">Dockets</a>
     <a class="nav-link" href="#board">Order rail</a>
     <a class="nav-link" href="#lists">Lists</a>
+    <a class="nav-link" href="#dashboards">Dashboards</a>
     <a class="nav-link" href="#pieces">Page pieces</a>
 </nav>
 
@@ -37,22 +40,36 @@
         <li><strong>Two densities.</strong> Customers get one comfortable column and big tap targets, with the main action at the bottom on a phone. Staff get the full width and an action beside each row.</li>
         <li><strong>Summary before detail.</strong> Lead with what needs attention (what's pending, what's ready), then the rest.</li>
         <li><strong>Real content only.</strong> Real dishes, prices in RM, and real statuses. No placeholder text, no invented figures.</li>
-        <li><strong>One bold thing.</strong> The docket is the signature. Everything around it stays plain: no gradients, no extra shadows, no decoration.</li>
+        <li><strong>One bold thing.</strong> The signboard header is the one decoration, on every page. Below it the docket is the only paper; everything else stays plain: no gradients, no extra shadows.</li>
+        <li><strong>Say it in words.</strong> "Table 3 for 2 people", "2 bookings for 8 people, 1 to confirm". No dot-separated strings, and labels in sentence case, never capitals.</li>
     </ul>
+</section>
+
+<section class="sg-section" id="signboard">
+    <h2>Signboard</h2>
+    <p class="text-muted mb-0">
+        The header at the top of this page: deep signboard green, the name in gilt Zilla Slab, and a row of mint wall
+        tiles under it. The current page gets a gilt bar under its link (beside it in the phone menu), and keyboard
+        focus on the sign shows in gilt. It comes from <code>_Layout.cshtml</code>; pages never add their own. Gilt is
+        only for lettering on the sign, never on white.
+    </p>
 </section>
 
 <section class="sg-section" id="colour">
     <h2>Colour</h2>
     <p class="text-muted">Use the tokens (<code>var(--rr-pandan)</code>) or the Bootstrap classes, which already use them (<code>btn-primary</code>, <code>text-bg-warning</code>, <code>alert-danger</code>).</p>
     <div class="sg-swatches">
-        <div class="sg-swatch"><span class="sg-chip" style="background:#f1f3f1"></span><strong>Marble</strong><span class="rr-ref">#F1F3F1 · --rr-marble</span><span>Page background, the tabletop.</span></div>
-        <div class="sg-swatch"><span class="sg-chip" style="background:#ffffff"></span><strong>Enamel</strong><span class="rr-ref">#FFFFFF · --rr-enamel</span><span>Cards, dockets, the header.</span></div>
-        <div class="sg-swatch"><span class="sg-chip" style="background:#1d1a17"></span><strong>Kopi-O</strong><span class="rr-ref">#1D1A17 · --rr-kopi</span><span>Text and headings.</span></div>
-        <div class="sg-swatch"><span class="sg-chip" style="background:#0b6b4f"></span><strong>Pandan</strong><span class="rr-ref">#0B6B4F · --rr-pandan</span><span>Actions, links, chosen options, confirmed and ready.</span></div>
-        <div class="sg-swatch"><span class="sg-chip" style="background:#e9b23c"></span><strong>Kaya</strong><span class="rr-ref">#E9B23C · --rr-kaya</span><span>Needs attention: pending, new. A fill behind dark text, never text on white.</span></div>
-        <div class="sg-swatch"><span class="sg-chip" style="background:#a86b3c"></span><strong>Teh</strong><span class="rr-ref">#A86B3C · --rr-teh</span><span>Being worked on: preparing.</span></div>
-        <div class="sg-swatch"><span class="sg-chip" style="background:#c2381c"></span><strong>Sambal</strong><span class="rr-ref">#C2381C · --rr-sambal</span><span>Cancel, errors, refusals.</span></div>
-        <div class="sg-swatch"><span class="sg-chip" style="background:#d8dcd7"></span><strong>Line</strong><span class="rr-ref">#D8DCD7 · --rr-line</span><span>Borders and rules. Secondary text is <span class="rr-ref">#5D625C</span>.</span></div>
+        <div class="sg-swatch"><span class="sg-chip" style="background:#eef1ee"></span><strong>Marble</strong><code>--rr-marble</code><span class="rr-ref">#EEF1EE</span><span>Page background, the tabletop.</span></div>
+        <div class="sg-swatch"><span class="sg-chip" style="background:#ffffff"></span><strong>Enamel</strong><code>--rr-enamel</code><span class="rr-ref">#FFFFFF</span><span>Cards, dockets, forms.</span></div>
+        <div class="sg-swatch"><span class="sg-chip" style="background:#1d1a17"></span><strong>Kopi-O</strong><code>--rr-kopi</code><span class="rr-ref">#1D1A17</span><span>Text and headings.</span></div>
+        <div class="sg-swatch"><span class="sg-chip" style="background:#0b6b4f"></span><strong>Pandan</strong><code>--rr-pandan</code><span class="rr-ref">#0B6B4F</span><span>Actions, links, chosen options, focus, confirmed and ready.</span></div>
+        <div class="sg-swatch"><span class="sg-chip" style="background:#143b2f"></span><strong>Signboard</strong><code>--rr-signboard</code><span class="rr-ref">#143B2F</span><span>The header, and the top of a date block.</span></div>
+        <div class="sg-swatch"><span class="sg-chip" style="background:#d4a72c"></span><strong>Gilt</strong><code>--rr-gilt</code><span class="rr-ref">#D4A72C</span><span>Lettering on the signboard only.</span></div>
+        <div class="sg-swatch"><span class="sg-chip" style="background:#b9dccd"></span><strong>Tile</strong><code>--rr-tile</code><span class="rr-ref">#B9DCCD</span><span>The wall tiles under the sign.</span></div>
+        <div class="sg-swatch"><span class="sg-chip" style="background:#e9b23c"></span><strong>Kaya</strong><code>--rr-kaya</code><span class="rr-ref">#E9B23C</span><span>Needs attention: pending, new. A fill or an edge, never text on white.</span></div>
+        <div class="sg-swatch"><span class="sg-chip" style="background:#a86b3c"></span><strong>Teh</strong><code>--rr-teh</code><span class="rr-ref">#A86B3C</span><span>Being worked on: preparing.</span></div>
+        <div class="sg-swatch"><span class="sg-chip" style="background:#c2381c"></span><strong>Sambal</strong><code>--rr-sambal</code><span class="rr-ref">#C2381C</span><span>Cancel, errors, refusals.</span></div>
+        <div class="sg-swatch"><span class="sg-chip" style="background:#d8dcd7"></span><strong>Line</strong><code>--rr-line</code><span class="rr-ref">#D8DCD7</span><span>Borders and rules. Secondary text is <span class="rr-ref">#5D625C</span>.</span></div>
     </div>
 </section>
 
@@ -61,7 +78,7 @@
     <div class="row g-4">
         <div class="col-lg-7">
             <div class="sg-demo">
-                <span class="rr-label">Display · Zilla Slab · headings, table numbers, the wordmark</span>
+                <span class="rr-label">Display: Zilla Slab, for headings, times, table numbers and the wordmark</span>
                 <p class="h1 mt-2">Book a table, then order from it.</p>
                 <p class="h2">Manage reservations</p>
                 <p class="h3 mb-0">Table 6</p>
@@ -69,14 +86,14 @@
         </div>
         <div class="col-lg-5">
             <div class="sg-demo h-100">
-                <span class="rr-label">Body · Plus Jakarta Sans · everything else</span>
+                <span class="rr-label">Body: Plus Jakarta Sans, for everything else</span>
                 <p class="mt-2">Reserve a lunch or dinner seating ahead. Once you're sitting down, order from your phone.</p>
-                <span class="rr-label">Monospace · references and money</span>
-                <p class="mt-2 mb-0"><span class="rr-ref">ORD-001257</span> · <span class="rr-ref">RES-001840</span> · <span class="rr-money">RM 26.90</span></p>
+                <span class="rr-label">References and money</span>
+                <p class="mt-2 mb-0"><span class="rr-ref">ORD-001257</span> and <span class="rr-money">RM 26.90</span> on a page; on a docket the reference prints in monospace.</p>
             </div>
         </div>
     </div>
-    <p class="text-muted mt-3 mb-0">Headings use <code>h1</code>–<code>h3</code> (slab). Small uppercase labels use <code>rr-label</code>, only for real labels such as "Seating" or "Table". References use <code>rr-ref</code>; money uses <code>rr-money</code> so the digits line up.</p>
+    <p class="text-muted mt-3 mb-0">Sizes step by 1.25: 13, 14, 16, 20, 25, 31 and 39px, and 61px for the front page's headline. Headings use <code>h1</code>–<code>h3</code> (slab). Small labels use <code>rr-label</code>: bold, sentence case, only for real labels such as "Special request" or "Lunch". References use <code>rr-ref</code>; money uses <code>rr-money</code> so the digits line up.</p>
 </section>
 
 <section class="sg-section" id="words">
@@ -92,7 +109,8 @@
         <div class="col-md-6">
             <ul class="sg-rules">
                 <li>Errors say what went wrong and what to do next: "That table is already booked for this seating. Choose another time or table."</li>
-                <li>Formats: <span class="rr-money">RM 85.50</span> · 26 Oct 2026, 7:30 PM · <span class="rr-ref">ORD-001257</span>. Use the formatter classes, never format inline.</li>
+                <li>Formats: <span class="rr-money">RM 85.50</span>, "26 Oct 2026, 7:30 PM" and <span class="rr-ref">ORD-001257</span>. Use the formatter classes, never format inline.</li>
+                <li>Say it in words: "Table 3 for 2 people", not "Table 3 · 2 people".</li>
                 <li>Name things the way people know them: "My orders", "Order queue", not "Order entities".</li>
             </ul>
         </div>
@@ -217,7 +235,8 @@
                 <div class="rr-docket__head">
                     <div>
                         <span class="rr-docket__title">Table 4</span>
-                        <span class="rr-ref">ORD-001256 · 9:08 PM</span>
+                        <span class="rr-ref d-block">ORD-001256</span>
+                        <span class="small text-muted">9:08 PM, 12 min ago</span>
                     </div>
                     <span class="rr-status rr-status--attention">Pending</span>
                 </div>
@@ -226,7 +245,7 @@
                     <li class="rr-docket__line"><span class="rr-docket__qty">3 ×</span> <span>Teh Tarik</span> <span class="rr-docket__amount">RM 11.40</span></li>
                 </ol>
                 <div class="rr-docket__total"><span>Total</span><span class="rr-money">RM 37.20</span></div>
-                <div class="rr-docket__meta"><span class="rr-status rr-status--off">Not paid</span><span>Placed 12 min ago</span></div>
+                <div class="rr-docket__meta"><span class="rr-status rr-status--off">Not paid</span></div>
                 <div class="rr-docket__actions">
                     <button type="button" class="btn btn-primary">Start preparing</button>
                     <button type="button" class="btn btn-outline-danger">Cancel</button>
@@ -239,7 +258,8 @@
                 <div class="rr-docket__head">
                     <div>
                         <span class="rr-docket__title">Table 6</span>
-                        <span class="rr-ref">ORD-001257 · 25 Oct, 9:08 PM</span>
+                        <span class="rr-ref d-block">ORD-001257</span>
+                        <span class="small text-muted">Placed 25 Oct 2026, 9:08 PM</span>
                     </div>
                     <span class="rr-status rr-status--progress">Preparing</span>
                 </div>
@@ -264,6 +284,7 @@
                 <li>Use a docket for a record a person hands over or receives: an order, a booking, a payment receipt.</li>
                 <li>Not for navigation or settings. Those are plain cards (<code>rr-feature</code>, <code>rr-panel</code>).</li>
                 <li>A docket on its own on a page gets <code>rr-docket--narrow</code>, so it keeps the width of a paper slip.</li>
+                <li>A ticket left on the rail from an earlier day shows its date and time ("28 Oct, 9:33 PM"), not hours waiting.</li>
                 <li>The steps line (<code>rr-steps</code>) shows where something is in a fixed journey. It doesn't update by itself.</li>
             </ul>
         </div>
@@ -279,7 +300,7 @@
             <div class="rr-board__rail"></div>
             <div class="rr-board__dockets">
                 <article class="rr-docket">
-                    <div class="rr-docket__head"><div><span class="rr-docket__title">Table 4</span><span class="rr-ref">ORD-001256 · 9:08 PM</span></div></div>
+                    <div class="rr-docket__head"><div><span class="rr-docket__title">Table 4</span><span class="rr-ref d-block">ORD-001256</span></div></div>
                     <ol class="rr-docket__lines">
                         <li class="rr-docket__line"><span class="rr-docket__qty">2 ×</span> <span>Nasi Lemak</span> <span class="rr-docket__amount"></span></li>
                         <li class="rr-docket__line"><span class="rr-docket__qty">3 ×</span> <span>Teh Tarik</span> <span class="rr-docket__amount"></span></li>
@@ -293,7 +314,7 @@
             <div class="rr-board__rail"></div>
             <div class="rr-board__dockets">
                 <article class="rr-docket">
-                    <div class="rr-docket__head"><div><span class="rr-docket__title">Table 6</span><span class="rr-ref">ORD-001257 · 9:08 PM</span></div></div>
+                    <div class="rr-docket__head"><div><span class="rr-docket__title">Table 6</span><span class="rr-ref d-block">ORD-001257</span></div></div>
                     <ol class="rr-docket__lines">
                         <li class="rr-docket__line"><span class="rr-docket__qty">1 ×</span> <span>Char Kway Teow</span> <span class="rr-docket__amount"></span></li>
                         <li class="rr-docket__line"><span class="rr-docket__qty">2 ×</span> <span>Cendol</span> <span class="rr-docket__amount"></span></li>
@@ -307,7 +328,7 @@
             <div class="rr-board__rail"></div>
             <div class="rr-board__dockets">
                 <article class="rr-docket">
-                    <div class="rr-docket__head"><div><span class="rr-docket__title">Table 2</span><span class="rr-ref">ORD-001258 · 9:08 PM</span></div></div>
+                    <div class="rr-docket__head"><div><span class="rr-docket__title">Table 2</span><span class="rr-ref d-block">ORD-001258</span></div></div>
                     <ol class="rr-docket__lines">
                         <li class="rr-docket__line"><span class="rr-docket__qty">3 ×</span> <span>Roti Canai (2 pieces)</span> <span class="rr-docket__amount"></span></li>
                     </ol>
@@ -325,7 +346,7 @@
 
 <section class="sg-section" id="lists">
     <h2>Lists</h2>
-    <p class="text-muted">A record in a customer's list is a slip (<code>rr-slip</code>): the details on the left, the status and actions on the right. A booking starts with a date block (<code>rr-dateblock</code>, a <code>&lt;time&gt;</code>), so people see the day before anything else. Buttons on a row carry the reference in a <code>visually-hidden</code> span, so a screen reader knows which one they're for.</p>
+    <p class="text-muted">A record in a customer's list is a slip (<code>rr-slip</code>): the details on the left, the status and actions on the right. A booking starts with a date block (<code>rr-dateblock</code>, a <code>&lt;time&gt;</code>), so people see the day before anything else, and <code>rr-slip__title--lead</code> sets the time (or an order's table) large. Buttons on a row carry the reference in a <code>visually-hidden</code> span, so a screen reader knows which one they're for.</p>
     <div class="row g-4">
         <div class="col-xl-6">
             <ul class="list-unstyled d-grid gap-3 mb-0">
@@ -333,7 +354,8 @@
                     <time class="rr-dateblock" datetime="2026-10-26"><span class="rr-dateblock__day">Mon</span><span class="rr-dateblock__date">26</span><span class="rr-dateblock__month">Oct</span></time>
                     <div class="rr-slip__body">
                         <div>
-                            <div class="rr-slip__title">7:30 PM · Table 3 · 2 people</div>
+                            <span class="rr-slip__title rr-slip__title--lead">7:30 PM</span>
+                            <span class="d-block fw-semibold">Table 3 for 2 people</span>
                             <span class="rr-ref">RES-001840</span>
                             <p class="small text-muted mt-1 mb-0">Window seat please, it is our anniversary</p>
                         </div>
@@ -349,8 +371,9 @@
                 <li class="rr-slip">
                     <div class="rr-slip__body">
                         <div>
-                            <div class="rr-slip__title">Table 4 · 5 items · <span class="rr-money">RM 37.20</span></div>
-                            <span class="rr-ref">ORD-001256</span> <span class="small text-muted">· 25 Oct 2026, 9:08 PM</span>
+                            <span class="rr-slip__title rr-slip__title--lead">Table 4</span>
+                            <span class="d-block fw-semibold">5 items, <span class="rr-money">RM 37.20</span></span>
+                            <div class="rr-row-meta"><span class="rr-ref">ORD-001256</span><span>25 Oct 2026, 9:08 PM</span></div>
                         </div>
                         <div class="rr-slip__side">
                             <span class="rr-status rr-status--progress">Preparing</span>
@@ -385,6 +408,46 @@
             <p class="text-muted mt-2 mb-0">Dish rows (<code>rr-dishes</code> + <code>rr-dish</code>) list what can be ordered. A chosen dish gets <code>is-chosen</code>, which the order page's script sets.</p>
         </div>
     </div>
+</section>
+
+<section class="sg-section" id="dashboards">
+    <h2>Dashboards</h2>
+    <p class="text-muted">A dashboard leads with what the role needs now, made from real data: dockets for a customer's next table and order, a tally for staff, facts for an Admin. The shelf of everything else comes after.</p>
+
+    <h3 class="h4 mt-4">Tally</h3>
+    <div class="rr-tally" role="group" aria-label="Kitchen">
+        <a class="rr-tally__item is-attention" href="#dashboards"><span class="rr-tally__count">3</span><span class="rr-tally__label">new orders</span></a>
+        <a class="rr-tally__item" href="#dashboards"><span class="rr-tally__count">1</span><span class="rr-tally__label">being prepared</span></a>
+        <a class="rr-tally__item" href="#dashboards"><span class="rr-tally__count">1</span><span class="rr-tally__label">ready to serve</span></a>
+        <a class="rr-tally__item" href="#dashboards"><span class="rr-tally__count">0</span><span class="rr-tally__label">served, not completed</span></a>
+    </div>
+    <p class="text-muted mt-2">Counts that need someone (<code>rr-tally</code>, <code>rr-tally__item</code>), each a link to the list behind it. A count waiting for someone gets <code>is-attention</code>, the kaya top edge. <code>rr-tally--one</code> holds a single count.</p>
+
+    <h3 class="h4 mt-4">Facts</h3>
+    <div class="rr-panel">
+        <dl class="rr-facts">
+            <div class="rr-facts__item"><dt>Tables</dt><dd>10 tables in 1 dining area</dd><dd><a href="#dashboards">Tables</a></dd></div>
+            <div class="rr-facts__item"><dt>Opening hours</dt><dd>Closed on Mondays</dd><dd><a href="#dashboards">Opening hours</a></dd></div>
+            <div class="rr-facts__item is-attention"><dt>Menu</dt><dd>9 dishes, 0 available</dd><dd><a href="#dashboards">Menu items</a></dd></div>
+            <div class="rr-facts__item"><dt>Online</dt><dd>Taking bookings, taking orders</dd><dd><a href="#dashboards">Restaurant details</a></dd></div>
+        </dl>
+    </div>
+    <p class="text-muted mt-2">How something is set up, as plain statements (<code>rr-facts</code>), each with the page that changes it. A fact that stops the restaurant working gets <code>is-attention</code>.</p>
+
+    <h3 class="h4 mt-4">Shelf</h3>
+    <div class="rr-shelf">
+        <div class="rr-shelf__sheet">
+            <ul class="rr-shelf__list">
+                <li class="rr-feature"><h4 class="rr-feature__title"><a href="#dashboards">Reservations</a></h4><p class="rr-feature__meta">Book, change or cancel a table.</p></li>
+                <li class="rr-feature"><h4 class="rr-feature__title"><a href="#dashboards">Place orders</a></h4><p class="rr-feature__meta">Order food and drinks to your table.</p></li>
+                <li class="rr-feature"><h4 class="rr-feature__title"><a href="#dashboards">Browse menu</a></h4><p class="rr-feature__meta">See what's on the menu.</p></li>
+            </ul>
+        </div>
+        <div class="rr-shelf__soon">
+            <button type="button" class="rr-feature rr-feature--soon"><span class="rr-feature__title">Feedback</span><span class="rr-soon">Coming soon</span></button>
+        </div>
+    </div>
+    <p class="text-muted mt-2">A role's features (<code>rr-shelf</code>, built by <code>Pages/Dashboards/_Cards.cshtml</code>): one white sheet of <code>rr-feature</code> links, and the ones not built yet as quieter "Coming soon" buttons that do nothing. A plain <code>rr-feature</code> card outside a shelf still works for other pages.</p>
 </section>
 
 <section class="sg-section" id="pieces">
@@ -429,24 +492,6 @@
     </div>
     <p class="text-muted mt-2">An empty list says what will appear and how to add the first one.</p>
 
-    <h3 class="h4 mt-4">Feature cards</h3>
-    <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-3">
-        <div class="col">
-            <div class="rr-feature">
-                <h4 class="rr-feature__title"><a href="#pieces">Reservations</a></h4>
-                <p class="text-muted mb-0">Book, change or cancel a table.</p>
-                <div class="rr-feature__meta">Story 5 · Cheah</div>
-            </div>
-        </div>
-        <div class="col">
-            <div class="rr-feature rr-feature--soon" aria-disabled="true">
-                <h4 class="rr-feature__title">Browse menu</h4>
-                <p class="mb-0">See what's on the menu.</p>
-                <div class="rr-feature__meta">Not built yet · Story 13 · Lim</div>
-            </div>
-        </div>
-    </div>
-
     <h3 class="h4 mt-4">Staff list</h3>
     <section aria-labelledby="sg-seating">
         <h4 class="rr-group-title" id="sg-seating">7:30 PM <span class="rr-count">2</span></h4>
@@ -454,8 +499,8 @@
             <li class="rr-list__item is-attention">
                 <div class="rr-tableno"><span class="rr-label">Table</span> <span class="rr-tableno__number">3</span></div>
                 <div class="rr-list__main">
-                    <div class="fw-semibold">2 people · Customer #1</div>
-                    <span class="rr-ref">RES-001840</span>
+                    <div class="fw-semibold">2 people</div>
+                    <div class="rr-row-meta"><span>Customer #1</span><span class="rr-ref">RES-001840</span></div>
                     <p class="small text-muted mt-1 mb-0">Window seat please, it is our anniversary</p>
                 </div>
                 <span class="rr-status rr-status--attention">Pending</span>
@@ -468,8 +513,8 @@
             <li class="rr-list__item">
                 <div class="rr-tableno"><span class="rr-label">Table</span> <span class="rr-tableno__number">7</span></div>
                 <div class="rr-list__main">
-                    <div class="fw-semibold">4 people · Customer #2</div>
-                    <span class="rr-ref">RES-001843</span>
+                    <div class="fw-semibold">4 people</div>
+                    <div class="rr-row-meta"><span>Customer #2</span><span class="rr-ref">RES-001843</span></div>
                 </div>
                 <span class="rr-status rr-status--good">Confirmed</span>
                 <div class="rr-list__actions">

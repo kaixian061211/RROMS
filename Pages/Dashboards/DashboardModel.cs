@@ -3,22 +3,29 @@ using RROMS.Web.Models.Dashboards;
 
 namespace RROMS.Web.Pages.Dashboards;
 
-/// <summary>What the three role dashboards share: the role's cards from DashboardCards.</summary>
+/// <summary>What the three role dashboards share: the role's cards from DashboardCards, and the greeting.</summary>
 public abstract class DashboardModel : PageModel
 {
-    private readonly IWebHostEnvironment _environment;
     private readonly string _role;
 
-    protected DashboardModel(IWebHostEnvironment environment, string role)
-    {
-        _environment = environment;
-        _role = role;
-    }
+    protected DashboardModel(string role) => _role = role;
 
     public IReadOnlyList<DashboardCard> Cards { get; private set; } = Array.Empty<DashboardCard>();
 
-    /// <summary>Development also shows features not built yet, and who owns each one.</summary>
-    public bool IsDevelopment => _environment.IsDevelopment();
+    /// <summary>Today, for the dashboards that show today's bookings and service.</summary>
+    public DateOnly Today { get; } = DateOnly.FromDateTime(DateTime.Now);
 
-    public void OnGet() => Cards = DashboardCards.For(_role, IsDevelopment);
+    /// <summary>"Good morning", "Good afternoon" or "Good evening", by the restaurant's clock.</summary>
+    public string Greeting => DateTime.Now.Hour switch
+    {
+        < 12 => "Good morning",
+        < 18 => "Good afternoon",
+        _ => "Good evening"
+    };
+
+    public virtual Task OnGetAsync()
+    {
+        Cards = DashboardCards.For(_role);
+        return Task.CompletedTask;
+    }
 }

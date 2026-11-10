@@ -64,7 +64,7 @@
                                 <div>
                                     <span class="rr-docket__title">@OrderFormatter.Table(order.TableId, Model.Tables)</span>
                                     <span class="rr-ref d-block">@OrderFormatter.Reference(order.OrderId)</span>
-                                    <span class="small text-muted">@OrderFormatter.Time(order.CreatedAt) · @OrderFormatter.Waiting(order.CreatedAt)</span>
+                                    <span class="small text-muted">@OrderFormatter.QueuedAt(order.CreatedAt)</span>
                                 </div>
                             </div>
                             <ol class="rr-docket__lines">

@@ -1,53 +1,34 @@
-@model RROMS.Web.Pages.Dashboards.DashboardModel
-@* The cards of one role's dashboard (rr-feature). A built feature is a card you can click; in Development the
-   features not built yet follow, dashed, with their story and owner. *@
+@model IReadOnlyList<RROMS.Web.Models.Dashboards.DashboardCard>
+@* A role's features as a shelf of links (rr-shelf, each one an rr-feature), in story order. Features that
+   aren't built yet follow in a quieter row: "Coming soon" buttons that do nothing when clicked. *@
 @{
-    var built = Model.Cards.Where(card => card.IsBuilt).ToList();
-    var notBuilt = Model.Cards.Where(card => !card.IsBuilt).ToList();
+    var built = Model.Where(card => card.IsBuilt).ToList();
+    var soon = Model.Where(card => !card.IsBuilt).ToList();
 }
 
-@if (Model.Cards.Count == 0)
-{
-    <div class="rr-empty">
-        <p class="rr-empty__title">Nothing here yet.</p>
-        <p class="mb-0">These features are still being built.</p>
+<div class="rr-shelf">
+    <div class="rr-shelf__sheet">
+        <ul class="rr-shelf__list">
+            @foreach (var card in built)
+            {
+                <li class="rr-feature">
+                    @* The link covers the whole cell (rr-feature__title a::after). *@
+                    <h3 class="rr-feature__title"><a href="@card.PagePath">@card.Title</a></h3>
+                    <p class="rr-feature__meta">@card.Description</p>
+                </li>
+            }
+        </ul>
     </div>
-}
-
-@if (built.Count > 0)
-{
-    <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-3">
-        @foreach (var card in built)
-        {
-            <div class="col">
-                <div class="rr-feature">
-                    @* The link covers the whole card (rr-feature__title a::after). *@
-                    <h2 class="rr-feature__title"><a href="@card.PagePath">@card.Title</a></h2>
-                    <p class="text-muted mb-0">@card.Description</p>
-                    @if (Model.IsDevelopment)
-                    {
-                        <div class="rr-feature__meta">Story @card.Story · @card.Owner</div>
-                    }
-                </div>
-            </div>
-        }
-    </div>
-}
-
-@if (notBuilt.Count > 0)
-{
-    <h2 class="h4 mt-5 mb-1">Not built yet</h2>
-    <p class="small text-muted mb-3">Development only. Outside Development these cards are hidden.</p>
-    <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-3">
-        @foreach (var card in notBuilt)
-        {
-            <div class="col">
-                <div class="rr-feature rr-feature--soon" aria-disabled="true">
-                    <h3 class="rr-feature__title">@card.Title</h3>
-                    <p class="mb-0">@card.Description</p>
-                    <div class="rr-feature__meta">Not built yet · Story @card.Story · @card.Owner</div>
-                </div>
-            </div>
-        }
-    </div>
-}
+    @if (soon.Count > 0)
+    {
+        <div class="rr-shelf__soon">
+            @foreach (var card in soon)
+            {
+                <button type="button" class="rr-feature rr-feature--soon" title="@card.Description">
+                    <span class="rr-feature__title">@card.Title</span>
+                    <span class="rr-soon">Coming soon</span>
+                </button>
+            }
+        </div>
+    }
+</div>

@@ -1,8 +1,9 @@
 /* =============================================================================
    RROMS design system ("kopitiam")
-   The look of a Malaysian coffee shop: marble tabletops, white enamel, painted
-   shop signs, and the order docket that goes to the kitchen. Bootstrap stays;
-   this file re-themes it and adds a few RROMS components (rr-*).
+   The look of a Malaysian coffee shop: a painted signboard over the door, mint
+   wall tiles, marble tabletops, white enamel, and the order docket that goes to
+   the kitchen. Bootstrap stays; this file re-themes it and adds a few RROMS
+   components (rr-*).
    Live examples: /Dev/StyleGuide (Development only). Rules: DESIGN.md.
    ========================================================================== */
 
@@ -38,7 +39,7 @@
 
 :root {
     /* Palette */
-    --rr-marble: #f1f3f1;        /* page background: the tabletop */
+    --rr-marble: #eef1ee;        /* page background: the tabletop */
     --rr-marble-deep: #e3e8e4;   /* the kitchen pass behind the order rail, pressed states */
     --rr-enamel: #ffffff;        /* cards, dockets, header */
     --rr-kopi: #1d1a17;          /* text */
@@ -57,6 +58,11 @@
     --rr-teh: #a86b3c;           /* in progress: preparing */
     --rr-teh-ink: #6e4220;
     --rr-teh-tint: #f3e6da;
+    --rr-signboard: #143b2f;     /* the shop sign: the header, painted deep green */
+    --rr-signboard-ink: #e6eee8; /* lettering on the signboard */
+    --rr-gilt: #d4a72c;          /* gilt sign lettering. Only on the signboard, never on white */
+    --rr-tile: #b9dccd;          /* the mint wall tiles under the sign */
+    --rr-grout: #f6faf7;
 
     /* Type */
     --rr-font-display: "Zilla Slab", Rockwell, "Roboto Slab", Georgia, serif;
@@ -76,8 +82,8 @@
     --bs-body-line-height: 1.55;
     --bs-body-color: #1d1a17;
     --bs-body-color-rgb: 29, 26, 23;
-    --bs-body-bg: #f1f3f1;
-    --bs-body-bg-rgb: 241, 243, 241;
+    --bs-body-bg: #eef1ee;
+    --bs-body-bg-rgb: 238, 241, 238;
     --bs-emphasis-color: #1d1a17;
     --bs-emphasis-color-rgb: 29, 26, 23;
     --bs-secondary-color: #5d625c;
@@ -167,8 +173,9 @@ h1, h2, h3, .h1, .h2, .h3 {
     text-wrap: balance;
 }
 
-h1, .h1 { font-size: clamp(1.875rem, 1.45rem + 1.4vw, 2.5rem); }
-h2, .h2 { font-size: clamp(1.375rem, 1.2rem + .6vw, 1.625rem); }
+/* A 1.25 scale: 13, 14, 16, 20, 25, 31 and 39px (61px for the front page's sign). */
+h1, .h1 { font-size: clamp(1.9375rem, 1.6rem + 1.1vw, 2.4375rem); }
+h2, .h2 { font-size: clamp(1.375rem, 1.25rem + .45vw, 1.5625rem); }
 h3, .h3 { font-size: 1.25rem; }
 
 h4, h5, h6, .h4, .h5, .h6 {
@@ -188,17 +195,30 @@ a {
     text-underline-offset: .18em;
 }
 
-:focus-visible {
-    outline: 3px solid rgba(11, 107, 79, .45);
+/* Keyboard focus: a solid pandan ring, at least 3:1 against the marble and the enamel. Bootstrap's own
+   focus glow on buttons, links in a nav and checkboxes is too faint for that, so they get the ring too. */
+:focus-visible,
+.btn:focus-visible,
+.nav-link:focus-visible,
+.form-check-input:focus-visible {
+    outline: 3px solid var(--rr-pandan);
     outline-offset: 2px;
+    box-shadow: none;
 }
 
-/* Reference numbers (RES-001841, ORD-001256) look like what the kitchen printer prints. */
+/* Reference numbers (RES-001841, ORD-001256). On a docket they're printed like the kitchen printer
+   prints them (monospace); anywhere else they're plain text with even digits. */
 .rr-ref {
-    font-family: var(--rr-font-mono);
     font-size: .875em;
-    letter-spacing: .02em;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: .01em;
     color: var(--rr-muted);
+}
+
+.rr-docket .rr-ref {
+    font-family: var(--rr-font-mono);
+    font-weight: 400;
 }
 
 /* Money and anything that lines up in columns. */
@@ -212,20 +232,21 @@ a {
     white-space: nowrap;
 }
 
-/* A small label above a heading or a value. Only for real labels ("Seating", "Table"). */
+/* A small label above a value. Only for real labels ("Special request", "Lunch"), in sentence case. */
 .rr-label {
     display: block;
-    font-size: .75rem;
+    font-family: var(--rr-font-body);
+    font-size: .8125rem;
+    letter-spacing: 0;
+    line-height: 1.4;
     font-weight: 700;
-    letter-spacing: .08em;
-    text-transform: uppercase;
     color: var(--rr-muted);
 }
 
 .rr-lede {
     font-size: 1.0625rem;
     color: var(--rr-muted);
-    max-width: 38rem;
+    max-width: 40rem;
 }
 
 /* Customer pages are one comfortable column; staff pages use the full width. */
@@ -352,10 +373,11 @@ a {
     background-color: var(--rr-enamel);
 }
 
+/* A field with focus gets a solid pandan edge (two pixels with its border) and a soft glow around it. */
 .form-control:focus,
 .form-select:focus {
     border-color: var(--rr-pandan);
-    box-shadow: 0 0 0 .2rem rgba(11, 107, 79, .2);
+    box-shadow: 0 0 0 1px var(--rr-pandan), 0 0 0 .25rem rgba(11, 107, 79, .18);
 }
 
 .form-control::placeholder {
@@ -445,10 +467,8 @@ a {
 }
 
 .table > thead th {
-    font-size: .75rem;
+    font-size: .8125rem;
     font-weight: 700;
-    letter-spacing: .08em;
-    text-transform: uppercase;
     color: var(--rr-muted);
     border-bottom-color: var(--rr-line-strong);
 }
@@ -463,66 +483,348 @@ a {
     --bs-badge-padding-x: .6em;
     --bs-badge-padding-y: .4em;
     --bs-badge-border-radius: 999px;
-    letter-spacing: .02em;
 }
 
 
 /* 5. Shell: header, navigation, footer, test-login bar --------------------- */
 
+/* The header is the shop's signboard: deep green, the name in gilt, and a row of mint wall tiles
+   under it. It's the one bold thing on every page; everything below it stays plain. */
 .rr-header {
-    background: var(--rr-enamel);
-    border-bottom: 1px solid var(--rr-line);
+    background: var(--rr-signboard);
+    color: var(--rr-signboard-ink);
+}
+
+.rr-header::after {
+    content: "";
+    display: block;
+    height: .75rem;
+    background:
+        linear-gradient(90deg, transparent .625rem, var(--rr-grout) .625rem) 0 0 / .75rem .75rem,
+        linear-gradient(transparent .625rem, var(--rr-grout) .625rem) 0 0 / .75rem .75rem,
+        var(--rr-tile);
+    border-top: 2px solid var(--rr-grout);
 }
 
 .rr-header .navbar {
     --bs-navbar-padding-y: .625rem;
-    --bs-navbar-color: var(--rr-muted);
-    --bs-navbar-hover-color: var(--rr-kopi);
-    --bs-navbar-active-color: var(--rr-pandan);
+    --bs-navbar-color: rgba(230, 238, 232, .86);
+    --bs-navbar-hover-color: #fff;
+    --bs-navbar-active-color: #fff;
     --bs-navbar-nav-link-padding-x: .75rem;
-    --bs-navbar-toggler-border-color: var(--rr-line-strong);
-    --bs-navbar-toggler-focus-width: .2rem;
+    --bs-navbar-toggler-border-color: rgba(230, 238, 232, .4);
+    --bs-navbar-toggler-focus-width: 0;
+    --bs-navbar-toggler-icon-bg: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba%28230, 238, 232, 0.95%29' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+}
+
+/* On the sign, focus shows in gilt, which stands out on the green. */
+.rr-header :focus-visible,
+.rr-header .nav-link:focus-visible,
+.rr-header .btn:focus-visible {
+    outline-color: var(--rr-gilt);
 }
 
 .rr-wordmark {
     font-family: var(--rr-font-display);
     font-variant-numeric: lining-nums;
     font-weight: 700;
-    font-size: 1.625rem;
-    letter-spacing: .04em;
-    color: var(--rr-kopi);
+    font-size: 1.75rem;
+    letter-spacing: .08em;
+    color: var(--rr-gilt);
     line-height: 1;
+}
+
+.rr-wordmark:hover,
+.rr-wordmark:focus {
+    color: var(--rr-gilt);
+}
+
+.rr-nav-toggle {
     display: inline-flex;
-    align-items: baseline;
-    gap: .375rem;
+    align-items: center;
+    gap: .5rem;
+    min-height: var(--rr-touch);
+    color: var(--rr-signboard-ink);
+    font-size: 1rem;
+    font-weight: 600;
 }
 
-.rr-wordmark:hover {
-    color: var(--rr-kopi);
-}
-
-/* The brand mark: a kaya-yellow dot after the name. */
-.rr-wordmark::after {
-    content: "";
-    align-self: flex-start;
-    width: .4375rem;
-    height: .4375rem;
-    margin-top: .0625rem;
-    border-radius: 50%;
-    background: var(--rr-kaya);
+.rr-nav-toggle .navbar-toggler-icon {
+    width: 1.25em;
+    height: 1.25em;
 }
 
 .rr-header .nav-link {
+    position: relative;
     font-weight: 600;
+    white-space: nowrap;
     border-radius: var(--rr-radius-control);
 }
 
 .rr-header .nav-link:hover {
-    background: var(--rr-marble);
+    background: rgba(255, 255, 255, .08);
 }
 
-.rr-header .nav-link.active {
-    background: var(--rr-pandan-tint);
+/* The current page: white lettering with a gilt bar under it (beside it in the phone menu). */
+.rr-header .nav-link.active::before {
+    content: "";
+    position: absolute;
+    left: var(--bs-navbar-nav-link-padding-x);
+    right: var(--bs-navbar-nav-link-padding-x);
+    bottom: .125rem;
+    height: 3px;
+    border-radius: 2px;
+    background: var(--rr-gilt);
+}
+
+@media (min-width: 1200px) {
+    .rr-nav {
+        gap: .125rem;
+        align-items: center;
+    }
+}
+
+/* Dropdowns in the header: one white sheet, items with a soft highlight, the current page in pandan. */
+.rr-header .dropdown-menu {
+    --bs-dropdown-min-width: 14rem;
+    --bs-dropdown-padding-x: .375rem;
+    --bs-dropdown-padding-y: .375rem;
+    --bs-dropdown-border-color: var(--rr-line);
+    --bs-dropdown-border-radius: var(--rr-radius-card);
+    --bs-dropdown-inner-border-radius: .375rem;
+    --bs-dropdown-link-color: var(--rr-kopi);
+    --bs-dropdown-link-hover-color: var(--rr-kopi);
+    --bs-dropdown-link-hover-bg: var(--rr-marble);
+    --bs-dropdown-link-active-color: var(--rr-pandan-dark);
+    --bs-dropdown-link-active-bg: var(--rr-pandan-tint);
+    --bs-dropdown-item-padding-x: .75rem;
+    --bs-dropdown-item-padding-y: .5rem;
+    --bs-dropdown-header-color: var(--rr-muted);
+    --bs-dropdown-header-padding-x: .75rem;
+    --bs-dropdown-divider-bg: var(--rr-line);
+    box-shadow: 0 12px 28px -14px rgba(29, 26, 23, .35);
+}
+
+.rr-header .dropdown-item {
+    border-radius: .375rem;
+    font-weight: 500;
+}
+
+.rr-header .dropdown-item.active {
+    font-weight: 600;
+}
+
+.rr-header .dropdown-header {
+    margin-top: .25rem;
+    font-family: var(--rr-font-body);
+    font-size: .8125rem;
+    font-weight: 700;
+}
+
+.rr-header .dropdown-item-text {
+    padding: .375rem .75rem;
+}
+
+@media (min-width: 1200px) {
+    .rr-header .dropdown-menu :focus-visible {
+        outline-color: var(--rr-pandan);
+    }
+}
+
+/* A feature that isn't built yet: it can be clicked, but nothing happens. */
+.rr-soon {
+    display: inline-flex;
+    align-items: center;
+    padding: .125rem .5rem;
+    border-radius: 999px;
+    background: var(--rr-teh-tint);
+    color: var(--rr-teh-ink);
+    font-size: .75rem;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.rr-soon-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: .75rem;
+}
+
+.rr-header .nav-link.rr-soon-item {
+    justify-content: flex-start;
+    gap: .5rem;
+}
+
+/* Notifications: a bell with the unread count. On a wide screen the word is only for screen readers. */
+.rr-nav-bell {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: .5rem;
+}
+
+.rr-nav-bell__count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.125rem;
+    height: 1.125rem;
+    padding: 0 .3rem;
+    border-radius: 999px;
+    background: var(--rr-sambal);
+    color: #fff;
+    font-size: .6875rem;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.rr-nav-bell__count[hidden] {
+    display: none;
+}
+
+@media (min-width: 1200px) {
+    .rr-nav-bell__label {
+        position: absolute !important;
+        width: 1px !important;
+        height: 1px !important;
+        overflow: hidden !important;
+        clip: rect(0, 0, 0, 0) !important;
+        white-space: nowrap !important;
+    }
+
+    .rr-nav-bell__count {
+        position: absolute;
+        top: .125rem;
+        right: .125rem;
+    }
+}
+
+/* The account menu: a round gilt initial and the name. */
+.rr-nav-account {
+    display: inline-flex;
+    align-items: center;
+    gap: .5rem;
+}
+
+.rr-nav-account__avatar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.875rem;
+    height: 1.875rem;
+    border-radius: 50%;
+    background: var(--rr-gilt);
+    color: var(--rr-signboard);
+    font-size: .8125rem;
+    font-weight: 700;
+}
+
+.rr-nav-account__role {
+    font-size: .8125rem;
+    color: var(--rr-muted);
+}
+
+/* Register: a white enamel button on the green sign. */
+.rr-header .rr-nav-cta {
+    --bs-btn-color: var(--rr-signboard);
+    --bs-btn-bg: var(--rr-enamel);
+    --bs-btn-border-color: var(--rr-enamel);
+    --bs-btn-hover-color: var(--rr-signboard);
+    --bs-btn-hover-bg: var(--rr-signboard-ink);
+    --bs-btn-hover-border-color: var(--rr-signboard-ink);
+    --bs-btn-active-color: var(--rr-signboard);
+    --bs-btn-active-bg: #cfdcd3;
+    --bs-btn-active-border-color: #cfdcd3;
+    margin-left: .25rem;
+    padding: .4375rem 1.125rem;
+}
+
+/* Below 1200px the links fold into the menu button and open as one list on the sign: full-width rows,
+   dropdowns opening in place, the current page marked with a gilt bar on its left. */
+@media (max-width: 1199.98px) {
+    .rr-header .navbar-collapse {
+        padding: .5rem 0 .75rem;
+    }
+
+    .rr-header .navbar-nav + .navbar-nav {
+        margin-top: .5rem;
+        padding-top: .5rem;
+        border-top: 1px solid rgba(230, 238, 232, .2);
+    }
+
+    .rr-header .nav-link {
+        display: flex;
+        align-items: center;
+        min-height: var(--rr-touch);
+        padding-left: .875rem;
+    }
+
+    .rr-header .nav-link.dropdown-toggle::after {
+        margin-left: auto;
+    }
+
+    .rr-header .nav-link.active::before {
+        left: 0;
+        right: auto;
+        top: .5rem;
+        bottom: .5rem;
+        width: 3px;
+        height: auto;
+    }
+
+    .rr-header .dropdown-menu {
+        --bs-dropdown-link-color: var(--rr-signboard-ink);
+        --bs-dropdown-link-hover-color: #fff;
+        --bs-dropdown-link-hover-bg: rgba(255, 255, 255, .08);
+        --bs-dropdown-link-active-color: #fff;
+        --bs-dropdown-link-active-bg: rgba(255, 255, 255, .1);
+        --bs-dropdown-header-color: rgba(230, 238, 232, .7);
+        --bs-dropdown-divider-bg: rgba(230, 238, 232, .2);
+        margin: 0 0 .25rem .875rem;
+        padding: 0 0 0 .5rem;
+        border: 0;
+        border-left: 1px solid rgba(230, 238, 232, .25);
+        border-radius: 0;
+        box-shadow: none;
+        background: transparent;
+    }
+
+    .rr-header .dropdown-item {
+        display: flex;
+        align-items: center;
+        min-height: var(--rr-touch);
+    }
+
+    .rr-header .rr-nav-account__role {
+        color: rgba(230, 238, 232, .7);
+    }
+
+    .rr-header .rr-nav-cta {
+        margin: .5rem 0 0;
+    }
+}
+
+/* Skip link: hidden until it has keyboard focus, then a gilt tab at the top left. */
+.rr-skip:focus {
+    position: absolute;
+    top: .5rem;
+    left: .5rem;
+    z-index: 1100;
+    padding: .625rem 1rem;
+    border-radius: var(--rr-radius-control);
+    background: var(--rr-gilt);
+    color: var(--rr-signboard);
+    font-weight: 700;
+}
+
+.rr-skip:focus-visible {
+    outline-color: var(--rr-signboard);
+}
+
+/* The skip link moves focus here; the page itself doesn't need a ring. */
+.rr-main:focus {
+    outline: 0;
 }
 
 .rr-main {
@@ -599,14 +901,12 @@ a {
     display: inline-flex;
     align-items: center;
     gap: .4em;
-    padding: .3em .7em .3em .6em;
+    padding: .25em .7em .25em .6em;
     border-radius: 999px;
-    font-size: .75rem;
+    font-size: .8125rem;
     font-weight: 700;
-    letter-spacing: .06em;
-    text-transform: uppercase;
     white-space: nowrap;
-    line-height: 1.2;
+    line-height: 1.25;
 }
 
 .rr-status::before {
@@ -770,11 +1070,7 @@ a {
     gap: .5rem;
     margin: 0;
     padding-bottom: .625rem;
-    font-family: var(--rr-font-body);
-    font-size: .8125rem;
-    font-weight: 700;
-    letter-spacing: .08em;
-    text-transform: uppercase;
+    font-size: 1.25rem;
 }
 
 /* Count chip beside a heading: how many are in this column or group. */
@@ -785,9 +1081,10 @@ a {
     border-radius: 999px;
     background: var(--rr-enamel);
     text-align: center;
-    font-family: var(--rr-font-mono);
+    font-family: var(--rr-font-body);
     font-size: .8125rem;
     font-weight: 700;
+    font-variant-numeric: tabular-nums;
     line-height: 1.4;
     letter-spacing: 0;
     color: var(--rr-kopi);
@@ -906,12 +1203,10 @@ a {
 .rr-dateblock__day {
     width: 100%;
     padding: .3rem 0;
-    background: var(--rr-kopi);
-    color: #fff;
-    font-size: .6875rem;
+    background: var(--rr-signboard);
+    color: var(--rr-signboard-ink);
+    font-size: .8125rem;
     font-weight: 700;
-    letter-spacing: .1em;
-    text-transform: uppercase;
 }
 
 .rr-dateblock__date {
@@ -924,10 +1219,8 @@ a {
 
 .rr-dateblock__month {
     padding: .125rem 0 .4rem;
-    font-size: .6875rem;
+    font-size: .8125rem;
     font-weight: 700;
-    letter-spacing: .1em;
-    text-transform: uppercase;
     color: var(--rr-muted);
 }
 
@@ -955,6 +1248,24 @@ a {
 .rr-slip__title {
     font-weight: 700;
     font-size: 1.0625rem;
+}
+
+/* A slip's lead: a booking's time or an order's table, set like the numbers on the board by the door. */
+.rr-slip__title--lead {
+    display: block;
+    font-family: var(--rr-font-display);
+    font-variant-numeric: lining-nums;
+    font-size: 1.5625rem;
+    line-height: 1.15;
+}
+
+/* A row's second line: who it's for and its reference, side by side without separators. */
+.rr-row-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 1rem;
+    font-size: .875rem;
+    color: var(--rr-muted);
 }
 
 .rr-slip__side {
@@ -1019,7 +1330,7 @@ a {
 }
 
 .btn-check:focus-visible + .rr-tile {
-    outline: 3px solid rgba(11, 107, 79, .45);
+    outline: 3px solid var(--rr-pandan);
     outline-offset: 2px;
 }
 
@@ -1052,7 +1363,7 @@ a {
 
 .rr-stepper:focus-within {
     border-color: var(--rr-pandan);
-    box-shadow: 0 0 0 .2rem rgba(11, 107, 79, .2);
+    box-shadow: 0 0 0 1px var(--rr-pandan), 0 0 0 .25rem rgba(11, 107, 79, .18);
 }
 
 .rr-stepper:has(.input-validation-error) {
@@ -1084,7 +1395,6 @@ a {
     border-left: 1px solid var(--rr-line);
     border-right: 1px solid var(--rr-line);
     text-align: center;
-    font-family: var(--rr-font-mono);
     font-weight: 700;
     font-variant-numeric: tabular-nums;
     -moz-appearance: textfield;
@@ -1100,6 +1410,16 @@ a {
 .rr-stepper__input:focus {
     outline: none;
     background: var(--rr-pandan-tint);
+}
+
+/* A group of dishes (a menu category): its name set like a heading on a menu card. */
+.rr-dish-group {
+    margin-bottom: .5rem;
+    font-family: var(--rr-font-display);
+    font-variant-numeric: lining-nums;
+    font-size: 1.25rem;
+    font-weight: 700;
+    line-height: 1.2;
 }
 
 /* Dish rows: what can be ordered, each with its price and a stepper. A chosen dish gets a pandan edge. */
@@ -1138,7 +1458,6 @@ a {
 
 .rr-dish__price {
     display: block;
-    font-family: var(--rr-font-mono);
     font-size: .875rem;
     font-variant-numeric: tabular-nums;
     color: var(--rr-muted);
@@ -1267,18 +1586,18 @@ a {
     color: var(--rr-muted);
 }
 
+/* A feature not built yet: the same card with a "Coming soon" tag. It's a button that does nothing. */
 .rr-feature--soon {
-    background: transparent;
-    border-style: dashed;
-    color: var(--rr-muted);
+    cursor: pointer;
 }
 
 .rr-feature--soon:hover {
-    border-color: var(--rr-line);
+    border-color: var(--rr-line-strong);
 }
 
 .rr-feature--soon .rr-feature__title {
-    color: var(--rr-muted);
+    color: var(--rr-kopi);
+    line-height: 1.2;
 }
 
 /* A feature card that is a button, such as a test user to sign in as. */
@@ -1296,6 +1615,280 @@ button.rr-feature {
 .rr-feature.is-current {
     border-color: var(--rr-pandan);
     box-shadow: inset 0 0 0 1px var(--rr-pandan);
+}
+
+/* A feature's link covers the whole card, so the whole card shows the focus ring. */
+.rr-feature:has(.rr-feature__title a:focus-visible) {
+    outline: 3px solid var(--rr-pandan);
+    outline-offset: 2px;
+}
+
+.rr-feature__title a:focus-visible {
+    outline: 0;
+}
+
+/* Dashboard: what the role needs now comes first (dockets, counts, facts); the shelf of everything else
+   comes after. Markup: .rr-dash > .rr-dash__slot > h2.rr-dash__title + docket or empty state. */
+.rr-dash {
+    display: grid;
+    gap: 2.5rem;
+    margin-bottom: 3rem;
+}
+
+@media (min-width: 992px) {
+    .rr-dash {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        align-items: start;
+    }
+}
+
+.rr-dash__title {
+    margin-bottom: 1rem;
+}
+
+.rr-dash__head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: .5rem 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.rr-dash__more {
+    margin: .875rem 0 0;
+    font-weight: 600;
+}
+
+.rr-dash__when {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.rr-dash__time {
+    min-width: 5.5rem;
+    font-family: var(--rr-font-display);
+    font-variant-numeric: lining-nums tabular-nums;
+    font-size: 1.25rem;
+    font-weight: 700;
+}
+
+/* Shelf: a role's features as one white sheet of links, divided by hairlines, with the ones not built
+   yet in a quieter row under it. The cells are rr-feature, so the dashboards' tests still find them. */
+.rr-shelf__sheet {
+    background: var(--rr-enamel);
+    border: 1px solid var(--rr-line);
+    border-radius: var(--rr-radius-card);
+    overflow: hidden;
+}
+
+/* Each cell draws a line on its right and bottom; the sheet clips the ones on its outer edge. */
+.rr-shelf__list {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    margin: 0 -1px -1px 0;
+    padding: 0;
+    list-style: none;
+}
+
+@media (min-width: 576px) {
+    .rr-shelf__list {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (min-width: 992px) {
+    .rr-shelf__list {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+.rr-shelf .rr-feature {
+    height: auto;
+    padding: 1rem 1.25rem 1.125rem;
+    border: 0;
+    border-right: 1px solid var(--rr-line);
+    border-bottom: 1px solid var(--rr-line);
+    border-radius: 0;
+}
+
+.rr-shelf .rr-feature:hover {
+    background: #f7f9f7;
+}
+
+.rr-shelf .rr-feature:has(.rr-feature__title a:focus-visible) {
+    outline-offset: -3px;
+}
+
+.rr-shelf .rr-feature__title {
+    margin: 0 0 .125rem;
+    font-size: 1.125rem;
+}
+
+.rr-shelf .rr-feature:hover .rr-feature__title a {
+    color: var(--rr-pandan);
+}
+
+.rr-shelf .rr-feature__meta {
+    margin: 0;
+    font-size: .875rem;
+}
+
+.rr-shelf__soon {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .5rem;
+    margin-top: .75rem;
+}
+
+.rr-shelf .rr-feature--soon {
+    flex-direction: row;
+    align-items: center;
+    gap: .5rem;
+    width: auto;
+    min-height: var(--rr-touch);
+    padding: .375rem .5rem .375rem 1rem;
+    border: 1px dashed var(--rr-line-strong);
+    border-radius: 999px;
+    background: transparent;
+}
+
+.rr-shelf .rr-feature--soon:hover {
+    background: transparent;
+    border-color: #a9b0a9;
+}
+
+.rr-shelf .rr-feature--soon .rr-feature__title {
+    margin: 0;
+    font-family: var(--rr-font-body);
+    font-size: .9375rem;
+    font-weight: 600;
+    color: var(--rr-muted);
+}
+
+/* Tally: counts that need someone, each a link to the list behind it (the staff dashboard's kitchen and
+   bookings to confirm). A count that needs attention gets a kaya top edge (is-attention). */
+.rr-now__groups {
+    display: grid;
+    gap: 1.25rem;
+}
+
+.rr-now__group .rr-label {
+    margin-bottom: .375rem;
+}
+
+@media (min-width: 992px) {
+    .rr-now__groups {
+        grid-template-columns: minmax(0, 1fr) minmax(0, 4fr);
+    }
+}
+
+.rr-tally {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    background: var(--rr-enamel);
+    border: 1px solid var(--rr-line);
+    border-radius: var(--rr-radius-card);
+    overflow: hidden;
+}
+
+@media (min-width: 768px) {
+    .rr-tally {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+}
+
+.rr-tally.rr-tally--one {
+    grid-template-columns: minmax(0, 1fr);
+}
+
+/* The shadow draws a line on each cell's top and left; the tally clips the ones on its outer edge. */
+.rr-tally__item {
+    display: flex;
+    flex-direction: column;
+    gap: .375rem;
+    padding: 1rem 1.25rem 1.125rem;
+    color: var(--rr-kopi);
+    text-decoration: none;
+    box-shadow: -1px -1px 0 var(--rr-line);
+}
+
+.rr-tally__item:hover {
+    color: var(--rr-kopi);
+    background: #f7f9f7;
+}
+
+.rr-tally__item:focus-visible {
+    outline-offset: -3px;
+}
+
+.rr-tally__item.is-attention {
+    box-shadow: -1px -1px 0 var(--rr-line), inset 0 4px 0 var(--rr-kaya);
+}
+
+.rr-tally__count {
+    font-family: var(--rr-font-display);
+    font-variant-numeric: lining-nums tabular-nums;
+    font-size: 2.4375rem;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.rr-tally__label {
+    font-size: .875rem;
+    font-weight: 600;
+    color: var(--rr-muted);
+}
+
+/* Facts: how something is set up, as plain statements, each with the page that changes it (the admin
+   dashboard). Markup: dl.rr-facts > .rr-facts__item > dt + dd (the fact) + dd (the link). */
+.rr-facts {
+    display: grid;
+    margin: 0;
+}
+
+@media (min-width: 768px) {
+    .rr-facts {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        column-gap: 2.5rem;
+    }
+}
+
+@media (min-width: 1200px) {
+    .rr-facts {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+}
+
+.rr-facts__item {
+    padding: .875rem 0 .25rem;
+    border-top: 1px solid var(--rr-line);
+}
+
+/* The kaya edge is the border plus an inset shadow, so the fact doesn't move down. */
+.rr-facts__item.is-attention {
+    border-top-color: var(--rr-kaya);
+    box-shadow: inset 0 2px 0 var(--rr-kaya);
+}
+
+.rr-facts__item dt {
+    font-size: .8125rem;
+    font-weight: 700;
+    color: var(--rr-muted);
+}
+
+.rr-facts__item dd {
+    margin: .125rem 0 0;
+    font-size: .875rem;
+}
+
+.rr-facts__item dd:first-of-type {
+    font-family: var(--rr-font-display);
+    font-variant-numeric: lining-nums;
+    font-size: 1.25rem;
+    font-weight: 700;
+    line-height: 1.25;
 }
 
 /* Panel: a plain white surface for a form or a group of details. */

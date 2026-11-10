@@ -3,47 +3,98 @@
 @using RROMS.Web.Models.OrdersAndReservations
 @{
     ViewData["Title"] = "Book a table";
+    var closedToday = Model.Hours is { IsClosed: true };
+    var nextSeating = Model.Seatings.FirstOrDefault(seating => seating.IsOpen && !seating.IsOver);
+    var meals = new[] { ("Lunch", ReservationTimeSlots.Lunch), ("Dinner", ReservationTimeSlots.Dinner) };
 }
 
-<div class="row align-items-center gy-5 gx-lg-5 py-lg-4">
-    <div class="col-lg-7">
-        <h1 class="rr-home-title">Book a table, then order from it.</h1>
-        <p class="rr-lede mt-3">
-            Reserve a lunch or dinner seating ahead. Once you're sitting down, order nasi lemak, char kway teow
-            or teh tarik from your phone, and pay at the counter or online.
+<div class="rr-home">
+    <section class="rr-home__lead" aria-labelledby="home-title">
+        <h1 class="rr-home-title" id="home-title">Book a table, then order from it.</h1>
+        <p class="rr-lede">
+            Reserve a lunch or dinner seating ahead. Once you're sitting down, order from your phone and pay at the
+            counter or online.
         </p>
-        <div class="d-flex flex-wrap gap-2 mt-4">
+        <div class="rr-home__actions">
             <a class="btn btn-primary btn-lg" asp-page="/Reservations/Create">Book a table</a>
             <a class="btn btn-outline-secondary btn-lg" asp-page="/Orders/Create">Order at your table</a>
         </div>
-    </div>
+    </section>
 
-    <div class="col-lg-5">
-        @* The seatings a table can be booked for, printed like a docket. *@
-        <section class="rr-docket rr-home-seatings" aria-labelledby="seatings-title">
-            <div class="rr-docket__head">
-                <h2 class="rr-docket__title" id="seatings-title">Seatings</h2>
-            </div>
-            <dl class="mb-0">
-                <dt class="rr-label">Lunch</dt>
-                <dd class="rr-home-times">
-                    @foreach (var slot in ReservationTimeSlots.Lunch)
+    @* Today's service, like the board by the door: the day, the hours and the seatings still to come. *@
+    <section class="rr-today" aria-labelledby="today-title">
+        <h2 class="rr-today__title" id="today-title">Today, @ReservationFormatter.DayMonth(Model.Today)</h2>
+        @if (closedToday)
+        {
+            <p class="rr-today__hours">Closed today. You can book a table for another day.</p>
+        }
+        else
+        {
+            @if (Model.Hours is { Opens: { } opens, Closes: { } closes })
+            {
+                <p class="rr-today__hours">Open @ReservationFormatter.Time(opens) to @ReservationFormatter.Time(closes)</p>
+            }
+            <dl class="rr-today__meals">
+                @foreach (var (meal, slots) in meals)
+                {
+                    var seatings = Model.Seatings.Where(s => s.IsOpen && slots.Contains(s.Time)).ToList();
+                    if (seatings.Count == 0)
                     {
-                        <span>@ReservationFormatter.Time(slot)</span>
+                        continue;
                     }
-                </dd>
-                <dt class="rr-label">Dinner</dt>
-                <dd class="rr-home-times mb-0">
-                    @foreach (var slot in ReservationTimeSlots.Dinner)
-                    {
-                        <span>@ReservationFormatter.Time(slot)</span>
-                    }
-                </dd>
+                    <div class="rr-today__meal">
+                        <dt>@meal</dt>
+                        <dd>
+                            <ul class="rr-today__times">
+                                @foreach (var seating in seatings)
+                                {
+                                    <li class="@(seating.IsOver ? "is-over" : null)">
+                                        @ReservationFormatter.Time(seating.Time)
+                                        @if (seating.IsOver)
+                                        {
+                                            <span class="visually-hidden">(already started)</span>
+                                        }
+                                    </li>
+                                }
+                            </ul>
+                        </dd>
+                    </div>
+                }
             </dl>
-            <div class="rr-docket__total">
-                <span>Booked by seating</span>
-                <a asp-page="/Reservations/Create">Choose one</a>
-            </div>
-        </section>
-    </div>
+            <p class="rr-today__note">
+                @if (!Model.TakingBookings)
+                {
+                    @:We aren't taking bookings online right now.
+                }
+                else if (nextSeating is not null)
+                {
+                    @:Next seating at @ReservationFormatter.Time(nextSeating.Time). Each booking keeps one table for the whole seating.
+                }
+                else
+                {
+                    @:Today's seatings have started. You can book a table for another day.
+                }
+            </p>
+        }
+    </section>
 </div>
+
+@if (Model.Dishes.Count > 0)
+{
+    <section class="rr-home__menu" aria-labelledby="menu-title">
+        <div class="rr-home__menu-head">
+            <h2 id="menu-title" class="mb-0">On the menu</h2>
+            <a asp-page="/Menu/Index">@(Model.DishCount > Model.Dishes.Count ? $"See all {Model.DishCount} dishes" : "See the menu")</a>
+        </div>
+        <ul class="rr-menuboard">
+            @foreach (var dish in Model.Dishes)
+            {
+                <li>
+                    <span>@dish.Name</span>
+                    <span class="rr-menuboard__leader" aria-hidden="true"></span>
+                    <span class="rr-money">@OrderFormatter.Money(dish.Price)</span>
+                </li>
+            }
+        </ul>
+    </section>
+}
