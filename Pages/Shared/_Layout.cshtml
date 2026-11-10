@@ -15,7 +15,8 @@
 
     var onMyReservations = Under("/Reservations") && !Under("/Reservations/Manage");
     var onMyOrders = Under("/Orders") && currentPage != "/Orders/Queue";
-    var onCustomerMore = currentPage is "/Payments/History" or "/Restaurant/Index";
+    var onCustomerMore = (currentPage is "/Payments/History" or "/Restaurant/Index")
+        || Under("/Feedback") || Under("/History") || Under("/Chatbot");
     var onStaffPayments = currentPage is "/Payments/Counter" or "/Payments/Index" or "/Payments/Collect" or "/Payments/Details";
     var onOperations = Under("/Reservations/Manage") || currentPage == "/Orders/Queue" || onStaffPayments;
     var onRestaurantSetup = Under("/Restaurant/Manage") || Under("/Menu/Manage") || Under("/Promotions/Manage");
@@ -98,9 +99,9 @@
                                     <li><a class="dropdown-item @Active(currentPage == "/Payments/History")" aria-current="@Current(currentPage == "/Payments/History")" asp-area="" asp-page="/Payments/History">My payments</a></li>
                                     <li><a class="dropdown-item @Active(currentPage == "/Restaurant/Index")" aria-current="@Current(currentPage == "/Restaurant/Index")" asp-area="" asp-page="/Restaurant/Index">About the restaurant</a></li>
                                     <li><hr class="dropdown-divider" /></li>
-                                    <li><button type="button" class="dropdown-item rr-soon-item">Feedback <span class="rr-soon">Coming soon</span></button></li>
-                                    <li><button type="button" class="dropdown-item rr-soon-item">Visit history <span class="rr-soon">Coming soon</span></button></li>
-                                    <li><button type="button" class="dropdown-item rr-soon-item">Chatbot <span class="rr-soon">Coming soon</span></button></li>
+                                    <li><a class="dropdown-item @Active(Under("/Feedback"))" aria-current="@Current(Under("/Feedback"))" asp-area="" asp-page="/Feedback/Index">Feedback</a></li>
+                                    <li><a class="dropdown-item @Active(Under("/History"))" aria-current="@Current(Under("/History"))" asp-area="" asp-page="/History/Index">Visit history</a></li>
+                                    <li><a class="dropdown-item @Active(Under("/Chatbot"))" aria-current="@Current(Under("/Chatbot"))" asp-area="" asp-page="/Chatbot/Index">Chatbot</a></li>
                                 </ul>
                             </li>
                         }
@@ -113,23 +114,6 @@
                             <li class="nav-item">
                                 <a class="nav-link @Active(currentPage == "/Orders/Queue")" aria-current="@Current(currentPage == "/Orders/Queue")" asp-area="" asp-page="/Orders/Queue">Order queue</a>
                             </li>
-
-                            <li class="nav-item">
-                                <a class="nav-link @Active(Under("/Feedback"))" aria-current="@Current(Under("/Feedback"))" asp-area="" asp-page="/Feedback/All">Customer feedback</a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link @Active(Under("/Preferences/Manage"))" aria-current="@Current(Under("/Preferences/Manage"))" asp-area="" asp-page="/Preferences/Manage/Index">Customer preferences</a>
-                            </li>
-                        }
-                        @if (HostEnvironment.IsDevelopment())
-                        {
-                            <li class="nav-item"><a class="nav-link @Active(currentPage == "/Payments/Demo")" asp-page="/Payments/Demo">Payments</a></li>
-                        }
-                        @if (isCustomer)
-                        {
-                            <li class="nav-item"><a class="nav-link @Active(currentPage == "/Payments/MyOrders")" asp-page="/Payments/MyOrders">Orders for payment</a></li>
-                            <li class="nav-item"><a class="nav-link @Active(currentPage == "/Payments/History")" asp-page="/Payments/History">My payments</a></li>
-
                             <li class="nav-item dropdown">
                                 <button class="nav-link dropdown-toggle @Active(onStaffPayments)" type="button" data-bs-toggle="dropdown" aria-expanded="false">Payments</button>
                                 <ul class="dropdown-menu">
@@ -137,7 +121,9 @@
                                     <li><a class="dropdown-item @Active(currentPage == "/Payments/Index")" aria-current="@Current(currentPage == "/Payments/Index")" asp-area="" asp-page="/Payments/Index">Manage payments</a></li>
                                 </ul>
                             </li>
-
+                            <li class="nav-item">
+                                <a class="nav-link @Active(Under("/Feedback"))" aria-current="@Current(Under("/Feedback"))" asp-area="" asp-page="/Feedback/All">Customer feedback</a>
+                            </li>
                             <li class="nav-item">
                                 <a class="nav-link @Active(Under("/Preferences/Manage"))" aria-current="@Current(Under("/Preferences/Manage"))" asp-area="" asp-page="/Preferences/Manage/Index">Customer preferences</a>
                             </li>
