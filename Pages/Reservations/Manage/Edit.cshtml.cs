@@ -36,6 +36,9 @@ public class EditModel : PageModel
     /// <summary>The reservation as loaded, for the customer and status shown above the form.</summary>
     public Reservation? Reservation { get; private set; }
 
+    /// <summary>Who booked: their name, or "Customer #id" if they have no account.</summary>
+    public string CustomerName { get; private set; } = string.Empty;
+
     /// <summary>Set when the reservation can't be changed. The page shows it instead of the form.</summary>
     public string? BlockedMessage { get; private set; }
 
@@ -53,6 +56,8 @@ public class EditModel : PageModel
         }
 
         Reservation = result.Reservation!;
+        CustomerName = ReservationFormatter.Customer(Reservation.CustomerUserId,
+            await _reservations.GetCustomerNamesAsync(new[] { Reservation.CustomerUserId }));
         Input = ReservationInput.From(Reservation);
         RowVersion = Reservation.RowVersion;
         return Page();

@@ -3,6 +3,7 @@
 @{
     ViewData["Title"] = "Manage reservations";
     ViewData["Tables"] = Model.Tables;   // for the partials below
+    ViewData["CustomerNames"] = Model.CustomerNames;
     var dateValue = ReservationFormatter.InputDate(Model.SelectedDate);
     var isToday = Model.SelectedDate == DateOnly.FromDateTime(DateTime.Today);
 

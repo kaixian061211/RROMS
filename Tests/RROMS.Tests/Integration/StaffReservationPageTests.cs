@@ -50,7 +50,9 @@ public class StaffReservationPageTests : PageTest
     {
         var id = await CustomerBooksAsync(table: 3);
         var list = await GetPageAsync(TomorrowsList);
-        Assert.Contains("Customer #1", TextOf(list));
+        // Customer A's account row is "Fixture Customer A" (TestDatabase), so staff see the name, not "Customer #1".
+        Assert.Contains("Fixture Customer A", TextOf(list));
+        Assert.DoesNotContain("Customer #1", TextOf(list));
         Assert.Equal(new[] { "Confirm", "Cancel" }, ButtonsFor(list, id));
 
         var afterConfirm = await SubmitAsync(StatusButton(list, id, "Confirm")!);

@@ -1,6 +1,7 @@
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using RROMS.Web.Data;
+using RROMS.Web.Models.Accounts;
 using RROMS.Web.Models.OrdersAndReservations;
 using RROMS.Web.Models.Notifications;
 using RROMS.Web.Services.Notifications;
@@ -61,6 +62,18 @@ public class ReservationService : IReservationService
     }
 
     public Task<IReadOnlyDictionary<int, TableInfo>> GetTablesAsync() => _restaurant.GetTablesAsync();
+
+    public async Task<IReadOnlyDictionary<int, string>> GetCustomerNamesAsync(IEnumerable<int> customerUserIds)
+    {
+        var ids = customerUserIds.Distinct().ToList();
+        if (ids.Count == 0)
+            return new Dictionary<int, string>();
+
+        // Read-only: the UserAccount table belongs to the account module.
+        return await _db.Set<UserAccount>().AsNoTracking()
+            .Where(u => ids.Contains(u.UserId))
+            .ToDictionaryAsync(u => u.UserId, u => u.FullName);
+    }
 
     // Customer actions
 
