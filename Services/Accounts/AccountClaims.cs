@@ -7,8 +7,8 @@ namespace RROMS.Web.Services.Accounts;
 public static class AccountClaims
 {
     /// <summary>
-    /// Marks a sign-in that belongs to a real row in the UserAccount table. Program.cs re-checks only these on
-    /// every request, so the Development test users (/Dev/SwitchUser), who have no row, keep working.
+    /// Marks a sign-in that belongs to a real row in the UserAccount table. Program.cs re-checks these on every
+    /// request. Both /Account/Login and the Development-only Switch user (/Dev/SwitchUser) issue it.
     /// </summary>
     public const string AccountClaimType = "rroms:account";
 

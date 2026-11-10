@@ -59,32 +59,37 @@ public static class TestDatabase
         await using var db = new AppDbContext(options);
         await db.Database.MigrateAsync();
         await EmptyAsync(db);
-        await AddNotificationRecipientsOnceAsync(db);
+        await AddFixtureAccountsAsync(db);
         await db.Set<OperatingHour>().ExecuteDeleteAsync();
         await db.Set<RestaurantInfo>().ExecuteDeleteAsync();
         await AddTablesOnceAsync(db);
     }
 
-    // These IDs belong only to the isolated fixtures/Development test principals,
-    // not to application account registration. Give them real account rows so
-    // notifications obey the same FK as production, without remapping existing users.
-    private static async Task AddNotificationRecipientsOnceAsync(AppDbContext db)
+    // These IDs belong only to the test fixtures, not to application account registration. They are real account
+    // rows, so notifications obey the same FK as production, and the page tests sign in as 1 to 4 (TestUsers)
+    // through Switch user. Rows are added once; if an id is already taken, its name, role and active flag are put back
+    // to the fixture's, because the page tests depend on them.
+    private static async Task AddFixtureAccountsAsync(AppDbContext db)
     {
         await db.Database.OpenConnectionAsync();
         CheckIsTestDatabase((SqlConnection)db.Database.GetDbConnection());
         await db.Database.ExecuteSqlRawAsync("""
+            DECLARE @fixture TABLE ([UserId] int, [Name] nvarchar(100), [Email] nvarchar(100), [Role] nvarchar(20));
+            INSERT INTO @fixture VALUES
+                (1, 'Fixture Customer A', 'fixture-customer-1@example.invalid', 'Customer'),
+                (2, 'Fixture Customer B', 'fixture-customer-2@example.invalid', 'Customer'),
+                (3, 'Fixture Staff', 'fixture-staff-3@example.invalid', 'Staff'),
+                (4, 'Fixture Admin', 'fixture-admin-4@example.invalid', 'Admin'),
+                (9001, 'Fixture Alice', 'fixture-customer-9001@example.invalid', 'Customer'),
+                (9002, 'Fixture Bob', 'fixture-customer-9002@example.invalid', 'Customer');
+
             SET IDENTITY_INSERT [UserAccount] ON;
             BEGIN TRY
                 INSERT INTO [UserAccount]
                     ([UserId], [FullName], [Email], [Role], [PasswordHash], [IsActive], [ResetOtpAttempts])
-                SELECT fixture.[UserId], fixture.[Name], fixture.[Email], 'Customer',
+                SELECT fixture.[UserId], fixture.[Name], fixture.[Email], fixture.[Role],
                        'not-used-for-authentication', 1, 0
-                FROM (VALUES
-                    (1, 'Fixture Customer A', 'fixture-customer-1@example.invalid'),
-                    (2, 'Fixture Customer B', 'fixture-customer-2@example.invalid'),
-                    (9001, 'Fixture Alice', 'fixture-customer-9001@example.invalid'),
-                    (9002, 'Fixture Bob', 'fixture-customer-9002@example.invalid')
-                ) fixture ([UserId], [Name], [Email])
+                FROM @fixture fixture
                 WHERE NOT EXISTS (SELECT 1 FROM [UserAccount] u WHERE u.[UserId] = fixture.[UserId]);
             END TRY
             BEGIN CATCH
@@ -92,6 +97,10 @@ public static class TestDatabase
                 THROW;
             END CATCH;
             SET IDENTITY_INSERT [UserAccount] OFF;
+
+            UPDATE u SET u.[FullName] = fixture.[Name], u.[Role] = fixture.[Role], u.[IsActive] = 1
+            FROM [UserAccount] u JOIN @fixture fixture ON fixture.[UserId] = u.[UserId]
+            WHERE u.[FullName] <> fixture.[Name] OR u.[Role] <> fixture.[Role] OR u.[IsActive] = 0;
             """);
     }
 
