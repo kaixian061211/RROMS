@@ -111,22 +111,11 @@ namespace RROMS.Web.Data.Migrations
                 unique: true,
                 filter: "[ReservationId] IS NOT NULL");
 
-            migrationBuilder.AddForeignKey(
-                name: "FK_Notification_UserAccount_UserId",
-                table: "Notification",
-                column: "UserId",
-                principalTable: "UserAccount",
-                principalColumn: "UserId",
-                onDelete: ReferentialAction.Restrict);
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropForeignKey(
-                name: "FK_Notification_UserAccount_UserId",
-                table: "Notification");
-
             migrationBuilder.DropTable(
                 name: "ChatMessage");
 
