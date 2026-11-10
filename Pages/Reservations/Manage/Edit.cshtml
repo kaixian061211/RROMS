@@ -13,7 +13,7 @@
             @if (Model.Reservation is not null)
             {
                 <p class="rr-lede d-flex flex-wrap align-items-center gap-2">
-                    @ReservationFormatter.Customer(Model.Reservation.CustomerUserId)
+                    @Model.CustomerName
                     <span class="@ReservationFormatter.StatusBadge(Model.Reservation.Status)">@ReservationFormatter.StatusLabel(Model.Reservation.Status)</span>
                 </p>
             }

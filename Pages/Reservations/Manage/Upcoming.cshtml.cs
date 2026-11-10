@@ -49,6 +49,9 @@ public class UpcomingModel : PageModel
     /// <summary>Every restaurant table by id, for table numbers (and on forms, the tables to choose from).</summary>
     public IReadOnlyDictionary<int, TableInfo> Tables { get; private set; } = new Dictionary<int, TableInfo>();
 
+    /// <summary>The listed customers' names, by user id.</summary>
+    public IReadOnlyDictionary<int, string> CustomerNames { get; private set; } = new Dictionary<int, string>();
+
     public async Task<IActionResult> OnGetAsync()
     {
         Tables = await _reservations.GetTablesAsync();
@@ -58,6 +61,7 @@ public class UpcomingModel : PageModel
         Rows = page.Items
             .Select(r => new IndexModel.Row(r, _reservations.GetAllowedStatusChanges(r), _reservations.CanChangeDetails(r)))
             .ToList();
+        CustomerNames = await _reservations.GetCustomerNamesAsync(page.Items.Select(r => r.CustomerUserId));
         PendingCount = await _reservations.CountPendingAsync(DateOnly.FromDateTime(DateTime.Today));
         return Page();
     }

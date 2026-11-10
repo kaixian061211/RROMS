@@ -3,7 +3,8 @@
    "ShowTime" (bool): show the time in the row, when the group heading is a date instead of a seating;
    "RouteValues" (Dictionary<string, string>): the list's address values, so a button brings staff back to the same view;
    "EditFrom" (string?): passed to the edit page as "from", so saving there comes back to this list;
-   "Tables" (the page's tables, by id): for the table number. *@
+   "Tables" (the page's tables, by id): for the table number;
+   "CustomerNames" (the listed customers' names, by user id): for who booked. *@
 @model IndexModel.Row
 @{
     var r = Model.Reservation;
@@ -11,6 +12,7 @@
     var routeValues = ViewData["RouteValues"] as Dictionary<string, string> ?? new();
     var editFrom = ViewData["EditFrom"] as string;
     var tables = ViewData["Tables"] as IReadOnlyDictionary<int, TableInfo> ?? new Dictionary<int, TableInfo>();
+    var customerNames = ViewData["CustomerNames"] as IReadOnlyDictionary<int, string> ?? new Dictionary<int, string>();
 }
 <li class="rr-list__item @(r.Status == ReservationStatus.Pending ? "is-attention" : null)">
     <div class="rr-tableno">
@@ -26,7 +28,7 @@
             }
         </div>
         <div class="rr-row-meta">
-            <span>@ReservationFormatter.Customer(r.CustomerUserId)</span>
+            <span>@ReservationFormatter.Customer(r.CustomerUserId, customerNames)</span>
             <span class="rr-ref">@ReservationFormatter.Reference(r.ReservationId)</span>
         </div>
         @if (r.SpecialRequest is not null)

@@ -3,6 +3,7 @@
 @{
     ViewData["Title"] = "Upcoming reservations";
     ViewData["Tables"] = Model.Tables;   // for the partials below
+    ViewData["CustomerNames"] = Model.CustomerNames;
 
     // The row's status buttons come back to this filter and page.
     var routeValues = new Dictionary<string, string> { ["pageNumber"] = Model.PageNumber.ToString() };

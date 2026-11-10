@@ -28,6 +28,9 @@ public class StaffModel : DashboardModel
 
     public IReadOnlyDictionary<int, TableInfo> Tables { get; private set; } = new Dictionary<int, TableInfo>();
 
+    /// <summary>Today's customers' names, by user id.</summary>
+    public IReadOnlyDictionary<int, string> CustomerNames { get; private set; } = new Dictionary<int, string>();
+
     public override async Task OnGetAsync()
     {
         await base.OnGetAsync();
@@ -42,5 +45,6 @@ public class StaffModel : DashboardModel
             .Where(r => r.Status != ReservationStatus.Cancelled)
             .ToList();
         Tables = await _reservations.GetTablesAsync();
+        CustomerNames = await _reservations.GetCustomerNamesAsync(TodaysBookings.Select(r => r.CustomerUserId));
     }
 }

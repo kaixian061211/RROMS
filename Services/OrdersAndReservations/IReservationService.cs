@@ -13,6 +13,12 @@ public interface IReservationService
     /// <summary>Every restaurant table by id, retired ones too, for showing table numbers. Forms offer only the active ones.</summary>
     Task<IReadOnlyDictionary<int, TableInfo>> GetTablesAsync();
 
+    /// <summary>
+    /// Customers' names from the account table, by user id, so staff see who booked. Ids with no account (the
+    /// Development test users) are left out; ReservationFormatter.Customer shows those as "Customer #id".
+    /// </summary>
+    Task<IReadOnlyDictionary<int, string>> GetCustomerNamesAsync(IEnumerable<int> customerUserIds);
+
     // Customer actions
 
     Task<ReservationResult> CreateAsync(int customerUserId, ReservationInput input);

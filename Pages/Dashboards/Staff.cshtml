@@ -74,7 +74,7 @@
                     <span class="rr-dash__time">@ReservationFormatter.Time(r.TimeSlot)</span>
                     <div class="rr-list__main">
                         <span class="fw-semibold">@ReservationFormatter.Table(r.TableId, Model.Tables) for @ReservationFormatter.PartySize(r.PartySize)</span>
-                        <span class="d-block small text-muted">@ReservationFormatter.Customer(r.CustomerUserId)</span>
+                        <span class="d-block small text-muted">@ReservationFormatter.Customer(r.CustomerUserId, Model.CustomerNames)</span>
                     </div>
                     <span class="@ReservationFormatter.StatusBadge(r.Status)">@ReservationFormatter.StatusLabel(r.Status)</span>
                 </li>

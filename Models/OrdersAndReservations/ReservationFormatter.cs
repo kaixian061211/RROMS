@@ -94,6 +94,10 @@ public static class ReservationFormatter
         return pending == 0 ? summary : $"{summary}, {pending} to confirm";
     }
 
-    // TODO: show the customer's name once the user table exists.
+    /// <summary>"Customer #4", for a customer with no account (the Development test users).</summary>
     public static string Customer(int customerUserId) => $"Customer #{customerUserId}";
+
+    /// <summary>The customer's name, from IReservationService.GetCustomerNamesAsync; "Customer #4" if they have no account.</summary>
+    public static string Customer(int customerUserId, IReadOnlyDictionary<int, string> names) =>
+        names.TryGetValue(customerUserId, out var name) ? name : Customer(customerUserId);
 }
