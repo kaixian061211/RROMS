@@ -15,8 +15,9 @@ public class DashboardPageTests : PageTest
 
     [Theory(DisplayName = "TC-00-08 Switching user lands on that role's dashboard: built cards open their pages, placeholders don't link, other dashboards refuse")]
     [Trait("Technique", "Decision table")]
-    [InlineData("Customer A", "/Dashboards/Customer", "/Reservations, /Account/Profile, /Orders, /Menu, /Tracking, /Notifications/Index", 3)]
-    [InlineData("Staff", "/Dashboards/Staff", "/Payments/Counter, /Account/Profile, /Reservations/Manage, /Orders/Queue", 1)]
+    [InlineData("Customer A", "/Dashboards/Customer",
+        "/Reservations, /Feedback, /Account/Profile, /Orders, /Menu, /History, /Tracking, /Notifications/Index, /Chatbot", 0)]
+    [InlineData("Staff", "/Dashboards/Staff", "/Payments/Counter, /Account/Profile, /Reservations/Manage, /Orders/Queue, /Preferences/Manage", 0)]
     [InlineData("Admin", "/Dashboards/Admin",
         "/Restaurant/Manage, /Restaurant/Manage/Announcements, /Menu/Manage, /Admin/Accounts/Index, /Promotions/Manage, /Reports, " +
         "/Payments/Counter, /Reservations/Manage, /Orders/Queue", 0)]
