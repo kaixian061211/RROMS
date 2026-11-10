@@ -113,23 +113,6 @@
                             <li class="nav-item">
                                 <a class="nav-link @Active(currentPage == "/Orders/Queue")" aria-current="@Current(currentPage == "/Orders/Queue")" asp-area="" asp-page="/Orders/Queue">Order queue</a>
                             </li>
-
-                            <li class="nav-item">
-                                <a class="nav-link @Active(Under("/Feedback"))" aria-current="@Current(Under("/Feedback"))" asp-area="" asp-page="/Feedback/All">Customer feedback</a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link @Active(Under("/Preferences/Manage"))" aria-current="@Current(Under("/Preferences/Manage"))" asp-area="" asp-page="/Preferences/Manage/Index">Customer preferences</a>
-                            </li>
-                        }
-                        @if (HostEnvironment.IsDevelopment())
-                        {
-                            <li class="nav-item"><a class="nav-link @Active(currentPage == "/Payments/Demo")" asp-page="/Payments/Demo">Payments</a></li>
-                        }
-                        @if (isCustomer)
-                        {
-                            <li class="nav-item"><a class="nav-link @Active(currentPage == "/Payments/MyOrders")" asp-page="/Payments/MyOrders">Orders for payment</a></li>
-                            <li class="nav-item"><a class="nav-link @Active(currentPage == "/Payments/History")" asp-page="/Payments/History">My payments</a></li>
-
                             <li class="nav-item dropdown">
                                 <button class="nav-link dropdown-toggle @Active(onStaffPayments)" type="button" data-bs-toggle="dropdown" aria-expanded="false">Payments</button>
                                 <ul class="dropdown-menu">
@@ -137,7 +120,9 @@
                                     <li><a class="dropdown-item @Active(currentPage == "/Payments/Index")" aria-current="@Current(currentPage == "/Payments/Index")" asp-area="" asp-page="/Payments/Index">Manage payments</a></li>
                                 </ul>
                             </li>
-
+                            <li class="nav-item">
+                                <a class="nav-link @Active(Under("/Feedback"))" aria-current="@Current(Under("/Feedback"))" asp-area="" asp-page="/Feedback/All">Customer feedback</a>
+                            </li>
                             <li class="nav-item">
                                 <a class="nav-link @Active(Under("/Preferences/Manage"))" aria-current="@Current(Under("/Preferences/Manage"))" asp-area="" asp-page="/Preferences/Manage/Index">Customer preferences</a>
                             </li>
