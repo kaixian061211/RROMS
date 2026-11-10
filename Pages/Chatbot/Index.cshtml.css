@@ -1,0 +1,40 @@
+/* The conversation. Customer messages sit on the right in the action colour's tint, the assistant's on the left. */
+.chat {
+    display: flex;
+    flex-direction: column;
+    gap: .75rem;
+    margin: 0;
+    padding: 0;
+}
+
+.chat-message {
+    max-width: 85%;
+    padding: .75rem 1rem;
+    border: 1px solid var(--rr-line);
+    border-radius: var(--rr-radius-card);
+    background: var(--rr-enamel);
+}
+
+.chat-message--customer {
+    align-self: flex-end;
+    background: var(--rr-pandan-tint);
+    border-color: var(--rr-pandan-tint);
+}
+
+.chat-message--bot {
+    align-self: flex-start;
+}
+
+.chat-message__who {
+    display: block;
+    margin-bottom: .125rem;
+    font-size: .8125rem;
+    font-weight: 600;
+    color: var(--rr-muted);
+}
+
+.chat-message__text {
+    margin: 0;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}

@@ -1,0 +1,57 @@
+@page "{id:int}"
+@model ReplyModel
+@{
+    ViewData["Title"] = "Reply to feedback";
+}
+
+<div class="rr-narrow">
+    <header class="rr-page-header">
+        <div>
+            <h1>Reply to feedback</h1>
+            <p class="rr-lede">Your reply shows under the customer's comment.</p>
+        </div>
+    </header>
+
+    @if (Model.ErrorMessage is not null)
+    {
+        <div class="alert alert-warning" role="alert">@Model.ErrorMessage</div>
+        <a asp-page="All" class="btn btn-outline-secondary">Back to feedback</a>
+    }
+    else if (Model.Existing is not null)
+    {
+        <div class="rr-panel mb-4">
+            <div class="rr-slip__title">
+                <span aria-hidden="true">@FeedbackFormatter.Stars(Model.Existing.Rating)</span>
+                <span class="visually-hidden">@FeedbackFormatter.StarsLabel(Model.Existing.Rating)</span>
+            </div>
+            <span class="small text-muted">@Model.Existing.DisplayName · @FeedbackFormatter.When(Model.Existing.CreatedAt)</span>
+            <span class="rr-ref ms-2">@FeedbackFormatter.Visit(Model.Existing.OrderId, Model.Existing.ReservationId)</span>
+            @if (Model.Existing.Comments is not null)
+            {
+                <p class="mt-2 mb-0">@Model.Existing.Comments</p>
+            }
+            else
+            {
+                <p class="mt-2 mb-0 text-muted">The customer left no comment.</p>
+            }
+        </div>
+
+        <form method="post">
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+            <div class="rr-panel">
+                <label asp-for="Input.Reply" class="form-label"></label>
+                <textarea asp-for="Input.Reply" class="form-control" rows="4" maxlength="1000" required
+                          data-msg-required="Please write a reply."></textarea>
+                <span asp-validation-for="Input.Reply" class="text-danger"></span>
+            </div>
+            <div class="rr-actionbar">
+                <button type="submit" class="btn btn-primary">Save reply</button>
+                <a asp-page="All" class="btn btn-outline-secondary">Back<span class="d-none d-sm-inline"> to feedback</span></a>
+            </div>
+        </form>
+    }
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
