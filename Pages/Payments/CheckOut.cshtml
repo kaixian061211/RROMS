@@ -49,7 +49,7 @@
                         <input asp-for="Method" type="radio" class="btn-check" id="@id" value="@option.Value" required disabled="@(Model.MustResumeOnlineCheckout && option.Value != Model.ExistingPayment!.Method)" />
                         <label for="@id" class="rr-tile payment-method">
                             <span class="payment-method__mark" aria-hidden="true"></span>
-                            <span><strong>@option.Title</strong><small>@option.Description</small></span>
+                            <span class="payment-method__body"><strong>@option.Title</strong><small>@option.Description</small></span>
                         </label>
                     </div>
                 }

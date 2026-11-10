@@ -18,15 +18,15 @@
                 <div class="rr-slip__body">
                     <div class="payment-slip__head"><h2 id="order-@order.OrderId" class="payment-card-title rr-ref">@PaymentFormatter.OrderReference(order.OrderId)</h2><span class="@(status is null ? "rr-status rr-status--attention" : PaymentFormatter.StatusPill(status, order.Method))">@(status is null ? "Unpaid" : PaymentFormatter.StatusText(status, order.Method))</span></div>
                     <div class="payment-slip__summary"><span class="payment-note">Order total</span><strong class="rr-money">@PaymentFormatter.Money(order.TotalAmount)</strong></div>
-                    @if (order.IsAwaitingCounter) { <p class="payment-note mb-0">Please pay our staff at the restaurant.</p> }
-                    <div class="payment-actions mt-3">
+                    @if (order.IsAwaitingCounter) { <p class="payment-note payment-slip__note mb-0">Please pay our staff at the restaurant.</p> }
+                    <div class="payment-actions payment-slip__actions">
                         @if (order.CanCheckOnlineStatus) { <a class="btn btn-outline-secondary" asp-page="Success" asp-route-paymentId="@order.PaymentId">Check payment status</a> }
                         @if (status is PaymentStatus.Paid or PaymentStatus.Refunded && order.PaymentId is not null)
                         { <a class="btn btn-outline-secondary" asp-page="Receipt" asp-route-id="@order.PaymentId">Download receipt</a> }
                         else if (order.OrderStatus == RROMS.Web.Models.OrdersAndReservations.OrderStatus.Cancelled)
                         { <span class="rr-status rr-status--off">Order cancelled</span> }
                         else
-                        { <a class="btn btn-outline-secondary" asp-page="CheckOut" asp-route-orderId="@order.OrderId">@(status is null ? "Choose how to pay" : status == PaymentStatus.Failed ? "Review payment options" : "Review payment")</a> }
+                        { <a class="btn btn-outline-secondary" asp-page="CheckOut" asp-route-orderId="@order.OrderId">@(status is null ? "Choose Payment method" :status == PaymentStatus.Failed ? "Review payment options" : "Review payment")</a> }
                     </div>
                 </div>
             </article>
